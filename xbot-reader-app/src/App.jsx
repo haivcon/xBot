@@ -24,6 +24,11 @@ export default function App() {
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
+    
+    // Quick validation, but we try to parse it anyway just in case Android MIME types are weird
+    if (file.name && !file.name.toLowerCase().endsWith('.csv') && file.type && !file.type.includes('csv') && !file.type.includes('excel')) {
+        alert('Please select a valid CSV file.');
+    }
 
     setLoading(true);
     Papa.parse(file, {
@@ -86,7 +91,7 @@ export default function App() {
           >
             <input 
               type="file" 
-              accept=".csv" 
+              accept="*/*" 
               ref={fileInputRef} 
               onChange={handleFileUpload} 
               className="hidden" 
