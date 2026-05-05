@@ -31,14 +31,20 @@
 - [Roadmap](#️-project-roadmap)
 - [Contributing](#-contributing)
 
-### 🚀 What's New in v1.3.3 (DEX Batch Transfers & Android APK Reader)
-- **Professional DEX Batch Transfers**: Completely overhauled the multi-wallet DEX transfer workflow. Added a virtualized, intelligent "Multi-Select" UI that auto-excludes already selected recipients. Included real-time balance tracking, dynamic gas calculation, and deep TxHash linking for every successful transfer row.
-- **Granular Error Handling & Retry Logic**: Implemented an explicit per-transaction failure state within bulk operations. Failed transfers now display precise error messages with a dedicated "Retry" button, allowing users to re-attempt individual failed nodes without repeating the entire batch.
-- **XBot CSV Reader App (Android)**: Introduced a standalone Android application project (`xbot-reader-app`) using Capacitor + React. This companion app securely loads XBot's exported wallet CSVs completely offline, intelligently maps columns (PK, Seed, Balance), and provides one-click masked copy functionality wrapped in a native mobile UI.
-- **Wallet State Stability**: Refactored the internal state mechanisms for `WalletsPage.jsx`. Balances are now forcefully refreshed via a silent background trigger, completely eliminating UI jitter, scroll resets, and loading spinner interruptions during active wallet management.
+### 🚀 What's New in v1.3.4 (Premium Vault Upgrade & Biometric Integration)
+- **XBOT Check (Premium Cold Vault)**: Completely upgraded the standalone Android application from a simple CSV reader into a secure, offline Cold Vault. The app now features persistent AES-256 encrypted storage, ensuring imported wallets are securely locked in the device.
+- **Native Biometric Auth**: Integrated native Android Biometrics (FaceID / Fingerprint / Lock Screen) to strictly guard vault access, entirely replacing the manual PIN code system. The Keystore intelligent drop mechanism securely wipes keys if screen locks are removed.
+- **Interactive QR Generator**: Added native QR code generation capabilities directly onto the wallet cards, allowing users to scan and import Private Keys or Addresses securely into Web3 wallets without risking clipboard hijacking.
+- **OKX Web3 Live Integration**: Expanded the mobile settings interface to capture comprehensive OKX OnchainOS API credentials (API Key, Secret Key, Passphrase), laying the groundwork for live cross-chain balance fetching directly within the offline vault.
 
 <details>
-<summary><b>View previous updates (v1.3.2)</b></summary>
+<summary><b>View previous updates (v1.3.3 & older)</b></summary>
+
+### v1.3.3 (DEX Batch Transfers & Android APK Reader)
+- **Professional DEX Batch Transfers**: Completely overhauled the multi-wallet DEX transfer workflow. Added a virtualized, intelligent "Multi-Select" UI that auto-excludes already selected recipients. Included real-time balance tracking, dynamic gas calculation, and deep TxHash linking for every successful transfer row.
+- **Granular Error Handling & Retry Logic**: Implemented an explicit per-transaction failure state within bulk operations. Failed transfers now display precise error messages with a dedicated "Retry" button, allowing users to re-attempt individual failed nodes without repeating the entire batch.
+- **XBot Check App (Android)**: Introduced a standalone Android application project (`xbot-check`) using Capacitor + React. This companion app securely loads XBot's exported wallet CSVs completely offline, intelligently maps columns (PK, Seed, Balance), and provides one-click masked copy functionality wrapped in a native mobile UI.
+- **Wallet State Stability**: Refactored the internal state mechanisms for `WalletsPage.jsx`. Balances are now forcefully refreshed via a silent background trigger, completely eliminating UI jitter, scroll resets, and loading spinner interruptions during active wallet management.
 
 ### v1.3.2 (Unified Bulk Export & Data Granularity)
 - **Unified Bulk Export Architecture**: Consolidated all fragmented export triggers (Address Only, Key Only, Full Export) into a single, intuitive "Export" workflow across the dashboard toolbar and bulk action bar, dramatically reducing UI clutter.

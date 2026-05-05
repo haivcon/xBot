@@ -28,9 +28,10 @@ onchainos-skills-main
 
 # ─── Build Output & Apps ───
 dashboard/dist/
-xbot-reader-app/node_modules/
-xbot-reader-app/dist/
-xbot-reader-app/android/
+xbot-check/node_modules/
+xbot-check/dist/
+xbot-check/android/
+
 
 # ─── Logs ───
 *.log
