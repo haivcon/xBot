@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Key, Trash2, ShieldAlert } from 'lucide-react';
-import { loadApiConfig, saveApiConfig, wipeAllData } from '../utils/storage';
+import { loadApiConfig, saveApiConfig, wipeAllData, loadWallets } from '../utils/storage';
+import { exportVaultBackup } from '../utils/backupUtils';
 
 export default function SettingsScreen({ aesKey, onBack, onWipe }) {
     const [config, setConfig] = useState({ apiKey: '', secretKey: '', passphrase: '' });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         const fetchApiConfig = async () => {
@@ -29,6 +31,21 @@ export default function SettingsScreen({ aesKey, onBack, onWipe }) {
         } else {
             alert('Failed to save settings.');
         }
+    };
+
+    const handleExportBackup = async () => {
+        setExporting(true);
+        try {
+            const wallets = await loadWallets(aesKey);
+            const currentConfig = await loadApiConfig(aesKey);
+            const success = await exportVaultBackup(wallets, currentConfig, aesKey);
+            if (!success) {
+                alert("Export failed.");
+            }
+        } catch (e) {
+            alert("Error exporting backup.");
+        }
+        setExporting(false);
     };
 
     const handleWipe = async () => {
@@ -110,6 +127,29 @@ export default function SettingsScreen({ aesKey, onBack, onWipe }) {
                             {saving ? 'Saving...' : 'Save Configuration'}
                         </button>
                     </div>
+                </div>
+
+                {/* Export Backup */}
+                <div className="glass-card p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                            <Key size={20} className="text-blue-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-semibold text-white">Vault Backup</h2>
+                            <p className="text-xs text-surface-400">Export encrypted Két sắt</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleExportBackup}
+                        disabled={exporting}
+                        className="w-full bg-surface-800 hover:bg-surface-700 text-white border border-surface-700 font-medium py-3 px-4 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                        {exporting ? 'Exporting...' : 'Export .xbot Backup'}
+                    </button>
+                    <p className="text-xs text-surface-500 mt-3 text-center">
+                        This file is AES-256 encrypted. It can only be restored on this device while your biometric lock is active, unless you manually extract the fallback key.
+                    </p>
                 </div>
 
                 {/* Danger Zone */}

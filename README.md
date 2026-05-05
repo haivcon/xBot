@@ -31,14 +31,21 @@
 - [Roadmap](#️-project-roadmap)
 - [Contributing](#-contributing)
 
-### 🚀 What's New in v1.3.4 (Premium Vault Upgrade & Biometric Integration)
+### 🚀 What's New in v1.3.5 (XBOT Vault Mega Upgrade)
+- **Live On-Chain Balance Sync**: Integrated a secure OKX API engine (`okxApi.js`) natively implementing HMAC-SHA256 signatures. The vault now queries OKX OnchainOS directly to fetch and update real-time native token balances across multiple chains, perfectly respecting OKX API rate limits.
+- **Wallet Folders & Tab Navigation**: Implemented an intelligent CSV metadata extractor. The vault now automatically groups imported wallets by their original `.csv` filenames into dedicated folders. A new modern horizontal tab interface allows seamless filtering and switching between wallet batches (e.g., `Airdrop_1`, `Main_Trading`).
+- **Encrypted `.xbot` Backup System**: Engineered a robust backup and restore system using Capacitor FileSystem. Users can export their entire vault (including wallets, folders, and API credentials) into an AES-256 encrypted `.xbot` file and safely store it on Google Drive. The import system natively recognizes and decrypts `.xbot` files.
+- **Native Transaction Signer**: Transformed the vault into a full offline wallet manager via Ethers.js v6. A new "Send Funds" module allows users to securely craft, estimate gas, and sign transactions entirely locally before broadcasting them directly to custom RPCs across multiple networks (X Layer, Ethereum, BSC, Arbitrum).
+- **Balance Sorting**: Added a dynamic 3-state sorting toggle. Users can now instantly sort their massive wallet lists by numeric balance in ascending or descending order, complete with intuitive UI icon rotations.
+
+<details>
+<summary><b>View previous updates (v1.3.4 & older)</b></summary>
+
+### v1.3.4 (Premium Vault Upgrade & Biometric Integration)
 - **XBOT Check (Premium Cold Vault)**: Completely upgraded the standalone Android application from a simple CSV reader into a secure, offline Cold Vault. The app now features persistent AES-256 encrypted storage, ensuring imported wallets are securely locked in the device.
 - **Native Biometric Auth**: Integrated native Android Biometrics (FaceID / Fingerprint / Lock Screen) to strictly guard vault access, entirely replacing the manual PIN code system. The Keystore intelligent drop mechanism securely wipes keys if screen locks are removed.
 - **Interactive QR Generator**: Added native QR code generation capabilities directly onto the wallet cards, allowing users to scan and import Private Keys or Addresses securely into Web3 wallets without risking clipboard hijacking.
 - **OKX Web3 Live Integration**: Expanded the mobile settings interface to capture comprehensive OKX OnchainOS API credentials (API Key, Secret Key, Passphrase), laying the groundwork for live cross-chain balance fetching directly within the offline vault.
-
-<details>
-<summary><b>View previous updates (v1.3.3 & older)</b></summary>
 
 ### v1.3.3 (DEX Batch Transfers & Android APK Reader)
 - **Professional DEX Batch Transfers**: Completely overhauled the multi-wallet DEX transfer workflow. Added a virtualized, intelligent "Multi-Select" UI that auto-excludes already selected recipients. Included real-time balance tracking, dynamic gas calculation, and deep TxHash linking for every successful transfer row.

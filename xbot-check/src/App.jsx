@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import { 
-  UploadCloud, Wallet, Key, FileText, Check, Copy, Search, Eye, EyeOff, ChevronDown, ChevronUp, QrCode, Settings, RefreshCw
+  UploadCloud, Wallet, Key, FileText, Check, Copy, Search, Eye, EyeOff, ChevronDown, ChevronUp, QrCode, Settings, RefreshCw, Send, ArrowDownUp
 } from 'lucide-react';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 
 import SettingsScreen from './components/SettingsScreen';
 import QRCodeModal from './components/QRCodeModal';
-import { saveWallets, loadWallets, loadApiConfig, getEncryptionKey } from './utils/storage';
+import SendFundsModal from './components/SendFundsModal';
+import { saveWallets, loadWallets, loadApiConfig, saveApiConfig, getEncryptionKey } from './utils/storage';
+import { exportVaultBackup, parseVaultBackupFile } from './utils/backupUtils';
+import { fetchWalletBalances } from './utils/okxApi';
 
 // ... (WalletCard unchanged)
 
-function WalletCard({ wallet, onShowQR }) {
+function WalletCard({ wallet, onShowQR, onSendFunds }) {
   const [expanded, setExpanded] = useState(false);
   const [showPk, setShowPk] = useState(false);
   const [showSeed, setShowSeed] = useState(false);
@@ -46,7 +49,7 @@ function WalletCard({ wallet, onShowQR }) {
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-white font-semibold">
-              {wallet.balance || '0.00'}
+              ${wallet.balance || '0.00'}
             </p>
             <p className="text-xs text-surface-400">Balance</p>
           </div>
@@ -66,6 +69,14 @@ function WalletCard({ wallet, onShowQR }) {
                 <code className="flex-1 bg-surface-800 text-brand-300 p-2 rounded text-sm break-all">
                   {wallet.address}
                 </code>
+                {wallet.privateKey && (
+                  <button 
+                    onClick={() => onSendFunds(wallet)}
+                    className="p-2 bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 rounded transition-colors"
+                  >
+                    <Send size={18} />
+                  </button>
+                )}
                 <button 
                   onClick={() => onShowQR(wallet.address, 'Wallet Address', wallet.name)}
                   className="p-2 bg-surface-800 hover:bg-brand-500/20 text-brand-400 rounded transition-colors"
@@ -150,8 +161,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFolder, setActiveFolder] = useState('All');
+  const [sortOrder, setSortOrder] = useState('none'); // 'none', 'asc', 'desc'
   
   const [qrModalData, setQrModalData] = useState({ isOpen: false, data: '', title: '', subtitle: '' });
+  const [sendModalWallet, setSendModalWallet] = useState(null);
 
   // On Unlock, load data
   useEffect(() => {
@@ -173,7 +187,7 @@ export default function App() {
   const handleFileUpload = async () => {
     try {
       const result = await FilePicker.pickFiles({
-        types: ['text/csv', 'text/comma-separated-values', 'application/csv', '.csv'],
+        types: ['text/csv', 'text/comma-separated-values', 'application/csv', '.csv', 'application/octet-stream'],
         multiple: false,
         readData: true
       });
@@ -181,7 +195,33 @@ export default function App() {
       if (result.files && result.files.length > 0) {
         const file = result.files[0];
         setLoading(true);
+
+        // Handle .xbot Backup File
+        if (file.name && file.name.toLowerCase().endsWith('.xbot')) {
+            try {
+                const backup = await parseVaultBackupFile(file.data, aesKey);
+                
+                // Merge wallets
+                const newWallets = [...wallets, ...backup.wallets];
+                setWallets(newWallets);
+                await saveWallets(newWallets, aesKey);
+                
+                // Merge config (overwrite if exists)
+                if (backup.config && backup.config.apiKey) {
+                    await saveApiConfig(backup.config, aesKey);
+                }
+                
+                alert('Backup imported successfully!');
+                setLoading(false);
+                return;
+            } catch (err) {
+                alert(err.message || "Failed to import backup");
+                setLoading(false);
+                return;
+            }
+        }
         
+        // Handle CSV File
         let csvString = '';
         try {
             const binString = atob(file.data);
@@ -202,8 +242,10 @@ export default function App() {
           skipEmptyLines: true,
           complete: async (results) => {
             const { data } = results;
+            const folderName = file.name ? file.name.replace(/\.csv$/i, '') : 'Imported';
+            
             const normalizedData = data.map(row => {
-              const normalizedRow = { _raw: row };
+              const normalizedRow = { _raw: row, groupId: folderName };
               for (const [key, value] of Object.entries(row)) {
                 const lowerKey = key.toLowerCase().trim();
                 if (lowerKey.includes('name')) normalizedRow.name = value;
@@ -215,8 +257,9 @@ export default function App() {
               return normalizedRow;
             });
 
-            setWallets(normalizedData);
-            await saveWallets(normalizedData, aesKey); // Save to secure storage
+            const newWallets = [...wallets, ...normalizedData];
+            setWallets(newWallets);
+            await saveWallets(newWallets, aesKey); // Save to secure storage
             setLoading(false);
           },
           error: (err) => {
@@ -233,17 +276,56 @@ export default function App() {
 
   const refreshLiveBalances = async () => {
     const config = await loadApiConfig(aesKey);
-    if (!config.apiKey) {
-      alert('Please set your OKX API Key in Settings first.');
+    if (!config.apiKey || !config.secretKey) {
+      alert('Please set your complete OKX API Key in Settings first.');
       return;
     }
     setRefreshing(true);
     
-    // Simulating API call
-    setTimeout(() => {
-      alert(`Simulated live fetch with OKX API Key ending in ...${config.apiKey.slice(-4)}\nSecret: ${config.secretKey ? 'Present' : 'Missing'}\nPassphrase: ${config.passphrase ? 'Present' : 'Missing'}`);
-      setRefreshing(false);
-    }, 1500);
+    try {
+        const currentWallets = [...wallets];
+        let updatedCount = 0;
+        
+        // Only refresh wallets in the currently active folder
+        const targetWallets = activeFolder === 'All' 
+            ? currentWallets 
+            : currentWallets.filter(w => (w.groupId || 'Imported') === activeFolder);
+
+        for (let i = 0; i < targetWallets.length; i++) {
+            const w = targetWallets[i];
+            if (!w.address) continue;
+            
+            try {
+                // Delay to prevent OKX rate limit (max 10/s)
+                await new Promise(r => setTimeout(r, 200));
+                
+                const data = await fetchWalletBalances(w.address, config);
+                
+                // Update balance (data.totalUsdValue)
+                if (data && data.totalUsdValue) {
+                    const originalIndex = currentWallets.findIndex(orig => orig.address === w.address);
+                    if (originalIndex !== -1) {
+                        currentWallets[originalIndex].balance = parseFloat(data.totalUsdValue).toFixed(2);
+                        updatedCount++;
+                    }
+                }
+            } catch (err) {
+                console.error(`Failed to sync ${w.address}:`, err);
+            }
+        }
+        
+        if (updatedCount > 0) {
+            setWallets(currentWallets);
+            await saveWallets(currentWallets, aesKey);
+            alert(`Successfully synced balances for ${updatedCount} wallets!`);
+        } else {
+            alert('Live Sync completed, but no balances were updated (rate limits or empty wallets).');
+        }
+        
+    } catch (e) {
+        alert("Failed to run Live Sync: " + e.message);
+    }
+    setRefreshing(false);
   };
 
   const handleWipe = () => {
@@ -258,18 +340,36 @@ export default function App() {
   if (authError) {
     return (
       <div className="min-h-screen bg-surface-900 flex items-center justify-center p-4 text-center">
-        <div>
+        <div className="max-w-sm w-full">
           <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShieldAlert size={32} />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Vault Locked</h2>
-          <p className="text-surface-400 mb-6">{authError}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="bg-surface-800 hover:bg-surface-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            Retry Authentication
-          </button>
+          <p className="text-surface-400 mb-8">{authError}</p>
+          
+          <div className="space-y-3">
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              Retry Authentication
+            </button>
+            
+            {authError.includes('Invalid Key') && (
+              <button 
+                onClick={async () => {
+                  if (window.confirm("WARNING: Your encryption key was lost or corrupted (usually happens if you removed your phone's screen lock). To use the app again, you must wipe all current vault data. Proceed?")) {
+                    const { wipeAllData } = await import('./utils/storage');
+                    await wipeAllData();
+                    window.location.reload();
+                  }
+                }}
+                className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                Wipe Vault & Reset
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -288,15 +388,24 @@ export default function App() {
     return <SettingsScreen aesKey={aesKey} onBack={() => setCurrentView('home')} onWipe={handleWipe} />;
   }
 
+  // Folders logic
+  const folders = ['All', ...new Set(wallets.map(w => w.groupId || 'Imported'))];
+
   // Home Vault View
   const filteredWallets = wallets.filter(w => {
+    if (activeFolder !== 'All' && (w.groupId || 'Imported') !== activeFolder) return false;
     const q = searchQuery.toLowerCase();
     return (w.name && w.name.toLowerCase().includes(q)) || 
            (w.address && w.address.toLowerCase().includes(q));
+  }).sort((a, b) => {
+    if (sortOrder === 'none') return 0;
+    const valA = parseFloat(a.balance || 0) || 0;
+    const valB = parseFloat(b.balance || 0) || 0;
+    return sortOrder === 'asc' ? valA - valB : valB - valA;
   });
 
   // Calculate Total Balance (assuming numeric balances)
-  const totalBalance = wallets.reduce((acc, w) => {
+  const totalBalance = filteredWallets.reduce((acc, w) => {
     const val = parseFloat(w.balance || 0);
     return acc + (isNaN(val) ? 0 : val);
   }, 0);
@@ -365,6 +474,21 @@ export default function App() {
           </div>
         ) : (
           <>
+            {/* Folder Tabs */}
+            {folders.length > 1 && (
+              <div className="flex overflow-x-auto gap-2 pb-2 mb-4 scrollbar-hide">
+                {folders.map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setActiveFolder(f)}
+                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeFolder === f ? 'bg-brand-500 text-white' : 'bg-surface-800 text-surface-400 hover:text-white hover:bg-surface-700'}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Action Bar */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6 mt-2">
               <div className="relative flex-1">
@@ -377,6 +501,15 @@ export default function App() {
                   className="w-full bg-surface-900 border border-surface-700 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder:text-surface-500"
                 />
               </div>
+              
+              <button 
+                onClick={() => setSortOrder(prev => prev === 'none' ? 'desc' : prev === 'desc' ? 'asc' : 'none')}
+                className={`flex-shrink-0 border px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${sortOrder !== 'none' ? 'bg-brand-500/10 border-brand-500/30 text-brand-400' : 'bg-surface-800 border-surface-700 text-surface-300 hover:text-white hover:bg-surface-700'}`}
+                title="Sort by Balance"
+              >
+                <ArrowDownUp size={18} className={sortOrder === 'desc' ? 'text-brand-400' : sortOrder === 'asc' ? 'text-brand-400 rotate-180 transition-transform' : ''} />
+              </button>
+
               <button 
                 onClick={handleFileUpload}
                 disabled={loading}
@@ -399,6 +532,7 @@ export default function App() {
                     key={i} 
                     wallet={w} 
                     onShowQR={(data, title, subtitle) => setQrModalData({ isOpen: true, data, title, subtitle })}
+                    onSendFunds={(wallet) => setSendModalWallet(wallet)}
                   />
                 ))
               )}
@@ -411,6 +545,13 @@ export default function App() {
         {...qrModalData} 
         onClose={() => setQrModalData({ ...qrModalData, isOpen: false })} 
       />
+
+      {sendModalWallet && (
+        <SendFundsModal 
+          wallet={sendModalWallet} 
+          onClose={() => setSendModalWallet(null)} 
+        />
+      )}
     </div>
   );
 }

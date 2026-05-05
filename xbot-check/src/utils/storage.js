@@ -29,7 +29,15 @@ export const getEncryptionKey = async () => {
         
         if (available.isAvailable) {
             try {
-                // Try to get existing key (Triggers Lock Screen / Biometric Prompt)
+                // Force the native authentication prompt
+                await NativeBiometric.verifyIdentity({
+                    reason: "Unlock XBOT Vault",
+                    title: "Vault Authentication",
+                    subtitle: "Log in using your biometric credential",
+                    useFallback: true // Allows device PIN if biometrics fail
+                });
+
+                // Try to get existing key
                 const creds = await NativeBiometric.getCredentials({
                     server: BIOMETRIC_SERVER
                 });
@@ -48,7 +56,7 @@ export const getEncryptionKey = async () => {
                     });
                     return newKey;
                 }
-                // If user canceled the prompt, bubble up the error to prevent access
+                // If user canceled the prompt or auth failed
                 throw new Error("Biometric authentication failed or canceled.");
             }
         } else {
