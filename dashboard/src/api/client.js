@@ -349,7 +349,7 @@ class ApiClient {
 
     // === Wallet APIs ===
     getWallets() { return this.get('/market/wallets'); }
-    createWallet(name) { return this.post('/market/wallets/create', { name }); }
+    createWallet(name, seedType = 12) { return this.post('/market/wallets/create', { name, seedType }); }
     importWallet(keys) { return this.post('/market/wallets/import', { keys }); }
     getWalletBalance(id, chainIndex) { return this.get(`/market/wallets/${id}/balance${chainIndex ? '?chainIndex=' + chainIndex : ''}`); }
     deleteWallet(id) { return this.delete(`/market/wallets/${id}`); }

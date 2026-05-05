@@ -236,7 +236,13 @@ function createMarketRoutes() {
             }
 
             const ENCRYPT_KEY = _getEncryptKey();
-            const newWallet = ethers.Wallet.createRandom();
+            
+            // Generate seed phrase based on requested length (default 12)
+            const seedType = parseInt(req.body.seedType) === 24 ? 24 : 12;
+            const entropyBytes = seedType === 24 ? 32 : 16;
+            const mnemonic = ethers.Mnemonic.fromEntropy(crypto.randomBytes(entropyBytes));
+            const newWallet = ethers.HDNodeWallet.fromMnemonic(mnemonic);
+            
             const iv = crypto.randomBytes(16);
             const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPT_KEY), iv);
             let encrypted = cipher.update(newWallet.privateKey, 'utf8', 'hex');
@@ -259,7 +265,9 @@ function createMarketRoutes() {
             res.json({
                 success: true,
                 wallet: { address: newWallet.address, name: walletName, isDefault: !!isDefault },
-                privateKey: newWallet.privateKey
+                privateKey: newWallet.privateKey,
+                seedPhrase: mnemonic.phrase,
+                seedType
             });
         } catch (err) {
             log.error('wallets/create error:', err.message);
@@ -423,7 +431,6 @@ function createMarketRoutes() {
                 keysList = [{ key: req.body.privateKey, name: req.body.name }];
             }
             if (keysList.length === 0) return res.status(400).json({ error: 'keys[] or privateKey required' });
-            if (keysList.length > 50) return res.status(400).json({ error: 'Maximum 50 keys per import' });
 
             const results = { imported: [], duplicates: [], invalid: [] };
 
@@ -600,9 +607,6 @@ function createMarketRoutes() {
             const walletIds = req.body.walletIds;
             if (!Array.isArray(walletIds) || walletIds.length === 0) {
                 return res.status(400).json({ error: 'walletIds[] required' });
-            }
-            if (walletIds.length > 50) {
-                return res.status(400).json({ error: 'Maximum 50 wallets per export' });
             }
 
             const ENCRYPT_KEY = _getEncryptKey();
