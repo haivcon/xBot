@@ -1,41 +1,97 @@
 import { Preferences } from '@capacitor/preferences';
+import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 import CryptoJS from 'crypto-js';
 
 const STORAGE_KEYS = {
     WALLETS: 'xbot_wallets',
     API_KEY: 'xbot_api_key',
-    HAS_PIN: 'xbot_has_pin'
+    AES_KEY_FALLBACK: 'xbot_aes_fallback'
+};
+
+const BIOMETRIC_SERVER = 'app.xbot.check';
+const BIOMETRIC_USER = 'xbot_vault';
+
+/**
+ * Generate a random 32-char string for AES
+ */
+const generateRandomKey = () => {
+    return CryptoJS.lib.WordArray.random(32).toString();
+};
+
+/**
+ * Retrieve the AES Encryption Key
+ * Triggers native Biometric/Lock Screen if available.
+ * If no lock screen is set on the device, it falls back to standard Preferences.
+ */
+export const getEncryptionKey = async () => {
+    try {
+        const available = await NativeBiometric.isAvailable();
+        
+        if (available.isAvailable) {
+            try {
+                // Try to get existing key (Triggers Lock Screen / Biometric Prompt)
+                const creds = await NativeBiometric.getCredentials({
+                    server: BIOMETRIC_SERVER
+                });
+                return creds.password;
+            } catch (err) {
+                // If ItemNotFound or similar, create a new one
+                if (err.message && (err.message.includes('ItemNotFound') || err.message.includes('not found') || err.code === 'ItemNotFound')) {
+                    const newKey = generateRandomKey();
+                    await NativeBiometric.setCredentials({
+                        username: BIOMETRIC_USER,
+                        password: newKey,
+                        server: BIOMETRIC_SERVER
+                    });
+                    return newKey;
+                }
+                // If user canceled the prompt, bubble up the error to prevent access
+                throw new Error("Biometric authentication failed or canceled.");
+            }
+        } else {
+            // Device has no lock screen / biometrics. Use standard Preferences.
+            const { value } = await Preferences.get({ key: STORAGE_KEYS.AES_KEY_FALLBACK });
+            if (value) return value;
+            
+            const newKey = generateRandomKey();
+            await Preferences.set({ key: STORAGE_KEYS.AES_KEY_FALLBACK, value: newKey });
+            return newKey;
+        }
+    } catch (e) {
+        console.error("Encryption key retrieval error:", e);
+        throw e;
+    }
 };
 
 /**
  * Encrypt data before saving to preferences
  */
-const encryptData = (data, pin) => {
-    if (!pin) throw new Error("PIN required for encryption");
-    return CryptoJS.AES.encrypt(JSON.stringify(data), pin).toString();
+const encryptData = (data, key) => {
+    if (!key) throw new Error("Key required for encryption");
+    return CryptoJS.AES.encrypt(JSON.stringify(data), key).toString();
 };
 
 /**
  * Decrypt data retrieved from preferences
  */
-const decryptData = (cipherText, pin) => {
-    if (!pin) throw new Error("PIN required for decryption");
+const decryptData = (cipherText, key) => {
+    if (!key) throw new Error("Key required for decryption");
     try {
-        const bytes = CryptoJS.AES.decrypt(cipherText, pin);
+        const bytes = CryptoJS.AES.decrypt(cipherText, key);
         const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
-        if (!decryptedStr) throw new Error("Invalid PIN");
+        if (!decryptedStr) throw new Error("Invalid Key");
         return JSON.parse(decryptedStr);
     } catch (e) {
-        throw new Error("Invalid PIN or corrupted data");
+        throw new Error("Invalid Key or corrupted data");
     }
 };
 
 /**
  * Save encrypted wallets
  */
-export const saveWallets = async (wallets, pin) => {
+export const saveWallets = async (wallets, key) => {
     try {
-        const encrypted = encryptData(wallets, pin);
+        const encrypted = encryptData(wallets, key);
         await Preferences.set({ key: STORAGE_KEYS.WALLETS, value: encrypted });
         return true;
     } catch (e) {
@@ -47,71 +103,43 @@ export const saveWallets = async (wallets, pin) => {
 /**
  * Load encrypted wallets
  */
-export const loadWallets = async (pin) => {
+export const loadWallets = async (key) => {
     const { value } = await Preferences.get({ key: STORAGE_KEYS.WALLETS });
-    if (!value) return []; // No saved wallets
-    return decryptData(value, pin);
+    if (!value) return [];
+    return decryptData(value, key);
 };
 
 /**
- * Save API Key (Encrypted with PIN for security)
+ * Save OKX API Configuration
  */
-export const saveApiKey = async (apiKey, pin) => {
+export const saveApiConfig = async (config, key) => {
     try {
-        const encrypted = encryptData(apiKey, pin);
+        const encrypted = encryptData(config, key);
         await Preferences.set({ key: STORAGE_KEYS.API_KEY, value: encrypted });
         return true;
     } catch (e) {
-        console.error('Failed to save API key', e);
+        console.error('Failed to save API config', e);
         return false;
     }
 };
 
 /**
- * Load API Key
+ * Load OKX API Configuration
  */
-export const loadApiKey = async (pin) => {
+export const loadApiConfig = async (key) => {
     const { value } = await Preferences.get({ key: STORAGE_KEYS.API_KEY });
-    if (!value) return '';
-    return decryptData(value, pin);
+    if (!value) return { apiKey: '', secretKey: '', passphrase: '' };
+    return decryptData(value, key);
 };
 
 /**
- * PIN Management
- */
-export const setHasPin = async (hasPin) => {
-    await Preferences.set({ key: STORAGE_KEYS.HAS_PIN, value: hasPin ? 'true' : 'false' });
-};
-
-export const getHasPin = async () => {
-    const { value } = await Preferences.get({ key: STORAGE_KEYS.HAS_PIN });
-    return value === 'true';
-};
-
-/**
- * Validate PIN by trying to decrypt a test string or just trying to decrypt the API Key / Wallets
- * We'll use a specific TEST key to validate if a PIN is correct during login
- */
-export const savePinVerification = async (pin) => {
-    const encrypted = encryptData('valid', pin);
-    await Preferences.set({ key: 'xbot_pin_verify', value: encrypted });
-    await setHasPin(true);
-};
-
-export const verifyPin = async (pin) => {
-    const { value } = await Preferences.get({ key: 'xbot_pin_verify' });
-    if (!value) return false;
-    try {
-        const decrypted = decryptData(value, pin);
-        return decrypted === 'valid';
-    } catch (e) {
-        return false;
-    }
-};
-
-/**
- * Panic Button - Wipe all data
+ * Wipe all data
  */
 export const wipeAllData = async () => {
     await Preferences.clear();
+    try {
+        await NativeBiometric.deleteCredentials({ server: BIOMETRIC_SERVER });
+    } catch(e) {
+        // Ignore if credential doesn't exist
+    }
 };

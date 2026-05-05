@@ -5,10 +5,11 @@ import {
 } from 'lucide-react';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 
-import LockScreen from './components/LockScreen';
 import SettingsScreen from './components/SettingsScreen';
 import QRCodeModal from './components/QRCodeModal';
-import { saveWallets, loadWallets, loadApiKey } from './utils/storage';
+import { saveWallets, loadWallets, loadApiConfig, getEncryptionKey } from './utils/storage';
+
+// ... (WalletCard unchanged)
 
 function WalletCard({ wallet, onShowQR }) {
   const [expanded, setExpanded] = useState(false);
@@ -141,7 +142,8 @@ function WalletCard({ wallet, onShowQR }) {
 }
 
 export default function App() {
-  const [masterPin, setMasterPin] = useState(null);
+  const [aesKey, setAesKey] = useState(null);
+  const [authError, setAuthError] = useState('');
   const [currentView, setCurrentView] = useState('home'); // 'home', 'settings'
   
   const [wallets, setWallets] = useState([]);
@@ -153,14 +155,20 @@ export default function App() {
 
   // On Unlock, load data
   useEffect(() => {
-    if (masterPin) {
-      loadWallets(masterPin).then(savedWallets => {
+    const authenticate = async () => {
+      try {
+        const key = await getEncryptionKey();
+        setAesKey(key);
+        const savedWallets = await loadWallets(key);
         if (savedWallets && savedWallets.length > 0) {
           setWallets(savedWallets);
         }
-      });
-    }
-  }, [masterPin]);
+      } catch (err) {
+        setAuthError(err.message || "Failed to authenticate.");
+      }
+    };
+    authenticate();
+  }, []);
 
   const handleFileUpload = async () => {
     try {
@@ -208,7 +216,7 @@ export default function App() {
             });
 
             setWallets(normalizedData);
-            await saveWallets(normalizedData, masterPin); // Save to secure storage
+            await saveWallets(normalizedData, aesKey); // Save to secure storage
             setLoading(false);
           },
           error: (err) => {
@@ -224,34 +232,60 @@ export default function App() {
   };
 
   const refreshLiveBalances = async () => {
-    const apiKey = await loadApiKey(masterPin);
-    if (!apiKey) {
+    const config = await loadApiConfig(aesKey);
+    if (!config.apiKey) {
       alert('Please set your OKX API Key in Settings first.');
       return;
     }
     setRefreshing(true);
     
-    // Simulating API call since exact OKX Web3 API endpoint wasn't specified.
-    // In production, you would fetch from OKX API here and update wallet balances.
+    // Simulating API call
     setTimeout(() => {
-      alert(`Simulated live fetch with API Key ending in ...${apiKey.slice(-4)}\nImplement exact OKX API endpoint here.`);
+      alert(`Simulated live fetch with OKX API Key ending in ...${config.apiKey.slice(-4)}\nSecret: ${config.secretKey ? 'Present' : 'Missing'}\nPassphrase: ${config.passphrase ? 'Present' : 'Missing'}`);
       setRefreshing(false);
     }, 1500);
   };
 
   const handleWipe = () => {
     setWallets([]);
-    setMasterPin(null);
+    setAesKey(null);
     setCurrentView('home');
+    // Reload to force new key generation
+    window.location.reload();
   };
 
   // Views Orchestration
-  if (!masterPin) {
-    return <LockScreen onUnlock={(pin) => setMasterPin(pin)} />;
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-surface-900 flex items-center justify-center p-4 text-center">
+        <div>
+          <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Vault Locked</h2>
+          <p className="text-surface-400 mb-6">{authError}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-surface-800 hover:bg-surface-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            Retry Authentication
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!aesKey) {
+    return (
+      <div className="min-h-screen bg-surface-900 flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-surface-400 text-sm">Unlocking Vault...</p>
+      </div>
+    );
   }
 
   if (currentView === 'settings') {
-    return <SettingsScreen masterPin={masterPin} onBack={() => setCurrentView('home')} onWipe={handleWipe} />;
+    return <SettingsScreen aesKey={aesKey} onBack={() => setCurrentView('home')} onWipe={handleWipe} />;
   }
 
   // Home Vault View
