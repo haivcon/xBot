@@ -562,7 +562,7 @@ function WalletDropdown({ wallets = [], value, onChange, accentColor = 'violet',
                                 <Wallet size={12} className={isSelected ? accentText : 'text-surface-200/30'} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="text-xs font-semibold truncate">{w.name || `Wallet ${w.id}`}</div>
+                                <div className="text-xs font-semibold truncate">{w.walletName || `Wallet ${w.id}`}</div>
                                 <div className="text-[9px] font-mono text-surface-200/25">{w.address?.slice(0, 8)}...{w.address?.slice(-6)}</div>
                             </div>
                             <div className="text-right flex-shrink-0">
@@ -601,7 +601,7 @@ function WalletDropdown({ wallets = [], value, onChange, accentColor = 'violet',
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                     <div className="text-xs font-semibold text-surface-100 truncate">
-                        {selected ? (selected.name || `Wallet ${selected.id}`) : 'Select wallet'}
+                        {selected ? (selected.walletName || `Wallet ${selected.id}`) : 'Select wallet'}
                     </div>
                     {selected && (
                         <div className="text-[9px] font-mono text-surface-200/25">{selected.address?.slice(0, 8)}...{selected.address?.slice(-6)}</div>
@@ -724,9 +724,9 @@ function SwapQuoteWidget({ chainIndex, onTokenSelect, wallets = [], selectedWall
                     toTokenAddress: tokens[toSymbol].addr,
                     amount: amt, slippage
                 });
-                results.push({ walletId: w.id, walletName: w.name || `Wallet ${w.id}`, txHash: res.txHash, amount: amt });
+                results.push({ walletId: w.id, walletName: w.walletName || `Wallet ${w.id}`, txHash: res.txHash, amount: amt });
             } catch (err) {
-                results.push({ walletId: w.id, walletName: w.name || `Wallet ${w.id}`, error: err.message, amount: amt });
+                results.push({ walletId: w.id, walletName: w.walletName || `Wallet ${w.id}`, error: err.message, amount: amt });
             }
             setBatchProgress({ done: i + 1, total: selectedList.length });
             setBatchResults([...results]);
@@ -1419,7 +1419,7 @@ function SwapQuoteWidget({ chainIndex, onTokenSelect, wallets = [], selectedWall
                             <label key={w.id} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs cursor-pointer border transition-colors ${batchSelectedWallets[w.id] ? 'bg-orange-500/10 border-orange-500/20 text-surface-100' : 'bg-surface-800/40 border-white/[0.04] text-surface-200/40 hover:border-white/[0.08]'}`}>
                                 <input type="checkbox" checked={!!batchSelectedWallets[w.id]} onChange={() => setBatchSelectedWallets(p => ({ ...p, [w.id]: !p[w.id] }))} className="w-3 h-3 rounded accent-orange-500" />
                                 <Wallet size={10} className={batchSelectedWallets[w.id] ? 'text-orange-400' : 'text-surface-200/20'} />
-                                <span className="flex-1 truncate">{w.name || `Wallet ${w.id}`}</span>
+                                <span className="flex-1 truncate">{w.walletName || `Wallet ${w.id}`}</span>
                                 {/* Per-wallet balance overview */}
                                 {wb !== undefined && (
                                     <span className={`text-[8px] font-mono ${Number(wb?.balance || 0) > 0 ? 'text-surface-200/30' : 'text-red-400/60 font-medium'}`}>
@@ -2313,7 +2313,7 @@ function DcaWidget({ chainIndex, wallets: sharedWallets = [] }) {
                         <div className="space-y-2 animate-fadeIn bg-surface-900/60 rounded-xl p-3 border border-white/[0.06]">
                             <p className="text-[10px] text-amber-400 flex items-center gap-1 font-semibold"><AlertTriangle size={11} /> {t('dashboard.dca.confirmCreate', 'Confirm DCA schedule:')}</p>
                             <div className="space-y-1.5 text-[10px]">
-                                <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.wallet', 'Wallet')}</span><span className="text-surface-100 font-mono">{selectedWallet?.name || `Wallet ${form.walletId}`}</span></div>
+                                <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.wallet', 'Wallet')}</span><span className="text-surface-100 font-mono">{selectedWallet?.walletName || `Wallet ${form.walletId}`}</span></div>
                                 <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.dca.pair', 'Pair')}</span><span className="text-surface-100 font-bold">{form.fromSymbol} → {form.toSymbol || form.toTokenAddress.slice(0, 8) + '...'}</span></div>
                                 <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.trading.amount', 'Amount')}</span><span className="text-surface-100 font-bold">{form.amount} {form.fromSymbol}</span></div>
                                 <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.interval', 'Interval')}</span><span className="text-surface-100">{selectedInterval?.label || '24h'}</span></div>
@@ -2555,11 +2555,15 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
     const [walletBalance, setWalletBalance] = useState(null);
     const [balanceLoading, setBalanceLoading] = useState(false);
     const [openTokenSelect, setOpenTokenSelect] = useState(false);
+    const [openAddWallets, setOpenAddWallets] = useState(false);
+    const [selectedAddWallets, setSelectedAddWallets] = useState({});
 
     useEffect(() => { if (selectedWallet) setSWalletId(String(selectedWallet.id)); }, [selectedWallet]);
 
+    const [gasFee, setGasFee] = useState(null);
+
     // Fetch wallet balance & tokens when wallet changes
-    useEffect(() => {
+    const fetchBalance = useCallback(() => {
         const wId = sWalletId;
         if (!wId) { setWalletBalance(null); setWalletTokens([]); return; }
         setBalanceLoading(true);
@@ -2598,7 +2602,21 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
             })
             .catch(() => setWalletBalance(null))
             .finally(() => setBalanceLoading(false));
-    }, [sWalletId, sToken, chainIndex]);
+    }, [sWalletId, sToken, chainIndex, tokens, knownTokens]);
+
+    useEffect(() => {
+        fetchBalance();
+    }, [fetchBalance]);
+
+    useEffect(() => {
+        if (sShowConfirm || bShowConfirm) {
+            api.getGasPrice(chainIndex).then(res => {
+                if (res && res.gasPriceEth) setGasFee(res.gasPriceEth);
+            }).catch(() => setGasFee(null));
+        } else {
+            setGasFee(null);
+        }
+    }, [sShowConfirm, bShowConfirm, chainIndex]);
 
     // Address validation
     const isValidAddress = (addr) => /^0x[a-fA-F0-9]{40}$/.test(addr);
@@ -2650,9 +2668,11 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
                     walletId: sWalletId, chainIndex, toAddress: row.toAddress,
                     tokenAddress: isNative ? undefined : tokenInfo?.addr, amount: amt
                 });
-                results.push({ txHash: res.txHash, toAddress: row.toAddress, walletName: senderWallet?.name || `W${sWalletId}`, amount: amt });
+                const knownRecW = wallets.find(w => w.address.toLowerCase() === row.toAddress.toLowerCase());
+                results.push({ txHash: res.txHash, toAddress: row.toAddress, walletName: knownRecW?.walletName || '', amount: amt });
             } catch (err) {
-                results.push({ error: err.message, toAddress: row.toAddress });
+                const knownRecW = wallets.find(w => w.address.toLowerCase() === row.toAddress.toLowerCase());
+                results.push({ error: err.message, toAddress: row.toAddress, walletName: knownRecW?.walletName || '', amount: amt });
             }
             setBProgress({ done: i + 1, total: validRows.length });
             setBResults([...results]);
@@ -2664,6 +2684,30 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
         const fail = results.length - ok;
         if (showToast) showToast(ok > 0 && fail === 0 ? 'success' : ok > 0 ? 'warning' : 'error',
             `Batch Transfer: ${ok}/${results.length} ${t('dashboard.tradingUx.success', 'success')}${fail > 0 ? `, ${fail} ${t('dashboard.tradingUx.failed', 'failed')}` : ''}`);
+    };
+
+    const retryTransfer = async (index) => {
+        const targetRes = bResults[index];
+        if (!targetRes || targetRes.txHash) return;
+        
+        setBResults(prev => prev.map((r, i) => i === index ? { ...r, retrying: true } : r));
+        
+        const tokenInfo = tokens[bToken];
+        const isNative = tokenInfo?.addr?.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+        
+        try {
+            const res = await api.executeTransfer({
+                walletId: sWalletId, chainIndex, toAddress: targetRes.toAddress,
+                tokenAddress: isNative ? undefined : tokenInfo?.addr, amount: targetRes.amount
+            });
+            const knownRecW = wallets.find(w => w.address.toLowerCase() === targetRes.toAddress.toLowerCase());
+            setBResults(prev => prev.map((r, i) => i === index ? { ...r, txHash: res.txHash, error: undefined, retrying: false, walletName: knownRecW?.walletName || '' } : r));
+            if (showToast) showToast('success', t('dashboard.trading.retrySuccess', 'Retry successful!'));
+        } catch (err) {
+            const knownRecW = wallets.find(w => w.address.toLowerCase() === targetRes.toAddress.toLowerCase());
+            setBResults(prev => prev.map((r, i) => i === index ? { ...r, error: err.message, retrying: false, walletName: knownRecW?.walletName || '' } : r));
+            if (showToast) showToast('error', t('dashboard.trading.retryFailed', 'Retry failed: ') + err.message);
+        }
     };
 
     const senderWallet = wallets.find(w => String(w.id) === String(sWalletId));
@@ -2703,13 +2747,31 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
 
                     {/* TO address */}
                     <div>
-                        <label className="text-[10px] text-surface-200/30 uppercase tracking-wider mb-1.5 block font-semibold">TO</label>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-[10px] text-surface-200/30 uppercase tracking-wider block font-semibold">TO</label>
+                            <div className="relative group">
+                                <button className="text-[9px] text-brand-400 hover:text-brand-300 font-semibold">{t('dashboard.trading.myWallets', 'My Wallets')} ↗</button>
+                                <div className="absolute right-0 top-full mt-1 w-48 bg-surface-800 border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 overflow-hidden">
+                                    <div className="max-h-48 overflow-y-auto">
+                                        {wallets.filter(w => String(w.id) !== sWalletId).map(w => (
+                                            <button key={w.id} onClick={() => setSTo(w.address)} className="w-full text-left px-3 py-2 text-[10px] hover:bg-white/5 transition-colors border-b border-white/[0.02] last:border-0">
+                                                <span className="font-bold text-surface-100 block">{w.walletName || `${t('dashboard.common.wallet', 'Wallet')} ${w.id}`}</span>
+                                                <span className="text-surface-200/50 font-mono break-all">{w.address}</span>
+                                            </button>
+                                        ))}
+                                        {wallets.filter(w => String(w.id) !== sWalletId).length === 0 && (
+                                            <div className="px-3 py-3 text-[10px] text-surface-200/50 text-center">{t('dashboard.trading.noOtherWallets', 'No other wallets available')}</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div className={`bg-surface-900/60 rounded-2xl border p-3 transition-colors ${addressError ? 'border-red-500/40' : 'border-white/[0.08]'}`}>
                             <input value={sTo} onChange={e => setSTo(e.target.value)} placeholder="0x..."
                                 className="w-full bg-transparent text-sm text-surface-100 font-mono outline-none placeholder:text-surface-200/15" />
                         </div>
                         {addressError && (
-                            <p className="text-[10px] text-red-400 mt-1 flex items-center gap-1"><AlertTriangle size={10} /> {t('dashboard.trading.invalidAddress', 'Invalid address format (must be 0x + 40 hex chars)')}</p>
+                            <p className="text-[10px] text-red-400 mt-1 flex items-center gap-1"><AlertTriangle size={10} /> {t('dashboard.trading.invalidAddress', 'Invalid address format')}</p>
                         )}
                     </div>
 
@@ -2731,6 +2793,9 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
                             {/* Available balance + MAX */}
                             {sWalletId && walletBalance != null && (
                                 <div className="flex items-center justify-end gap-2 mt-2">
+                                    <button onClick={fetchBalance} disabled={balanceLoading} className="text-surface-200/30 hover:text-brand-400 disabled:opacity-50 transition-colors" title={t('dashboard.trading.reloadBalance', 'Reload Balance')}>
+                                        <RefreshCw size={10} className={balanceLoading ? 'animate-spin' : ''} />
+                                    </button>
                                     <span className="text-[9px] text-surface-200/30">
                                         {t('dashboard.tradingUx.available', 'Available')}: {balanceLoading ? '...' : parseFloat(Number(walletBalance).toFixed(4))} {sToken}
                                     </span>
@@ -2803,9 +2868,12 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
                         <div className="space-y-2 animate-fadeIn bg-surface-900/60 rounded-xl p-3 border border-white/[0.06]">
                             <p className="text-[10px] text-amber-400 flex items-center gap-1 font-semibold"><AlertTriangle size={11} /> {t('dashboard.trading.confirmTransfer', 'Confirm transfer details:')}</p>
                             <div className="space-y-1.5 text-[10px]">
-                                <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.trading.from', 'From')}</span><span className="text-surface-100 font-mono">{senderWallet?.name || `Wallet ${sWalletId}`}</span></div>
+                                <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.trading.from', 'From')}</span><span className="text-surface-100 font-mono">{senderWallet?.walletName || `Wallet ${sWalletId}`}</span></div>
                                 <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.to', 'To')}</span><span className="text-surface-100 font-mono">{sTo.slice(0, 10)}...{sTo.slice(-6)}</span></div>
                                 <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.trading.amount', 'Amount')}</span><span className="text-surface-100 font-bold">{sAmount} {sToken}</span></div>
+                                <div className="pt-1 mt-1 border-t border-white/[0.04]"></div>
+                                <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.available', 'Available Balance')}</span><span className="text-surface-100">{walletBalance != null ? parseFloat(Number(walletBalance).toFixed(4)) : '...'} {sToken}</span></div>
+                                <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.estFee', 'Est. Network Fee')}</span><span className="text-surface-200/50">{gasFee ? `~${parseFloat(Number(gasFee).toFixed(6))} NATIVE` : '...'}</span></div>
                             </div>
                             <div className="flex gap-2 mt-2">
                                 <button onClick={() => setSShowConfirm(false)} className="flex-1 py-2 rounded-lg bg-surface-800/60 border border-white/[0.08] text-xs text-surface-200/50 hover:text-surface-100 transition-colors">{t('dashboard.common.cancel', 'Cancel')}</button>
@@ -2836,7 +2904,19 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
 
                     {/* Token for all — with wallet logos */}
                     <div>
-                        <label className="text-[10px] text-surface-200/30 uppercase tracking-wider mb-1.5 block font-semibold">{t('dashboard.tradingUx.token', 'TOKEN')}</label>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-[10px] text-surface-200/30 uppercase tracking-wider block font-semibold">{t('dashboard.tradingUx.token', 'TOKEN')}</label>
+                            {sWalletId && walletBalance != null && (
+                                <div className="flex items-center gap-2">
+                                    <button onClick={fetchBalance} disabled={balanceLoading} className="text-surface-200/30 hover:text-brand-400 disabled:opacity-50 transition-colors" title={t('dashboard.trading.reloadBalance', 'Reload Balance')}>
+                                        <RefreshCw size={10} className={balanceLoading ? 'animate-spin' : ''} />
+                                    </button>
+                                    <span className="text-[9px] text-surface-200/30">
+                                        {t('dashboard.tradingUx.available', 'Available')}: {balanceLoading ? '...' : parseFloat(Number(walletBalance).toFixed(4))} {bToken}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                         <div className="flex flex-wrap gap-1.5">
                             {(walletTokens.length > 0
                                 ? walletTokens.filter(wt => Number(wt.balance || 0) > 0).map(wt => {
@@ -2853,7 +2933,7 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
                                             isActive ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'bg-surface-800/60 text-surface-200/50 border border-white/[0.08] hover:border-white/[0.15]'
                                         }`}>
                                             {logo ? <img src={logo} alt="" width={14} height={14} className="rounded-full" onError={e => { e.target.style.display = 'none'; }} /> : <span>{tokens[sym]?.icon || '🪙'}</span>}
-                                            {sym}
+                                            {sym} <span className="opacity-50 font-mono text-[9px] ml-0.5">({parseFloat(Number(wt.balance || 0).toFixed(4))})</span>
                                         </button>
                                     );
                                 })
@@ -2909,31 +2989,92 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
 
                     {/* Rows */}
                     <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
-                        {bRows.map((row, i) => (
-                            <div key={i} className="flex gap-1.5 items-center">
-                                <input value={row.toAddress} onChange={e => updateBatchRow(i, 'toAddress', e.target.value)} placeholder="0x..."
-                                    className={`flex-1 min-w-0 bg-surface-900/60 border rounded-lg px-2 py-2 text-[10px] text-surface-100 font-mono outline-none placeholder:text-surface-200/15 ${row.toAddress && !isValidAddress(row.toAddress) ? 'border-red-500/40' : 'border-white/[0.08]'}`} />
-                                {!bSameAmount && (
-                                    <input type="number" value={row.amount} onChange={e => updateBatchRow(i, 'amount', e.target.value)} placeholder="Amt"
-                                        className="w-20 bg-surface-900/60 border border-white/[0.08] rounded-lg px-2 py-2 text-[10px] text-surface-100 text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                                )}
-                                <button onClick={() => removeBatchRow(i)} className="text-surface-200/20 hover:text-red-400 transition-colors p-1"><X size={12} /></button>
-                            </div>
-                        ))}
+                        {bRows.map((row, i) => {
+                            const knownW = wallets.find(w => w.address.toLowerCase() === (row.toAddress || '').toLowerCase());
+                            return (
+                                <div key={i} className="flex gap-1.5 items-end">
+                                    <div className="flex-1 min-w-0">
+                                        {knownW && <div className="text-[9px] text-brand-400/80 mb-0.5 ml-1 font-semibold truncate">{knownW.walletName || `${t('dashboard.common.wallet', 'Wallet')} ${knownW.id}`}</div>}
+                                        <input value={row.toAddress} onChange={e => updateBatchRow(i, 'toAddress', e.target.value)} placeholder="0x..."
+                                            className={`w-full bg-surface-900/60 border rounded-lg px-2 py-2 text-[10px] text-surface-100 font-mono outline-none placeholder:text-surface-200/15 ${row.toAddress && !isValidAddress(row.toAddress) ? 'border-red-500/40' : 'border-white/[0.08]'}`} />
+                                    </div>
+                                    {!bSameAmount && (
+                                        <input type="number" value={row.amount} onChange={e => updateBatchRow(i, 'amount', e.target.value)} placeholder="Amt"
+                                            className="w-20 h-[30px] mb-[1px] bg-surface-900/60 border border-white/[0.08] rounded-lg px-2 text-[10px] text-surface-100 text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                                    )}
+                                    <button onClick={() => removeBatchRow(i)} className="h-[30px] mb-[1px] text-surface-200/20 hover:text-red-400 transition-colors px-1.5"><X size={12} /></button>
+                                </div>
+                            );
+                        })}
                     </div>
-                    <button onClick={addBatchRow} className="w-full py-2 rounded-xl border border-dashed border-white/[0.1] text-[10px] text-surface-200/30 hover:text-surface-100 hover:border-white/[0.2] transition-colors flex items-center justify-center gap-1">
-                        <Plus size={10} /> {t('dashboard.trading.addRow', 'Add Row')}
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={addBatchRow} className="flex-1 py-2 rounded-xl border border-dashed border-white/[0.1] text-[10px] text-surface-200/30 hover:text-surface-100 hover:border-white/[0.2] transition-colors flex items-center justify-center gap-1">
+                            <Plus size={10} /> {t('dashboard.trading.addRow', 'Add Row')}
+                        </button>
+                        <div className="flex-1 relative">
+                            <button onClick={() => setOpenAddWallets(!openAddWallets)} className="w-full py-2 rounded-xl border border-dashed border-white/[0.1] text-[10px] text-brand-400 hover:text-brand-300 hover:border-brand-500/30 transition-colors flex items-center justify-center gap-1">
+                                <Wallet size={10} /> {t('dashboard.trading.addMyWallets', 'Add My Wallets')}
+                            </button>
+                            {openAddWallets && (
+                                <div className="absolute bottom-full left-0 right-0 mb-1 bg-surface-800 border border-white/10 rounded-xl shadow-2xl z-20 overflow-hidden flex flex-col">
+                                    <div className="p-2 border-b border-white/[0.04] flex justify-between items-center bg-surface-900/40">
+                                        <span className="text-[9px] text-surface-200/50 font-bold uppercase tracking-wider">{t('dashboard.trading.selectWallets', 'Select Wallets')}</span>
+                                        <button onClick={() => { setOpenAddWallets(false); setSelectedAddWallets({}); }} className="text-surface-200/30 hover:text-surface-100 p-1"><X size={10} /></button>
+                                    </div>
+                                    <div className="max-h-[220px] overflow-y-auto">
+                                        {(() => {
+                                            const availWallets = wallets.filter(w => String(w.id) !== sWalletId && !bRows.some(r => (r.toAddress || '').toLowerCase() === w.address.toLowerCase()));
+                                            if (availWallets.length === 0) return <div className="px-3 py-4 text-[10px] text-surface-200/50 text-center">{t('dashboard.trading.noOtherWallets', 'No other wallets available')}</div>;
+                                            return availWallets.map(w => {
+                                                const isSel = selectedAddWallets[w.id];
+                                                return (
+                                                    <button key={w.id} onClick={() => setSelectedAddWallets(p => ({ ...p, [w.id]: !isSel }))} className={`w-full text-left px-3 py-2 text-[10px] transition-colors border-b border-white/[0.02] last:border-0 flex items-center justify-between ${isSel ? 'bg-brand-500/15 hover:bg-brand-500/25' : 'hover:bg-white/5'}`}>
+                                                        <div className="min-w-0 pr-2">
+                                                            <span className={`font-bold block truncate ${isSel ? 'text-brand-400' : 'text-surface-100'}`}>{w.walletName || `${t('dashboard.common.wallet', 'Wallet')} ${w.id}`}</span>
+                                                            <span className="text-surface-200/50 font-mono truncate">{w.address.slice(0, 8)}...{w.address.slice(-4)}</span>
+                                                        </div>
+                                                        <div className={`w-3.5 h-3.5 rounded flex items-center justify-center flex-shrink-0 transition-colors ${isSel ? 'bg-brand-500 text-white' : 'border border-white/[0.2]'}`}>
+                                                            {isSel && <Check size={10} />}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                    {Object.keys(selectedAddWallets).some(k => selectedAddWallets[k]) && (
+                                        <div className="p-2 border-t border-white/[0.04] bg-surface-900/40">
+                                            <button onClick={() => {
+                                                const toAdd = Object.keys(selectedAddWallets).filter(k => selectedAddWallets[k]).map(k => wallets.find(w => String(w.id) === k)).filter(Boolean);
+                                                setBRows(prev => {
+                                                    const newRows = [...prev];
+                                                    if (newRows.length === 1 && !newRows[0].toAddress) newRows.pop();
+                                                    toAdd.forEach(w => newRows.push({ walletId: w.id, toAddress: w.address, amount: bSameAmount ? bGlobalAmount : '' }));
+                                                    return newRows;
+                                                });
+                                                setSelectedAddWallets({});
+                                                setOpenAddWallets(false);
+                                            }} className="w-full py-1.5 rounded-lg bg-brand-500 text-white text-[10px] font-bold hover:bg-brand-600 transition-colors">
+                                                {t('dashboard.common.add', 'Add')} {Object.keys(selectedAddWallets).filter(k => selectedAddWallets[k]).length} {t('dashboard.common.wallet', 'Wallet')}(s)
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
                     {/* Execute batch — with confirmation (P3) */}
                     {bShowConfirm ? (
                         <div className="space-y-2 animate-fadeIn bg-surface-900/60 rounded-xl p-3 border border-white/[0.06]">
                             <p className="text-[10px] text-amber-400 flex items-center gap-1 font-semibold"><AlertTriangle size={11} /> {t('dashboard.tradingUx.confirmBatchTransfer', 'Confirm batch transfer:')}</p>
                             <div className="space-y-1 text-[10px]">
-                                <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.fromWallet', 'From Wallet')}</span><span className="text-surface-100 font-bold">{senderWallet?.name || `W${sWalletId}`}</span></div>
+                                <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.fromWallet', 'From Wallet')}</span><span className="text-surface-100 font-bold">{senderWallet?.walletName || `W${sWalletId}`}</span></div>
                                 <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.token', 'Token')}</span><span className="text-surface-100 font-bold">{bToken}</span></div>
                                 <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.recipients', 'Recipients')}</span><span className="text-surface-100">{bRows.filter(r => r.toAddress && (bSameAmount ? bGlobalAmount : r.amount)).length}</span></div>
                                 <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.totalAmount', 'Total')}</span><span className="text-surface-100 font-bold">{bSameAmount ? (Number(bGlobalAmount || 0) * bRows.filter(r => r.toAddress).length).toFixed(4) : bRows.filter(r => r.amount).reduce((s, r) => s + Number(r.amount || 0), 0).toFixed(4)} {bToken}</span></div>
+                                <div className="pt-1 mt-1 border-t border-white/[0.04]"></div>
+                                <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.available', 'Available Balance')}</span><span className={`font-semibold ${(bSameAmount ? (Number(bGlobalAmount || 0) * bRows.filter(r => r.toAddress).length) : bRows.filter(r => r.amount).reduce((s, r) => s + Number(r.amount || 0), 0)) > (walletBalance || 0) ? 'text-red-400' : 'text-emerald-400'}`}>{walletBalance != null ? parseFloat(Number(walletBalance).toFixed(4)) : '...'} {bToken}</span></div>
+                                <div className="flex justify-between"><span className="text-surface-200/40">{t('dashboard.tradingUx.estFee', 'Est. Network Fee (Total)')}</span><span className="text-surface-200/50">{gasFee ? `~${parseFloat((Number(gasFee) * bRows.filter(r => r.toAddress && (bSameAmount ? bGlobalAmount : r.amount)).length).toFixed(6))} NATIVE` : '...'}</span></div>
                             </div>
                             <div className="flex gap-2 mt-2">
                                 <button onClick={() => setBShowConfirm(false)} className="flex-1 py-2 rounded-lg bg-surface-800/60 border border-white/[0.08] text-xs text-surface-200/50 hover:text-surface-100 transition-colors">{t('dashboard.common.cancel', 'Cancel')}</button>
@@ -2958,16 +3099,40 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
 
                     {/* Results */}
                     {bResults.length > 0 && (
-                        <div className="space-y-1.5 mt-1">
-                            <p className="text-[10px] text-surface-200/30 font-semibold">{t('dashboard.trading.results', 'Results')}:</p>
+                        <div className="space-y-1.5 mt-3 animate-fadeIn">
+                            <p className="text-[10px] text-surface-200/30 font-semibold uppercase tracking-wider">{t('dashboard.trading.results', 'Results')}</p>
                             {bResults.map((r, i) => (
-                                <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs ${r.txHash ? 'bg-emerald-500/10 border border-emerald-500/15' : 'bg-red-500/10 border border-red-500/15'}`}>
-                                    {r.txHash ? <Check size={11} className="text-emerald-400" /> : <AlertTriangle size={11} className="text-red-400" />}
-                                    <span className="truncate flex-1 text-surface-100">{r.walletName || r.toAddress?.slice(0, 10)}</span>
-                                    {r.txHash ? (
-                                        <a href={getExplorerTxUrl(chainIndex, r.txHash)} target="_blank" rel="noopener"
-                                            className="text-brand-400 font-mono hover:text-brand-300">{r.txHash.slice(0, 10)}... <ExternalLink size={9} className="inline" /></a>
-                                    ) : <span className="text-red-400 truncate max-w-[150px]">{r.error}</span>}
+                                <div key={i} className={`flex gap-2 px-3 py-2.5 rounded-xl text-[10px] ${r.txHash ? 'bg-emerald-500/10 border border-emerald-500/15' : 'bg-red-500/10 border border-red-500/15'}`}>
+                                    <div className="flex-shrink-0 mt-0.5">
+                                        {r.txHash ? <Check size={12} className="text-emerald-400" /> : <AlertTriangle size={12} className="text-red-400" />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className={`font-bold truncate pr-2 ${r.txHash ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                {r.walletName || `${t('dashboard.common.wallet', 'Wallet')} ${r.toAddress.slice(0, 6)}`}
+                                            </span>
+                                            <span className="font-mono text-surface-100 flex-shrink-0 font-bold bg-surface-900/40 px-1.5 py-0.5 rounded">
+                                                {r.amount} {bToken}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center w-full">
+                                            <span className="text-surface-200/40 font-mono truncate mr-2 flex-1 min-w-0">{r.toAddress}</span>
+                                            {r.txHash ? (
+                                                <a href={getExplorerTxUrl(chainIndex, r.txHash)} target="_blank" rel="noopener"
+                                                    className="text-brand-400 font-mono hover:text-brand-300 flex items-center gap-1 flex-shrink-0 bg-brand-500/10 px-1.5 py-0.5 rounded-md transition-colors">
+                                                    {r.txHash.slice(0, 10)}... <ExternalLink size={9} />
+                                                </a>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 flex-shrink-0 min-w-0 justify-end max-w-[60%]">
+                                                    <span className="text-red-400/80 text-[9px] truncate italic" title={r.error}>{r.error}</span>
+                                                    <button onClick={() => retryTransfer(i)} disabled={r.retrying} className="text-[9px] bg-red-500/20 hover:bg-red-500/30 text-red-300 px-1.5 py-0.5 rounded transition-colors flex items-center gap-1 flex-shrink-0 disabled:opacity-50">
+                                                        {r.retrying ? <Loader2 size={9} className="animate-spin" /> : <RefreshCw size={9} />}
+                                                        <span className="hidden sm:inline">{t('dashboard.common.retry', 'Retry')}</span>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -3048,7 +3213,7 @@ function ExecuteSwapButton({ chainIndex, fromTokenAddress, toTokenAddress, amoun
                     </div>
                     <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-surface-800/60 border border-white/[0.06]">
                         <Wallet size={11} className="text-violet-400" />
-                        <span className="text-[10px] text-surface-100 font-mono flex-1">{selectedWallet?.name || selectedWallet?.address?.slice(0, 10) + '...' + selectedWallet?.address?.slice(-6)}</span>
+                        <span className="text-[10px] text-surface-100 font-mono flex-1">{selectedWallet?.walletName || selectedWallet?.address?.slice(0, 10) + '...' + selectedWallet?.address?.slice(-6)}</span>
                     </div>
                     <div className="flex gap-2">
                         <button onClick={() => setShowConfirm(false)} className="flex-1 py-2 rounded-lg bg-surface-800/60 border border-white/[0.08] text-xs text-surface-200/50 hover:text-surface-100 transition-colors">{t('dashboard.common.cancel', 'Cancel')}</button>

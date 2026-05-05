@@ -31,14 +31,20 @@
 - [Roadmap](#️-project-roadmap)
 - [Contributing](#-contributing)
 
-### 🚀 What's New in v1.3.2 (Unified Bulk Export & Data Granularity)
+### 🚀 What's New in v1.3.3 (DEX Batch Transfers & Android APK Reader)
+- **Professional DEX Batch Transfers**: Completely overhauled the multi-wallet DEX transfer workflow. Added a virtualized, intelligent "Multi-Select" UI that auto-excludes already selected recipients. Included real-time balance tracking, dynamic gas calculation, and deep TxHash linking for every successful transfer row.
+- **Granular Error Handling & Retry Logic**: Implemented an explicit per-transaction failure state within bulk operations. Failed transfers now display precise error messages with a dedicated "Retry" button, allowing users to re-attempt individual failed nodes without repeating the entire batch.
+- **XBot CSV Reader App (Android)**: Introduced a standalone Android application project (`xbot-reader-app`) using Capacitor + React. This companion app securely loads XBot's exported wallet CSVs completely offline, intelligently maps columns (PK, Seed, Balance), and provides one-click masked copy functionality wrapped in a native mobile UI.
+- **Wallet State Stability**: Refactored the internal state mechanisms for `WalletsPage.jsx`. Balances are now forcefully refreshed via a silent background trigger, completely eliminating UI jitter, scroll resets, and loading spinner interruptions during active wallet management.
+
+<details>
+<summary><b>View previous updates (v1.3.2)</b></summary>
+
+### v1.3.2 (Unified Bulk Export & Data Granularity)
 - **Unified Bulk Export Architecture**: Consolidated all fragmented export triggers (Address Only, Key Only, Full Export) into a single, intuitive "Export" workflow across the dashboard toolbar and bulk action bar, dramatically reducing UI clutter.
 - **Granular CSV Column Selection**: Re-engineered the export engine to allow dynamic column toggling. Users can now selectively include or exclude `Name`, `Address`, `Balance`, and `Private Key` in their clipboard copy or CSV downloads for cleaner, purpose-driven data management.
 - **Secure Private Key Handling**: Implemented strict PIN protection within the unified modal. The Private Key column is hidden by default and requires explicit PIN verification to unlock. Keys auto-hide after 60 seconds to prevent unauthorized shoulder-surfing.
 - **Clean Audit Trails**: Standardized CSV outputs by stripping redundant metadata (e.g., Export Time) from the row data, ensuring the resulting files are immediately ready for spreadsheet processing and secure storage.
-
-<details>
-<summary><b>View previous updates (v1.3.1)</b></summary>
 
 ### v1.3.1 (Batch Swap UX Overhaul & Localization Fidelity)
 - **Comprehensive Batch Swap "Get Quote" Flow**: Completely overhauled the batch swap capability by embedding a robust Pre-Swap Quote mechanism. Users can now preview detailed DEX routes, estimated output, price impact, and gas fees across multiple wallets before executing, moving away from blind batch execution.

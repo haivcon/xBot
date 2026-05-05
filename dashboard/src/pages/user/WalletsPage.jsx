@@ -203,6 +203,7 @@ function CreateWalletModal({ currentCount, limit, onClose, onCreated }) {
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState(null);
     const [count, setCount] = useState(1);
+    const [seedType, setSeedType] = useState(12);
     const [showKey, setShowKey] = useState(false);
     const [copied, setCopied] = useState(false);
     const maxCreate = Math.max(0, limit - currentCount);
@@ -214,7 +215,7 @@ function CreateWalletModal({ currentCount, limit, onClose, onCreated }) {
         let errMessage = null;
         try {
             for (let i = 0; i < count; i++) {
-                const data = await api.createWallet();
+                const data = await api.createWallet(undefined, seedType);
                 if (data.error) throw new Error(data.error);
                 newResults.push(data);
             }
@@ -230,7 +231,7 @@ function CreateWalletModal({ currentCount, limit, onClose, onCreated }) {
 
     const copyAll = () => {
         if (!results || !results.items) return;
-        const text = results.items.map(r => `${r.privateKey}  ${r.wallet?.name}  ${r.wallet?.address}`).join('\n');
+        const text = results.items.map(r => `${r.privateKey}  ${r.seedPhrase || ''}  ${r.wallet?.name}  ${r.wallet?.address}`).join('\n');
         navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -238,8 +239,8 @@ function CreateWalletModal({ currentCount, limit, onClose, onCreated }) {
 
     const downloadCsv = () => {
         const timestamp = new Date().toLocaleString();
-        let text = 'Private Key,Wallet Name,Address,Creation Time\n';
-        text += results.items.map(r => `${r.privateKey},"${r.wallet?.name || ''}",${r.wallet?.address},"${timestamp}"`).join('\n');
+        let text = 'Private Key,Seed Phrase,Wallet Name,Address,Creation Time\n';
+        text += results.items.map(r => `${r.privateKey},"${r.seedPhrase || ''}","${r.wallet?.name || ''}",${r.wallet?.address},"${timestamp}"`).join('\n');
         const blob = new Blob(['\uFEFF' + text], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -262,18 +263,24 @@ function CreateWalletModal({ currentCount, limit, onClose, onCreated }) {
                             <CustomSelect value={chainIndex} onChange={setChainIndex} size="sm" options={CHAIN_OPTIONS.map(c => ({ value: c.value, label: c.label }))} />
                         </div>
 
-                        <div className="mb-6">
-                            <label className="text-[10px] uppercase tracking-wider text-surface-200/40 mb-1 block">
-                                {t('dashboard.walletPage.walletAmount', 'Number of wallets to create')} (Max: {maxCreate})
-                            </label>
-                            <input 
-                                type="number" 
-                                min={1} 
-                                max={maxCreate} 
-                                value={count} 
-                                onChange={e => setCount(Math.min(maxCreate, Math.max(1, parseInt(e.target.value) || 1)))}
-                                className="w-full bg-surface-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-surface-100 outline-none focus:border-brand-500/50 transition-colors"
-                            />
+                        <div className="flex gap-4 mb-6">
+                            <div className="flex-1">
+                                <label className="text-[10px] uppercase tracking-wider text-surface-200/40 mb-1 block">Seed Phrase</label>
+                                <CustomSelect value={seedType} onChange={setSeedType} size="sm" options={[{value: 12, label: '12 Words'}, {value: 24, label: '24 Words'}]} />
+                            </div>
+                            <div className="flex-[1.5]">
+                                <label className="text-[10px] uppercase tracking-wider text-surface-200/40 mb-1 block">
+                                    {t('dashboard.walletPage.walletAmount', 'Number of wallets to create')} (Max: {maxCreate})
+                                </label>
+                                <input 
+                                    type="number" 
+                                    min={1} 
+                                    max={maxCreate} 
+                                    value={count} 
+                                    onChange={e => setCount(Math.min(maxCreate, Math.max(1, parseInt(e.target.value) || 1)))}
+                                    className="w-full bg-surface-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-surface-100 outline-none focus:border-brand-500/50 transition-colors"
+                                />
+                            </div>
                         </div>
 
                         <div className="flex gap-3">
@@ -313,9 +320,17 @@ function CreateWalletModal({ currentCount, limit, onClose, onCreated }) {
                                         </div>
                                         <div>
                                             <label className="text-[10px] uppercase tracking-wider text-surface-200/40 mb-1 block">{t('dashboard.walletPage.privateKey', 'Private Key')}</label>
-                                            <code className="block bg-surface-900/50 px-3 py-2 rounded-lg text-xs text-amber-400/80 break-all">
+                                            <code className="block bg-surface-900/50 px-3 py-2 rounded-lg text-xs text-amber-400/80 break-all mb-3">
                                                 {showKey ? r.privateKey : '••••••••••••••••••••••••••••••••••••••••••••••••'}
                                             </code>
+                                            {r.seedPhrase && (
+                                                <>
+                                                    <label className="text-[10px] uppercase tracking-wider text-surface-200/40 mb-1 block">Seed Phrase</label>
+                                                    <code className="block bg-surface-900/50 px-3 py-2 rounded-lg text-xs text-emerald-400/80 break-all">
+                                                        {showKey ? r.seedPhrase : '••••••••••••••••••••••••••••••••••••••••••••••••'}
+                                                    </code>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -390,21 +405,44 @@ function ImportWalletModal({ currentCount, limit, onClose, onImported }) {
 
     // Parse lines into rows
     const parseLines = (text) => {
-        const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
-        return lines.slice(0, maxImport).map(line => {
-            // Support: key,name,address... | key\tname... | key name
-            const csvMatch = line.match(/^([0-9a-fA-Fx]+)[,\t]\s*([^,\t]*)/);
-            if (csvMatch) {
-                let name = csvMatch[2].trim();
-                // Remove surrounding quotes if they exist from CSV
-                if (name.startsWith('"') && name.endsWith('"')) name = name.substring(1, name.length - 1);
-                return { key: csvMatch[1], name };
+        let lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
+        
+        // Remove header if present
+        if (lines[0] && (lines[0].toLowerCase().includes('private key') || lines[0].toLowerCase().includes('address') || lines[0].toLowerCase().includes('wallet name'))) {
+            lines = lines.slice(1);
+        }
+
+        return lines.map(line => {
+            // Find a valid EVM private key in the line (64 hex chars, optional 0x)
+            const pkMatch = line.match(/(?:0x)?[a-fA-F0-9]{64}/);
+            let key = '';
+            let name = '';
+
+            if (pkMatch) {
+                key = pkMatch[0];
+                // Try to extract name (quoted string at the beginning of line)
+                const nameMatch = line.match(/^"([^"]+)"/);
+                if (nameMatch) {
+                    name = nameMatch[1].trim();
+                } else {
+                    // Try to extract name around the key
+                    const idx = line.indexOf(key);
+                    if (idx > 0) {
+                        name = line.substring(0, idx).replace(/[,\t\s]+$/, '').trim();
+                        if (name.startsWith('"') && name.endsWith('"')) name = name.substring(1, name.length - 1);
+                    } else if (idx === 0) {
+                        name = line.substring(key.length).replace(/^[,\t\s]+/, '').split(',')[0].trim();
+                        if (name.startsWith('"') && name.endsWith('"')) name = name.substring(1, name.length - 1);
+                    }
+                }
+            } else {
+                // Legacy fallback if no valid key is found (let backend validate it)
+                const parts = line.split(/[,\t\s]+/);
+                key = parts[0] || '';
+                name = parts.slice(1).join(' ').trim();
             }
-            const parts = line.split(/\s+/);
-            const key = parts[0] || '';
-            const rest = parts.slice(1).join(' ').trim();
-            return { key, name: rest };
-        });
+            return { key, name };
+        }).filter(r => r.key).slice(0, maxImport);
     };
 
     // Paste handler
@@ -1225,7 +1263,7 @@ function WalletCard({ wallet, onRefresh, onSetDefault, onDelete, onRename, onTag
 
                 {/* Actions */}
                 <div className="px-3 py-2 border-t border-white/5 flex items-center gap-1">
-                    <button onClick={() => { loadBalance(true); onRefresh(); }} className="p-1 rounded-lg hover:bg-white/5 text-surface-200/30 hover:text-brand-400 transition-colors" title={t('dashboard.walletPage.refresh', 'Refresh')}>
+                    <button onClick={() => loadBalance(true)} className="p-1 rounded-lg hover:bg-white/5 text-surface-200/30 hover:text-brand-400 transition-colors" title={t('dashboard.walletPage.refresh', 'Refresh')}>
                         <RefreshCw size={11} />
                     </button>
                     <button 
@@ -1361,16 +1399,16 @@ export default function WalletsPage() {
         setShowGlobalChainMenu(false);
     };
 
-    const loadWallets = useCallback(async () => {
-        setLoading(true);
+    const loadWallets = useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const data = await api.getWallets();
             setWallets(data.wallets || []);
             setHasPinCode(!!data.hasPinCode);
             setWalletLimit(data.walletLimit || 50);
-            setSelectedIds(new Set());
+            if (!silent) setSelectedIds(new Set());
         } catch { /* ignore */ }
-        finally { setLoading(false); }
+        finally { if (!silent) setLoading(false); }
     }, []);
 
     useEffect(() => { loadWallets(); }, [loadWallets]);
@@ -1456,7 +1494,7 @@ export default function WalletsPage() {
     const handleSetDefault = async (id) => {
         try {
             const result = await api.setDefaultWallet(id);
-            await loadWallets();
+            await loadWallets(true);
             const wallet = wallets.find(w => w.id === id);
             const name = wallet?.walletName || 'Wallet';
             if (result.isDefault) {
@@ -1474,7 +1512,7 @@ export default function WalletsPage() {
 
     const handleDelete = async (id) => {
         if (!confirm(t('dashboard.walletPage.deleteConfirm'))) return;
-        try { await api.deleteWallet(id); loadWallets(); } catch { /* ignore */ }
+        try { await api.deleteWallet(id); loadWallets(true); } catch { /* ignore */ }
     };
 
     const handleRename = (id, newName) => {
@@ -1507,7 +1545,8 @@ export default function WalletsPage() {
         if (!confirm(t('dashboard.walletPage.bulkDeleteConfirm', `Delete ${selectedIds.size} wallets?`))) return;
         try {
             await Promise.all([...selectedIds].map(id => api.deleteWallet(id)));
-            loadWallets();
+            loadWallets(true);
+            setSelectedIds(new Set());
         } catch { /* ignore */ }
     };
 
@@ -1826,7 +1865,7 @@ export default function WalletsPage() {
                         >
                         <WalletCard
                             wallet={w}
-                            onRefresh={loadWallets}
+                            onRefresh={() => loadWallets(true)}
                             onSetDefault={handleSetDefault}
                             onDelete={handleDelete}
                             onRename={handleRename}

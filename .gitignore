@@ -26,8 +26,11 @@ onchainos-skills-main
 *.db-wal
 *.db-shm
 
-# ─── Build Output ───
+# ─── Build Output & Apps ───
 dashboard/dist/
+xbot-reader-app/node_modules/
+xbot-reader-app/dist/
+xbot-reader-app/android/
 
 # ─── Logs ───
 *.log
