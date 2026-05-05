@@ -36,7 +36,10 @@ export const getEncryptionKey = async () => {
                 return creds.password;
             } catch (err) {
                 // If ItemNotFound or similar, create a new one
-                if (err.message && (err.message.includes('ItemNotFound') || err.message.includes('not found') || err.code === 'ItemNotFound')) {
+                const msg = (err.message || '').toLowerCase();
+                const code = (err.code || '').toLowerCase();
+                
+                if (msg.includes('itemnotfound') || msg.includes('not found') || msg.includes('no credentials') || code === 'itemnotfound') {
                     const newKey = generateRandomKey();
                     await NativeBiometric.setCredentials({
                         username: BIOMETRIC_USER,
