@@ -45,6 +45,22 @@ function shortAddr(addr) {
     return addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '—';
 }
 
+/** Generate export filename with full datetime, timezone, user, chain & count info */
+function buildExportFileName({ prefix = 'wallets', user, chainIndex, count }) {
+    const uId = user?.username || user?.userId || 'user';
+    const d = new Date();
+    const pad = (n, len = 2) => String(n).padStart(len, '0');
+    const dateStr = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+    const timeStr = `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    const tzOff = -d.getTimezoneOffset();
+    const tzSign = tzOff >= 0 ? '+' : '-';
+    const tzH = pad(Math.floor(Math.abs(tzOff) / 60));
+    const tzM = pad(Math.abs(tzOff) % 60);
+    const tzStr = `UTC${tzSign}${tzH}${tzM !== '00' ? tzM : ''}`;
+    const chainName = (CHAIN_NAMES[chainIndex] || 'MultiChain').replace(/\s+/g, '');
+    return `${prefix}_${uId}_${chainName}_${count}wallets_${dateStr}_${timeStr}_${tzStr}.csv`;
+}
+
 /* ── Set PIN Modal ── */
 function SetPinModal({ hasPin, onClose, onDone }) {
     const [currentPin, setCurrentPin] = useState('');
@@ -221,7 +237,6 @@ function CreateWalletModal({ currentCount, limit, onClose, onCreated }) {
     };
 
     const downloadCsv = () => {
-        if (!results || !results.items) return;
         const timestamp = new Date().toLocaleString();
         let text = 'Private Key,Wallet Name,Address,Creation Time\n';
         text += results.items.map(r => `${r.privateKey},"${r.wallet?.name || ''}",${r.wallet?.address},"${timestamp}"`).join('\n');
@@ -229,12 +244,7 @@ function CreateWalletModal({ currentCount, limit, onClose, onCreated }) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const uIdentifier = user?.username || user?.userId || 'user';
-        const dObj = new Date();
-        const dString = `${dObj.getFullYear()}${String(dObj.getMonth() + 1).padStart(2, '0')}${String(dObj.getDate()).padStart(2, '0')}_${String(dObj.getHours()).padStart(2, '0')}${String(dObj.getMinutes()).padStart(2, '0')}`;
-        const chainName = CHAIN_NAMES[chainIndex] || 'Chain';
-        const chainTag = `${chainName.replace(/\s+/g, '')}_${chainIndex}`;
-        a.download = `wallets_${uIdentifier}_${chainTag}_${results.items.length}_${dString}.csv`;
+        a.download = buildExportFileName({ prefix: 'wallets_new', user, chainIndex, count: results.items.length });
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -698,7 +708,7 @@ function ExportKeyModal({ walletId, walletAddress, onClose }) {
     );
 }
 
-/* ── Bulk Export Modal ── */
+/* ── Unified Export Modal ── */
 function BulkExportModal({ walletIds, wallets, balances, onClose }) {
     const { user } = useAuthStore();
     const { t } = useTranslation();
@@ -712,7 +722,29 @@ function BulkExportModal({ walletIds, wallets, balances, onClose }) {
     const [pin, setPin] = useState('');
     const timerRef = useRef(null);
 
-    const exportAll = async (pinOverride) => {
+    // Column toggles
+    const [cols, setCols] = useState({ name: true, address: true, balance: true, key: false });
+    const toggleCol = (col) => {
+        if (col === 'key' && !cols.key && !keys) {
+            fetchKeys();
+            return;
+        }
+        setCols(prev => ({ ...prev, [col]: !prev[col] }));
+    };
+
+    const rows = useMemo(() => walletIds.map(id => {
+        const w = wallets.find(w => w.id === id);
+        const k = keys?.find(k => k.id === id);
+        return {
+            id,
+            name: w?.walletName || k?.name || 'Wallet',
+            address: w?.address || k?.address || '',
+            balance: balances?.[id] || 0,
+            privateKey: k?.privateKey || null,
+        };
+    }), [walletIds, wallets, balances, keys]);
+
+    const fetchKeys = async (pinOverride) => {
         setLoading(true); setError(null);
         const usePin = pinOverride || pin || undefined;
         try {
@@ -723,173 +755,214 @@ function BulkExportModal({ walletIds, wallets, balances, onClose }) {
                 name: r.name || wallets.find(w => w.id === r.id)?.walletName || 'Wallet'
             }));
             setKeys(results);
+            setCols(prev => ({ ...prev, key: true }));
             setNeedPin(false);
-            timerRef.current = setTimeout(() => { setKeys(null); setShowKeys(false); onClose(); }, 60000);
+            setPin('');
+            timerRef.current = setTimeout(() => { setKeys(null); setCols(prev => ({ ...prev, key: false })); setShowKeys(false); }, 120000);
         } catch (err) {
             if (err.message === 'PIN required' || err.message?.includes('PIN')) {
-                if (isPinCacheValid()) {
-                    // PIN was recently verified — shouldn't happen
-                }
                 setNeedPin(true);
                 if (err.message !== 'PIN required') setError(err.message);
                 else setError(null);
-            } else {
-                setError(err.message);
-            }
-        } finally {
-            setLoading(false);
-        }
+            } else { setError(err.message); }
+        } finally { setLoading(false); }
     };
 
-    const handlePinSubmit = () => {
-        if (pin.length < 4) return;
-        exportAll(pin);
-    };
+    const handlePinSubmit = () => { if (pin.length < 4) return; fetchKeys(pin); };
 
-    useEffect(() => () => {
-        if (timerRef.current) clearTimeout(timerRef.current);
-        // Clear keys from memory on unmount
-    }, []);
+    useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
-    const copyAll = () => {
-        const text = keys.map(k => `${k.privateKey}  ${k.name}  ${k.address}`).join('\n');
-        navigator.clipboard.writeText(text);
+    const copySelected = () => {
+        const parts = [];
+        if (cols.name) parts.push('Name');
+        if (cols.address) parts.push('Address');
+        if (cols.key) parts.push('Private Key');
+        if (cols.balance) parts.push('Balance');
+        const lines = rows.map(r => {
+            const p = [];
+            if (cols.name) p.push(r.name);
+            if (cols.address) p.push(r.address);
+            if (cols.key) p.push(r.privateKey || '');
+            if (cols.balance) p.push(formatUsd(r.balance));
+            return p.join('\t');
+        });
+        navigator.clipboard.writeText([parts.join('\t'), ...lines].join('\n'));
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-        // Auto-lock: hide keys after 5s post-copy
-        setTimeout(() => { setKeys(null); setShowKeys(false); onClose(); }, 5000);
     };
 
-    const downloadFile = () => {
-        const timestamp = new Date().toLocaleString();
-        let text = 'Private Key,Wallet Name,Address,Balance ($),Export Time\n';
-        text += keys.map(k => `${k.privateKey},"${k.name || ''}",${k.address},${balances?.[k.id] || 0},"${timestamp}"`).join('\n');
+    const downloadCsv = () => {
+        const header = [];
+        if (cols.name) header.push('Wallet Name');
+        if (cols.address) header.push('Address');
+        if (cols.key) header.push('Private Key');
+        if (cols.balance) header.push('Balance ($)');
+        let text = header.join(',') + '\n';
+        text += rows.map(r => {
+            const p = [];
+            if (cols.name) p.push(`"${r.name}"`);
+            if (cols.address) p.push(r.address);
+            if (cols.key) p.push(r.privateKey || '');
+            if (cols.balance) p.push(r.balance);
+            return p.join(',');
+        }).join('\n');
+        const prefix = cols.key ? 'export_keys' : 'export';
         const blob = new Blob(['\uFEFF' + text], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const uIdentifier = user?.username || user?.userId || 'user';
-        const dObj = new Date();
-        const dString = `${dObj.getFullYear()}${String(dObj.getMonth() + 1).padStart(2, '0')}${String(dObj.getDate()).padStart(2, '0')}_${String(dObj.getHours()).padStart(2, '0')}${String(dObj.getMinutes()).padStart(2, '0')}`;
-        const chainName = CHAIN_NAMES[chainIndex] || 'Chain';
-        const chainTag = `${chainName.replace(/\s+/g, '')}_${chainIndex}`;
-        a.download = `wallets_${uIdentifier}_${chainTag}_${keys.length}_${dString}.csv`;
+        a.download = buildExportFileName({ prefix, user, chainIndex, count: rows.length });
         a.click();
         URL.revokeObjectURL(url);
     };
 
+    const activeColCount = Object.values(cols).filter(Boolean).length;
+
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-surface-900 border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl animate-fadeIn max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center gap-2 mb-4">
-                    <Key className="text-amber-400" size={20} />
-                    <h3 className="text-lg font-bold text-surface-100">{t('dashboard.walletPage.exportBulkTitle', 'Export {{count}} Wallets', { count: walletIds.length })}</h3>
+            <div className="bg-surface-900 border border-white/10 rounded-2xl p-5 w-full max-w-2xl shadow-2xl animate-fadeIn max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <Download className="text-brand-400" size={18} />
+                        <h3 className="text-base font-bold text-surface-100">
+                            {t('dashboard.walletPage.exportBulkTitle', 'Export {{count}} Wallets', { count: walletIds.length })}
+                        </h3>
+                    </div>
+                    <button onClick={onClose} className="p-1 rounded-lg hover:bg-white/5 text-surface-200/40 hover:text-surface-200 transition-colors">
+                        <X size={16} />
+                    </button>
                 </div>
 
-                {!keys && !loading && (
-                    <div className="mb-4">
-                        <label className="text-[10px] uppercase tracking-wider text-surface-200/40 mb-1 block">Chain tag for exported file name</label>
-                        <CustomSelect value={chainIndex} onChange={setChainIndex} size="sm" options={CHAIN_OPTIONS.map(c => ({ value: c.value, label: c.label }))} />
-                    </div>
-                )}
+                {/* Column toggles */}
+                <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                    <span className="text-[9px] uppercase tracking-wider text-surface-200/30 mr-1">{t('dashboard.walletPage.exportCols', 'Columns')}:</span>
+                    {[
+                        { id: 'name',    label: t('dashboard.walletPage.nameLabel', 'Name'),       color: 'brand' },
+                        { id: 'address', label: t('dashboard.walletPage.addressCol', 'Address'),    color: 'brand' },
+                        { id: 'balance', label: t('dashboard.walletPage.balanceCol', 'Balance'),    color: 'emerald' },
+                        { id: 'key',     label: t('dashboard.walletPage.privateKey', 'Private Key'), color: 'amber' },
+                    ].map(c => (
+                        <button key={c.id} onClick={() => toggleCol(c.id)} disabled={c.id === 'key' && loading}
+                            className={`text-[10px] flex items-center gap-1 px-2 py-1 rounded-lg border transition-all ${
+                                cols[c.id]
+                                    ? c.color === 'amber' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                    : c.color === 'emerald' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                    : 'bg-brand-500/15 text-brand-400 border-brand-500/30'
+                                    : 'bg-surface-800/50 text-surface-200/30 border-white/5 hover:border-white/10'
+                            } disabled:opacity-40`}>
+                            {c.id === 'key' && loading ? <Loader2 size={10} className="animate-spin" /> : (cols[c.id] ? <CheckSquare size={10} /> : <Square size={10} />)}
+                            {c.label}
+                        </button>
+                    ))}
+                </div>
 
-                {error && !needPin ? (
-                    <>
-                        <p className="text-sm text-red-400 mb-4">{error}</p>
-                        <button onClick={onClose} className="btn-secondary w-full text-sm">{t('dashboard.walletPage.close', 'Close')}</button>
-                    </>
-                ) : needPin && !keys ? (
-                    <>
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 mb-4">
-                            <p className="text-xs text-amber-400 flex items-start gap-2">
-                                <Lock size={14} className="mt-0.5 flex-shrink-0" />
-                                <span>{t('dashboard.walletPage.enterPin', 'Enter PIN to export private keys')}</span>
-                            </p>
-                        </div>
-                        <p className="text-xs text-surface-200/50 mb-3">
-                            {walletIds.length} {t('dashboard.walletPage.bulkExportDesc', 'wallets selected')}
+                {/* PIN prompt */}
+                {needPin && !keys && (
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 mb-3">
+                        <p className="text-xs text-amber-400 flex items-start gap-2 mb-2">
+                            <Lock size={13} className="mt-0.5 flex-shrink-0" />
+                            <span>{t('dashboard.walletPage.enterPin', 'Enter PIN to export private keys')}</span>
                         </p>
-                        <input type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-                            onKeyDown={e => e.key === 'Enter' && handlePinSubmit()}
-                            placeholder="••••" className="input-field text-sm text-center tracking-[0.5em] mb-3" autoFocus />
-                        {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
-                        <div className="flex gap-3">
-                            <button onClick={onClose} className="btn-secondary flex-1 text-sm">{t('dashboard.common.cancel', 'Cancel')}</button>
-                            <button onClick={handlePinSubmit} disabled={loading || pin.length < 4} className="flex-1 text-sm flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold hover:shadow-lg transition-all disabled:opacity-50">
-                                {loading ? <Loader2 size={16} className="animate-spin" /> : <Key size={16} />}
+                        <div className="flex gap-2">
+                            <input type="password" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                                onKeyDown={e => e.key === 'Enter' && handlePinSubmit()}
+                                placeholder="••••" className="input-field text-sm text-center tracking-[0.5em] flex-1" autoFocus />
+                            <button onClick={handlePinSubmit} disabled={loading || pin.length < 4}
+                                className="text-xs flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold hover:shadow-lg transition-all disabled:opacity-50">
+                                {loading ? <Loader2 size={14} className="animate-spin" /> : <Key size={14} />}
                                 {t('dashboard.walletPage.confirm', 'Confirm')}
                             </button>
                         </div>
-                    </>
-                ) : !keys ? (
-                    <>
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">
-                            <p className="text-xs text-red-400 flex items-start gap-2">
-                                <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
-                                <span>{t('dashboard.walletPage.bulkExportWarning', 'You are about to export private keys for {{count}} wallets. Never share these with anyone!', { count: walletIds.length })}</span>
-                            </p>
-                        </div>
-                        <div className="mb-4 space-y-1">
-                            {walletIds.map(id => {
-                                const w = wallets.find(w => w.id === id);
-                                return <p key={id} className="text-xs text-surface-200/50 font-mono">• {w?.walletName}: {shortAddr(w?.address)}</p>;
-                            })}
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={onClose} className="btn-secondary flex-1 text-sm">{t('dashboard.common.cancel', 'Cancel')}</button>
-                            <button onClick={() => exportAll()} disabled={loading} className="flex-1 text-sm flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold hover:shadow-lg transition-all disabled:opacity-50">
-                                {loading ? <Loader2 size={16} className="animate-spin" /> : <Key size={16} />}
-                                {t('dashboard.walletPage.revealAll', 'Reveal All')}
-                            </button>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <div className="space-y-2 mb-4" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
-                            {keys.map((k, i) => (
-                                <div key={i} className="bg-surface-800/80 rounded-lg px-3 py-2.5">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <p className="text-[10px] font-medium text-surface-200/60">{k.name}</p>
-                                        <div className="flex items-center gap-1">
-                                            <button onClick={() => { navigator.clipboard.writeText(k.address); }} className="p-0.5 rounded hover:bg-white/5 text-surface-200/30 hover:text-brand-400 transition-colors" title="Copy address">
-                                                <Copy size={9} />
-                                            </button>
-                                            <a href={`https://www.okx.com/web3/explorer/xlayer/address/${k.address}`} target="_blank" rel="noopener" className="p-0.5 rounded hover:bg-white/5 text-surface-200/30 hover:text-brand-400 transition-colors" title="View on OKX Explorer">
-                                                <ExternalLink size={9} />
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <code className="text-[9px] text-surface-200/40 break-all block mb-1">{k.address}</code>
-                                    <code className="text-[11px] text-amber-400/80 break-all block">
-                                        {showKeys ? k.privateKey : '••••••••••••••••••••••••'}
-                                    </code>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex gap-2 mb-3">
-                            <button onClick={() => setShowKeys(!showKeys)} className="btn-secondary flex-1 text-xs flex items-center justify-center gap-1">
-                                {showKeys ? <EyeOff size={12} /> : <Eye size={12} />}
-                                {showKeys ? t('dashboard.walletPage.hide', 'Hide') : t('dashboard.walletPage.show', 'Show')}
-                            </button>
-                            <button onClick={copyAll} className="btn-secondary flex-1 text-xs flex items-center justify-center gap-1">
-                                {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                                {t('dashboard.walletPage.copyAll', 'Copy All')}
-                            </button>
-                            <button onClick={downloadFile} className="btn-secondary flex-1 text-xs flex items-center justify-center gap-1">
-                                <FileText size={12} /> {t('dashboard.walletPage.saveCsv', 'Save CSV')}
-                            </button>
-                        </div>
-                        <p className="text-[9px] text-amber-400/50 mb-3 flex items-center gap-1">
-                            <AlertTriangle size={8} /> {t('dashboard.walletPage.autoHideBulk', 'Auto-hides in 60 seconds')}
-                        </p>
-                        <button onClick={onClose} className="btn-secondary w-full text-sm">{t('dashboard.walletPage.close', 'Close')}</button>
-                    </>
+                        {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
+                    </div>
                 )}
+
+                {error && !needPin && (
+                    <p className="text-xs text-red-400 mb-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{error}</p>
+                )}
+
+                {/* Preview table */}
+                <div className="flex-1 overflow-auto rounded-xl border border-white/5 mb-3" style={{ maxHeight: '50vh' }}>
+                    <table className="w-full text-[11px]">
+                        <thead>
+                            <tr className="bg-surface-800/80 sticky top-0 z-10">
+                                <th className="text-left px-2.5 py-2 text-surface-200/40 font-medium w-8">#</th>
+                                {cols.name && <th className="text-left px-2.5 py-2 text-surface-200/40 font-medium">{t('dashboard.walletPage.nameLabel', 'Name')}</th>}
+                                {cols.address && <th className="text-left px-2.5 py-2 text-surface-200/40 font-medium">{t('dashboard.walletPage.addressCol', 'Address')}</th>}
+                                {cols.balance && <th className="text-right px-2.5 py-2 text-surface-200/40 font-medium">{t('dashboard.walletPage.balanceCol', 'Balance')}</th>}
+                                {cols.key && <th className="text-left px-2.5 py-2 text-surface-200/40 font-medium">{t('dashboard.walletPage.privateKey', 'Private Key')}</th>}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((r, i) => (
+                                <tr key={r.id} className="border-t border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                                    <td className="px-2.5 py-1.5 text-surface-200/25">{i + 1}</td>
+                                    {cols.name && <td className="px-2.5 py-1.5 text-surface-100 font-medium truncate max-w-[120px]">{r.name}</td>}
+                                    {cols.address && (
+                                        <td className="px-2.5 py-1.5 font-mono text-surface-200/60">
+                                            <span className="flex items-center gap-1">
+                                                <span className="truncate max-w-[180px]">{r.address}</span>
+                                                <button onClick={() => navigator.clipboard.writeText(r.address)}
+                                                    className="p-0.5 rounded hover:bg-white/5 text-surface-200/20 hover:text-brand-400 transition-colors flex-shrink-0">
+                                                    <Copy size={9} />
+                                                </button>
+                                            </span>
+                                        </td>
+                                    )}
+                                    {cols.balance && <td className="px-2.5 py-1.5 text-right text-emerald-400/70 tabular-nums">{formatUsd(r.balance)}</td>}
+                                    {cols.key && (
+                                        <td className="px-2.5 py-1.5 font-mono text-amber-400/70">
+                                            {r.privateKey ? (
+                                                <span className="flex items-center gap-1">
+                                                    <span className="truncate max-w-[160px]">{showKeys ? r.privateKey : '••••••••••••••••'}</span>
+                                                    <button onClick={() => navigator.clipboard.writeText(r.privateKey)}
+                                                        className="p-0.5 rounded hover:bg-white/5 text-surface-200/20 hover:text-amber-400 transition-colors flex-shrink-0">
+                                                        <Copy size={9} />
+                                                    </button>
+                                                </span>
+                                            ) : <span className="text-surface-200/15 italic">—</span>}
+                                        </td>
+                                    )}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    {cols.key && keys && (
+                        <button onClick={() => setShowKeys(!showKeys)} className="btn-secondary text-[10px] flex items-center gap-1 px-2.5 py-1.5">
+                            {showKeys ? <EyeOff size={11} /> : <Eye size={11} />}
+                            {showKeys ? t('dashboard.walletPage.hide', 'Hide') : t('dashboard.walletPage.show', 'Show')}
+                        </button>
+                    )}
+                    {cols.key && keys && (
+                        <p className="text-[8px] text-amber-400/40 flex items-center gap-1">
+                            <AlertTriangle size={7} /> {t('dashboard.walletPage.autoHideBulk', 'Auto-hides in 60 seconds')}
+                        </p>
+                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                        <button onClick={copySelected} disabled={activeColCount === 0}
+                            className="btn-secondary text-[10px] flex items-center gap-1 px-2.5 py-1.5 disabled:opacity-30">
+                            {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                            {copied ? t('dashboard.walletPage.copied', 'Copied') : t('dashboard.walletPage.copyAll', 'Copy All')}
+                        </button>
+                        <button onClick={downloadCsv} disabled={activeColCount === 0}
+                            className="text-[10px] flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-brand-500 to-brand-400 text-white font-bold hover:shadow-lg hover:shadow-brand-500/20 transition-all disabled:opacity-30">
+                            <Download size={11} />
+                            {t('dashboard.walletPage.saveCsv', 'Save CSV')}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>,
         document.body
     );
 }
+
+
 
 /* ── Wallet Card ── */
 function WalletCard({ wallet, onRefresh, onSetDefault, onDelete, onRename, onTagsChange, selected, onToggleSelect, hasPinCode, onBalanceUpdate, globalChain, availableTags }) {
@@ -1438,6 +1511,8 @@ export default function WalletsPage() {
         } catch { /* ignore */ }
     };
 
+
+
     // Toggle view mode
     const toggleViewMode = () => {
         const next = viewMode === 'grid' ? 'list' : 'grid';
@@ -1602,14 +1677,15 @@ export default function WalletsPage() {
                         )}
                     </div>
 
-                    {/* Bulk export */}
                     {selectedIds.size > 0 && (
-                        <button
-                            onClick={() => setShowBulkExport(true)}
-                            className="text-[11px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-400 hover:border-amber-400/50 transition-colors"
-                        >
-                            <Key size={11} /> {t('dashboard.walletPage.exportKey')} ({selectedIds.size})
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setShowBulkExport(true)}
+                                className="text-[11px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-brand-500/10 border border-brand-500/20 text-brand-400 hover:border-brand-400/40 transition-colors"
+                            >
+                                <Download size={11} /> {t('dashboard.walletPage.exportBulkTitle', 'Export', { count: selectedIds.size })}
+                            </button>
+                        </>
                     )}
 
                     {/* Tag filter */}
@@ -1657,9 +1733,9 @@ export default function WalletsPage() {
                     <div className="h-4 w-px bg-white/10" />
                     <button
                         onClick={() => setShowBulkExport(true)}
-                        className="text-[10px] flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors"
+                        className="text-[10px] flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition-colors"
                     >
-                        <Key size={10} /> {t('dashboard.walletPage.exportKey', 'Export')}
+                        <Download size={10} /> {t('dashboard.walletPage.exportBulkTitle', 'Export', { count: '' }).trim()}
                     </button>
                     <button
                         onClick={handleBulkDelete}

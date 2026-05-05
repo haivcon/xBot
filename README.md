@@ -31,11 +31,21 @@
 - [Roadmap](#️-project-roadmap)
 - [Contributing](#-contributing)
 
-### 🚀 What's New in v1.3.1 (Batch Swap UX Overhaul & Localization Fidelity)
+### 🚀 What's New in v1.3.2 (Unified Bulk Export & Data Granularity)
+- **Unified Bulk Export Architecture**: Consolidated all fragmented export triggers (Address Only, Key Only, Full Export) into a single, intuitive "Export" workflow across the dashboard toolbar and bulk action bar, dramatically reducing UI clutter.
+- **Granular CSV Column Selection**: Re-engineered the export engine to allow dynamic column toggling. Users can now selectively include or exclude `Name`, `Address`, `Balance`, and `Private Key` in their clipboard copy or CSV downloads for cleaner, purpose-driven data management.
+- **Secure Private Key Handling**: Implemented strict PIN protection within the unified modal. The Private Key column is hidden by default and requires explicit PIN verification to unlock. Keys auto-hide after 60 seconds to prevent unauthorized shoulder-surfing.
+- **Clean Audit Trails**: Standardized CSV outputs by stripping redundant metadata (e.g., Export Time) from the row data, ensuring the resulting files are immediately ready for spreadsheet processing and secure storage.
+
+<details>
+<summary><b>View previous updates (v1.3.1)</b></summary>
+
+### v1.3.1 (Batch Swap UX Overhaul & Localization Fidelity)
 - **Comprehensive Batch Swap "Get Quote" Flow**: Completely overhauled the batch swap capability by embedding a robust Pre-Swap Quote mechanism. Users can now preview detailed DEX routes, estimated output, price impact, and gas fees across multiple wallets before executing, moving away from blind batch execution.
 - **Intelligent Wallet Selection UI**: Re-engineered the trading wallet selector to dynamically assess token balances. It now provides instant visual feedback, displaying live balances or rendering hard warnings (`0 Bal`, `Insufficient Funds`) if the designated swap amounts exceed a single wallet's liquidity.
 - **Granular Custom Amount Control**: Refined the "Custom Each" and "Same for all" input capabilities, enabling complex batch routing where each selected wallet can swap distinctly tailored amounts of tokens in one unified transaction block.
 - **100% Trading UI Localization**: Completed a full rigorous localization pass over the trading dashboard interface. Extrapolated dozens of hardcoded strings into the i18n dictionary, ensuring all multi-wallet transaction notifications, tables, and warnings gracefully resolve to English, Vietnamese (vi), Chinese (zh), Korean (ko), Russian (ru), and Indonesian (id).
+</details>
 
 
 ### 🌟 Features at a Glance
