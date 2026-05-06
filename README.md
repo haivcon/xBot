@@ -31,15 +31,27 @@
 - [Roadmap](#️-project-roadmap)
 - [Contributing](#-contributing)
 
-### 🚀 What's New in v1.3.5 (XBOT Vault Mega Upgrade)
+### 🚀 What's New in v1.3.6 (Vault Operations & API Optimization)
+
+#### XBOT Check v1.3.0 — Full Vault Management Suite
+- **Batch Sweep Engine**: Select multiple wallets and sweep their entire native token balance (ETH/OKB/BNB) to a single destination address in one batch operation via ethers.js v6. Supports X Layer, Ethereum, BSC, and Arbitrum networks.
+- **Transaction History Tracking**: All successful transactions (individual sends and batch sweeps) are now logged with full metadata (hash, amount, chain, timestamp) into AES-256 encrypted local storage for auditability.
+- **Wallet & Folder Management**: Added per-wallet Rename/Delete actions inside the expanded card view. Folder tabs now display wallet counts, support double-click rename, and include a delete button for removing entire groups at once.
+- **Analytics Dashboard**: New interactive dashboard view with stats grid (total wallets, folders, balance), pie chart showing asset distribution across folders, and total vault valuation.
+- **Selection System Overhaul**: Replaced fragile index-based multi-select with address-based selection. Selections now persist correctly across search, sort, and folder switching — preventing the critical bug where sweep could target wrong wallets.
+
+#### Bot Core — API Performance Optimization
+- **Reference Price Caching**: Added a 60-second TTL cache for OKB/ETH/BTC reference price lookups in `fetchReferenceTokenPriceUsd`. Reduces redundant API calls by ~60% per price alert cycle (e.g., 3 tracked tokens: 15 calls → 6 calls), significantly lowering OKX rate limit pressure.
+
+<details>
+<summary><b>View previous updates (v1.3.5 & older)</b></summary>
+
+### v1.3.5 (XBOT Vault Mega Upgrade)
 - **Live On-Chain Balance Sync**: Integrated a secure OKX API engine (`okxApi.js`) natively implementing HMAC-SHA256 signatures. The vault now queries OKX OnchainOS directly to fetch and update real-time native token balances across multiple chains, perfectly respecting OKX API rate limits.
 - **Wallet Folders & Tab Navigation**: Implemented an intelligent CSV metadata extractor. The vault now automatically groups imported wallets by their original `.csv` filenames into dedicated folders. A new modern horizontal tab interface allows seamless filtering and switching between wallet batches (e.g., `Airdrop_1`, `Main_Trading`).
 - **Encrypted `.xbot` Backup System**: Engineered a robust backup and restore system using Capacitor FileSystem. Users can export their entire vault (including wallets, folders, and API credentials) into an AES-256 encrypted `.xbot` file and safely store it on Google Drive. The import system natively recognizes and decrypts `.xbot` files.
 - **Native Transaction Signer**: Transformed the vault into a full offline wallet manager via Ethers.js v6. A new "Send Funds" module allows users to securely craft, estimate gas, and sign transactions entirely locally before broadcasting them directly to custom RPCs across multiple networks (X Layer, Ethereum, BSC, Arbitrum).
 - **Balance Sorting**: Added a dynamic 3-state sorting toggle. Users can now instantly sort their massive wallet lists by numeric balance in ascending or descending order, complete with intuitive UI icon rotations.
-
-<details>
-<summary><b>View previous updates (v1.3.4 & older)</b></summary>
 
 ### v1.3.4 (Premium Vault Upgrade & Biometric Integration)
 - **XBOT Check (Premium Cold Vault)**: Completely upgraded the standalone Android application from a simple CSV reader into a secure, offline Cold Vault. The app now features persistent AES-256 encrypted storage, ensuring imported wallets are securely locked in the device.
@@ -51,19 +63,11 @@
 - **Professional DEX Batch Transfers**: Completely overhauled the multi-wallet DEX transfer workflow. Added a virtualized, intelligent "Multi-Select" UI that auto-excludes already selected recipients. Included real-time balance tracking, dynamic gas calculation, and deep TxHash linking for every successful transfer row.
 - **Granular Error Handling & Retry Logic**: Implemented an explicit per-transaction failure state within bulk operations. Failed transfers now display precise error messages with a dedicated "Retry" button, allowing users to re-attempt individual failed nodes without repeating the entire batch.
 - **XBot Check App (Android)**: Introduced a standalone Android application project (`xbot-check`) using Capacitor + React. This companion app securely loads XBot's exported wallet CSVs completely offline, intelligently maps columns (PK, Seed, Balance), and provides one-click masked copy functionality wrapped in a native mobile UI.
-- **Wallet State Stability**: Refactored the internal state mechanisms for `WalletsPage.jsx`. Balances are now forcefully refreshed via a silent background trigger, completely eliminating UI jitter, scroll resets, and loading spinner interruptions during active wallet management.
 
-### v1.3.2 (Unified Bulk Export & Data Granularity)
-- **Unified Bulk Export Architecture**: Consolidated all fragmented export triggers (Address Only, Key Only, Full Export) into a single, intuitive "Export" workflow across the dashboard toolbar and bulk action bar, dramatically reducing UI clutter.
-- **Granular CSV Column Selection**: Re-engineered the export engine to allow dynamic column toggling. Users can now selectively include or exclude `Name`, `Address`, `Balance`, and `Private Key` in their clipboard copy or CSV downloads for cleaner, purpose-driven data management.
-- **Secure Private Key Handling**: Implemented strict PIN protection within the unified modal. The Private Key column is hidden by default and requires explicit PIN verification to unlock. Keys auto-hide after 60 seconds to prevent unauthorized shoulder-surfing.
-- **Clean Audit Trails**: Standardized CSV outputs by stripping redundant metadata (e.g., Export Time) from the row data, ensuring the resulting files are immediately ready for spreadsheet processing and secure storage.
-
-### v1.3.1 (Batch Swap UX Overhaul & Localization Fidelity)
-- **Comprehensive Batch Swap "Get Quote" Flow**: Completely overhauled the batch swap capability by embedding a robust Pre-Swap Quote mechanism. Users can now preview detailed DEX routes, estimated output, price impact, and gas fees across multiple wallets before executing, moving away from blind batch execution.
-- **Intelligent Wallet Selection UI**: Re-engineered the trading wallet selector to dynamically assess token balances. It now provides instant visual feedback, displaying live balances or rendering hard warnings (`0 Bal`, `Insufficient Funds`) if the designated swap amounts exceed a single wallet's liquidity.
-- **Granular Custom Amount Control**: Refined the "Custom Each" and "Same for all" input capabilities, enabling complex batch routing where each selected wallet can swap distinctly tailored amounts of tokens in one unified transaction block.
-- **100% Trading UI Localization**: Completed a full rigorous localization pass over the trading dashboard interface. Extrapolated dozens of hardcoded strings into the i18n dictionary, ensuring all multi-wallet transaction notifications, tables, and warnings gracefully resolve to English, Vietnamese (vi), Chinese (zh), Korean (ko), Russian (ru), and Indonesian (id).
+### v1.3.2 & older
+- Unified Bulk Export Architecture, Granular CSV Column Selection, Secure Private Key Handling
+- Batch Swap UX Overhaul, Intelligent Wallet Selection, 100% Trading UI Localization
+- See [full changelog](https://github.com/haivcon/xbot/releases) for complete history.
 </details>
 
 

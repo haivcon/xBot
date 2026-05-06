@@ -43,6 +43,7 @@ Thumbs.db
 
 # ─── IDE ───
 .vscode/
+.idea/
 
 # ─── Temp ───
 *.jar
@@ -61,3 +62,6 @@ test_*.js
 update_*.js
 insert_*.js
 cleanup_*.js
+
+# ─── Gemini / AI working dirs ───
+.gemini/

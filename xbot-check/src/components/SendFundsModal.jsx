@@ -9,7 +9,7 @@ const NETWORKS = [
   { name: 'Arbitrum One', rpc: 'https://arb1.arbitrum.io/rpc', chainId: 42161, symbol: 'ETH' }
 ];
 
-export default function SendFundsModal({ wallet, onClose }) {
+export default function SendFundsModal({ wallet, onClose, onTxComplete }) {
   const [network, setNetwork] = useState(NETWORKS[0]);
   const [toAddress, setToAddress] = useState('');
   const [amount, setAmount] = useState('');
@@ -57,8 +57,21 @@ export default function SendFundsModal({ wallet, onClose }) {
 
       setTxHash(tx.hash);
       
-      // Wait for confirmation (optional, we just show hash for speed)
-      // await tx.wait();
+      // Record to history
+      if (onTxComplete) {
+        onTxComplete({
+          hash: tx.hash,
+          from: wallet.address,
+          to: toAddress,
+          amount,
+          symbol: network.symbol,
+          network: network.name,
+          chainId: network.chainId,
+          status: 'success',
+          timestamp: Date.now(),
+          type: 'send'
+        });
+      }
 
     } catch (err) {
       console.error(err);

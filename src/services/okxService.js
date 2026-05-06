@@ -2193,11 +2193,22 @@ function createOkxService(config) {
         return trimmed ? trimmed.toLowerCase() : null;
     }
 
+    const _refPriceCache = new Map(); // key: address -> { price, expiresAt }
+    const REF_PRICE_CACHE_TTL = 60_000; // 60s
+
     async function fetchReferenceTokenPriceUsd({ tokenAddress, chainIndex, label = 'ref' }) {
         const address = normalizeOkxTokenAddress(tokenAddress);
         if (!address || !Number.isFinite(chainIndex)) {
             return null;
         }
+
+        // Check cache first
+        const now = Date.now();
+        const cached = _refPriceCache.get(address);
+        if (cached && cached.expiresAt > now) {
+            return cached.price;
+        }
+
         const body = [{ chainIndex, tokenContractAddress: address }];
         try {
             const payload = await callOkxDexEndpoint('/api/v6/dex/market/price', body, {
@@ -2206,9 +2217,15 @@ function createOkxService(config) {
             });
             const entry = unwrapOkxFirst(payload);
             const price = extractOkxPriceValue(entry);
-            return Number.isFinite(price) ? price : null;
+            if (Number.isFinite(price)) {
+                _refPriceCache.set(address, { price, expiresAt: now + REF_PRICE_CACHE_TTL });
+                return price;
+            }
+            return null;
         } catch (error) {
             log.warn(`Failed to fetch ${label} price: ${error.message}`);
+            // Return stale cache if available
+            if (cached) return cached.price;
             return null;
         }
     }

@@ -5,6 +5,7 @@ import CryptoJS from 'crypto-js';
 const STORAGE_KEYS = {
     WALLETS: 'xbot_wallets',
     API_KEY: 'xbot_api_key',
+    TX_HISTORY: 'xbot_tx_history',
     AES_KEY_FALLBACK: 'xbot_aes_fallback'
 };
 
@@ -141,6 +142,37 @@ export const loadApiConfig = async (key) => {
     const { value } = await Preferences.get({ key: STORAGE_KEYS.API_KEY });
     if (!value) return { apiKey: '', secretKey: '', passphrase: '' };
     return decryptData(value, key);
+};
+
+/**
+ * Save a transaction record
+ */
+export const saveTxRecord = async (tx, key) => {
+    try {
+        const history = await loadTxHistory(key);
+        history.unshift(tx); // newest first
+        // Keep max 200 records
+        const trimmed = history.slice(0, 200);
+        const encrypted = encryptData(trimmed, key);
+        await Preferences.set({ key: STORAGE_KEYS.TX_HISTORY, value: encrypted });
+        return true;
+    } catch (e) {
+        console.error('Failed to save tx record', e);
+        return false;
+    }
+};
+
+/**
+ * Load transaction history
+ */
+export const loadTxHistory = async (key) => {
+    try {
+        const { value } = await Preferences.get({ key: STORAGE_KEYS.TX_HISTORY });
+        if (!value) return [];
+        return decryptData(value, key);
+    } catch (e) {
+        return [];
+    }
 };
 
 /**

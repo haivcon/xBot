@@ -1,24 +1,29 @@
 import { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import { 
-  UploadCloud, Wallet, Key, FileText, Check, Copy, Search, Eye, EyeOff, ChevronDown, ChevronUp, QrCode, Settings, RefreshCw, Send, ArrowDownUp
+  UploadCloud, Wallet, Key, FileText, Check, Copy, Search, Eye, EyeOff, ChevronDown, ChevronUp, QrCode, Settings, RefreshCw, Send, ArrowDownUp, Trash2, Pencil, BarChart3, Clock, Zap, CheckSquare, Square
 } from 'lucide-react';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 
 import SettingsScreen from './components/SettingsScreen';
 import QRCodeModal from './components/QRCodeModal';
 import SendFundsModal from './components/SendFundsModal';
-import { saveWallets, loadWallets, loadApiConfig, saveApiConfig, getEncryptionKey } from './utils/storage';
+import SweepModal from './components/SweepModal';
+import DashboardView from './components/DashboardView';
+import HistoryView from './components/HistoryView';
+import { saveWallets, loadWallets, loadApiConfig, saveApiConfig, getEncryptionKey, saveTxRecord } from './utils/storage';
 import { exportVaultBackup, parseVaultBackupFile } from './utils/backupUtils';
 import { fetchWalletBalances } from './utils/okxApi';
 
 // ... (WalletCard unchanged)
 
-function WalletCard({ wallet, onShowQR, onSendFunds }) {
+function WalletCard({ wallet, onShowQR, onSendFunds, onDelete, onRename }) {
   const [expanded, setExpanded] = useState(false);
   const [showPk, setShowPk] = useState(false);
   const [showSeed, setShowSeed] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(wallet.name || '');
 
   const handleCopy = (text, field) => {
     navigator.clipboard.writeText(text);
@@ -27,7 +32,7 @@ function WalletCard({ wallet, onShowQR, onSendFunds }) {
   };
 
   return (
-    <div className="glass-card mb-4 overflow-hidden border border-surface-700 hover:border-brand-500/30 transition-colors">
+    <div className="glass-card overflow-hidden border border-surface-700 hover:border-brand-500/30 transition-colors">
       {/* Header - Always visible */}
       <div 
         className="p-4 flex items-center justify-between cursor-pointer bg-surface-800/30 hover:bg-surface-800/50"
@@ -38,19 +43,27 @@ function WalletCard({ wallet, onShowQR, onSendFunds }) {
             <Wallet size={20} className="text-brand-400" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-white font-medium truncate">
-              {wallet.name || 'Unnamed Wallet'}
-            </h3>
+            {editing ? (
+              <input
+                autoFocus
+                className="bg-transparent border-b border-brand-500 text-white text-sm outline-none w-full"
+                value={editName}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={() => { onRename(editName); setEditing(false); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { onRename(editName); setEditing(false); } }}
+              />
+            ) : (
+              <h3 className="text-white font-medium truncate">{wallet.name || 'Unnamed Wallet'}</h3>
+            )}
             <p className="text-surface-400 text-sm font-mono truncate">
               {wallet.address ? `${wallet.address.substring(0, 6)}...${wallet.address.substring(wallet.address.length - 4)}` : 'No Address'}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-white font-semibold">
-              ${wallet.balance || '0.00'}
-            </p>
+            <p className="text-white font-semibold">${wallet.balance || '0.00'}</p>
             <p className="text-xs text-surface-400">Balance</p>
           </div>
           {expanded ? <ChevronUp size={20} className="text-surface-500" /> : <ChevronDown size={20} className="text-surface-500" />}
@@ -60,6 +73,16 @@ function WalletCard({ wallet, onShowQR, onSendFunds }) {
       {/* Expanded Details */}
       {expanded && (
         <div className="p-4 border-t border-surface-700 bg-surface-900/50 space-y-4">
+          
+          {/* Quick Actions */}
+          <div className="flex gap-2">
+            <button onClick={() => { setEditing(true); }} className="flex items-center gap-1 text-xs text-surface-400 hover:text-brand-400 bg-surface-800 px-3 py-1.5 rounded-lg transition-colors">
+              <Pencil size={12} /> Rename
+            </button>
+            <button onClick={onDelete} className="flex items-center gap-1 text-xs text-surface-400 hover:text-red-400 bg-surface-800 px-3 py-1.5 rounded-lg transition-colors">
+              <Trash2 size={12} /> Delete
+            </button>
+          </div>
           
           {/* Address */}
           {wallet.address && (
@@ -155,17 +178,22 @@ function WalletCard({ wallet, onShowQR, onSendFunds }) {
 export default function App() {
   const [aesKey, setAesKey] = useState(null);
   const [authError, setAuthError] = useState('');
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'settings'
+  const [currentView, setCurrentView] = useState('home');
   
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFolder, setActiveFolder] = useState('All');
-  const [sortOrder, setSortOrder] = useState('none'); // 'none', 'asc', 'desc'
+  const [sortOrder, setSortOrder] = useState('none');
   
   const [qrModalData, setQrModalData] = useState({ isOpen: false, data: '', title: '', subtitle: '' });
   const [sendModalWallet, setSendModalWallet] = useState(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedAddrs, setSelectedAddrs] = useState(new Set());
+  const [showSweep, setShowSweep] = useState(false);
+  const [editingFolder, setEditingFolder] = useState(null);
+  const [editFolderName, setEditFolderName] = useState('');
 
   // On Unlock, load data
   useEffect(() => {
@@ -332,8 +360,53 @@ export default function App() {
     setWallets([]);
     setAesKey(null);
     setCurrentView('home');
-    // Reload to force new key generation
     window.location.reload();
+  };
+
+  // Feature 1: Delete single wallet (by address to avoid stale reference)
+  const handleDeleteWallet = async (walletToDelete) => {
+    if (!window.confirm(`Delete wallet "${walletToDelete.name || walletToDelete.address?.substring(0,10)}"?`)) return;
+    const updated = wallets.filter(w => w.address !== walletToDelete.address);
+    setWallets(updated);
+    await saveWallets(updated, aesKey);
+  };
+
+  // Feature 1: Delete entire folder
+  const handleDeleteFolder = async (folderName) => {
+    if (!window.confirm(`Delete all wallets in folder "${folderName}"?`)) return;
+    const updated = wallets.filter(w => (w.groupId || 'Imported') !== folderName);
+    setWallets(updated);
+    await saveWallets(updated, aesKey);
+    setActiveFolder('All');
+  };
+
+  // Feature 2: Rename folder
+  const handleRenameFolder = async (oldName, newName) => {
+    if (!newName || newName === oldName) { setEditingFolder(null); return; }
+    const updated = wallets.map(w => (w.groupId || 'Imported') === oldName ? { ...w, groupId: newName } : w);
+    setWallets(updated);
+    await saveWallets(updated, aesKey);
+    setEditingFolder(null);
+    if (activeFolder === oldName) setActiveFolder(newName);
+  };
+
+  // Feature 2: Rename wallet (by address)
+  const handleRenameWallet = async (wallet, newName) => {
+    const updated = wallets.map(w => w.address === wallet.address ? { ...w, name: newName } : w);
+    setWallets(updated);
+    await saveWallets(updated, aesKey);
+  };
+
+  // Feature 4: Toggle select (by address for stability)
+  const toggleSelect = (addr) => {
+    const next = new Set(selectedAddrs);
+    next.has(addr) ? next.delete(addr) : next.add(addr);
+    setSelectedAddrs(next);
+  };
+
+  // Feature 6: Record transaction
+  const handleTxComplete = async (txData) => {
+    await saveTxRecord(txData, aesKey);
   };
 
   // Views Orchestration
@@ -387,6 +460,12 @@ export default function App() {
   if (currentView === 'settings') {
     return <SettingsScreen aesKey={aesKey} onBack={() => setCurrentView('home')} onWipe={handleWipe} />;
   }
+  if (currentView === 'dashboard') {
+    return <DashboardView wallets={wallets} onBack={() => setCurrentView('home')} />;
+  }
+  if (currentView === 'history') {
+    return <HistoryView aesKey={aesKey} onBack={() => setCurrentView('home')} />;
+  }
 
   // Folders logic
   const folders = ['All', ...new Set(wallets.map(w => w.groupId || 'Imported'))];
@@ -424,12 +503,17 @@ export default function App() {
               Vault
             </h1>
           </div>
-          <button 
-            onClick={() => setCurrentView('settings')}
-            className="p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors"
-          >
-            <Settings size={20} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setCurrentView('dashboard')} className="p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="Analytics">
+              <BarChart3 size={18} />
+            </button>
+            <button onClick={() => setCurrentView('history')} className="p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="History">
+              <Clock size={18} />
+            </button>
+            <button onClick={() => setCurrentView('settings')} className="p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="Settings">
+              <Settings size={20} />
+            </button>
+          </div>
         </div>
 
         {wallets.length > 0 && (
@@ -476,21 +560,41 @@ export default function App() {
           <>
             {/* Folder Tabs */}
             {folders.length > 1 && (
-              <div className="flex overflow-x-auto gap-2 pb-2 mb-4 scrollbar-hide">
-                {folders.map(f => (
-                  <button
-                    key={f}
-                    onClick={() => setActiveFolder(f)}
-                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeFolder === f ? 'bg-brand-500 text-white' : 'bg-surface-800 text-surface-400 hover:text-white hover:bg-surface-700'}`}
-                  >
-                    {f}
-                  </button>
-                ))}
+              <div className="flex overflow-x-auto gap-2 pb-2 mb-4 scrollbar-hide items-center">
+                {folders.map(f => {
+                  const count = f === 'All' ? wallets.length : wallets.filter(w => (w.groupId || 'Imported') === f).length;
+                  return editingFolder === f ? (
+                    <input
+                      key={f}
+                      autoFocus
+                      className="bg-surface-800 border border-brand-500 text-white text-sm px-3 py-2 rounded-full outline-none min-w-[80px]"
+                      value={editFolderName}
+                      onChange={(e) => setEditFolderName(e.target.value)}
+                      onBlur={() => handleRenameFolder(f, editFolderName)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleRenameFolder(f, editFolderName)}
+                    />
+                  ) : (
+                    <div key={f} className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => { setActiveFolder(f); setSelectedAddrs(new Set()); }}
+                        onDoubleClick={() => f !== 'All' && (setEditingFolder(f), setEditFolderName(f))}
+                        className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${activeFolder === f ? 'bg-brand-500 text-white' : 'bg-surface-800 text-surface-400 hover:text-white hover:bg-surface-700'}`}
+                      >
+                        {f} <span className="opacity-60 ml-1">({count})</span>
+                      </button>
+                      {f !== 'All' && activeFolder === f && (
+                        <button onClick={() => handleDeleteFolder(f)} className="p-1 text-red-400/50 hover:text-red-400 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
             {/* Action Bar */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-6 mt-2">
+            <div className="flex gap-2 mb-4 mt-2">
               <div className="relative flex-1">
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
                 <input 
@@ -504,36 +608,66 @@ export default function App() {
               
               <button 
                 onClick={() => setSortOrder(prev => prev === 'none' ? 'desc' : prev === 'desc' ? 'asc' : 'none')}
-                className={`flex-shrink-0 border px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${sortOrder !== 'none' ? 'bg-brand-500/10 border-brand-500/30 text-brand-400' : 'bg-surface-800 border-surface-700 text-surface-300 hover:text-white hover:bg-surface-700'}`}
+                className={`flex-shrink-0 border px-3 py-3 rounded-lg transition-colors flex items-center justify-center ${sortOrder !== 'none' ? 'bg-brand-500/10 border-brand-500/30 text-brand-400' : 'bg-surface-800 border-surface-700 text-surface-300 hover:text-white hover:bg-surface-700'}`}
                 title="Sort by Balance"
               >
-                <ArrowDownUp size={18} className={sortOrder === 'desc' ? 'text-brand-400' : sortOrder === 'asc' ? 'text-brand-400 rotate-180 transition-transform' : ''} />
+                <ArrowDownUp size={18} />
+              </button>
+
+              <button 
+                onClick={() => { setSelectMode(!selectMode); setSelectedAddrs(new Set()); }}
+                className={`flex-shrink-0 border px-3 py-3 rounded-lg transition-colors flex items-center justify-center ${selectMode ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' : 'bg-surface-800 border-surface-700 text-surface-300 hover:text-white hover:bg-surface-700'}`}
+                title="Select Mode"
+              >
+                <CheckSquare size={18} />
               </button>
 
               <button 
                 onClick={handleFileUpload}
                 disabled={loading}
-                className="bg-surface-800 hover:bg-surface-700 border border-surface-700 text-white px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                className="flex-shrink-0 bg-surface-800 hover:bg-surface-700 border border-surface-700 text-white px-3 py-3 rounded-lg transition-colors flex items-center justify-center"
               >
                 {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <UploadCloud size={18} />}
-                Import New
               </button>
             </div>
 
+            {/* Sweep Bar (when selecting) */}
+            {selectMode && selectedAddrs.size > 0 && (
+              <div className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
+                <span className="text-sm text-yellow-400 font-medium">{selectedAddrs.size} wallets selected</span>
+                <button 
+                  onClick={() => setShowSweep(true)}
+                  className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Zap size={14} /> Sweep All
+                </button>
+              </div>
+            )}
+
             {/* List */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               {filteredWallets.length === 0 ? (
                 <div className="text-center py-10 text-surface-500">
                   No wallets found matching your search.
                 </div>
               ) : (
                 filteredWallets.map((w, i) => (
-                  <WalletCard 
-                    key={i} 
-                    wallet={w} 
-                    onShowQR={(data, title, subtitle) => setQrModalData({ isOpen: true, data, title, subtitle })}
-                    onSendFunds={(wallet) => setSendModalWallet(wallet)}
-                  />
+                  <div key={i} className="flex items-start gap-2">
+                    {selectMode && (
+                      <button onClick={() => toggleSelect(w.address)} className="mt-5 flex-shrink-0">
+                        {selectedAddrs.has(w.address) ? <CheckSquare size={20} className="text-yellow-400" /> : <Square size={20} className="text-surface-500" />}
+                      </button>
+                    )}
+                    <div className="flex-1">
+                      <WalletCard 
+                        wallet={w} 
+                        onShowQR={(data, title, subtitle) => setQrModalData({ isOpen: true, data, title, subtitle })}
+                        onSendFunds={(wallet) => setSendModalWallet(wallet)}
+                        onDelete={() => handleDeleteWallet(w)}
+                        onRename={(newName) => handleRenameWallet(w, newName)}
+                      />
+                    </div>
+                  </div>
                 ))
               )}
             </div>
@@ -549,7 +683,16 @@ export default function App() {
       {sendModalWallet && (
         <SendFundsModal 
           wallet={sendModalWallet} 
-          onClose={() => setSendModalWallet(null)} 
+          onClose={() => setSendModalWallet(null)}
+          onTxComplete={handleTxComplete}
+        />
+      )}
+
+      {showSweep && (
+        <SweepModal
+          selectedWallets={filteredWallets.filter(w => selectedAddrs.has(w.address))}
+          onClose={() => { setShowSweep(false); setSelectMode(false); setSelectedAddrs(new Set()); }}
+          onTxComplete={handleTxComplete}
         />
       )}
     </div>
