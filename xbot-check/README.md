@@ -1,6 +1,6 @@
 # 🛡️ XBOT Check — Web3 Cold Storage Vault
 
-**[🇬🇧 English](#-english) | [🇻🇳 Tiếng Việt](#-tiếng-việt) | [🇨🇳 简体中文](#-简体中文)**
+**[🇬🇧 English](#-english) | [🇨🇳 简体中文](#-简体中文) | [🇻🇳 Tiếng Việt](#-tiếng-việt) | [🇰🇷 한국어](#-한국어) | [🇷🇺 Русский](#-русский) | [🇮🇩 Bahasa Indonesia](#-bahasa-indonesia)**
 
 ---
 
@@ -190,5 +190,188 @@ npx cap open android
 ### ⚠️ 安全警告
 - **切勿分享您的 `.xbot` 备份文件或用于加密它们的密码。**
 - 本应用程序存储极其敏感的私钥。**请始终确保您的设备已启用安全的屏幕锁定（PIN/密码/生物识别）。** 如果您移除设备的屏幕锁定，Android Keystore 将会销毁生物识别密钥，导致金库无法访问，以此来保护您的资产免遭窃取。
+
+</details>
+
+---
+
+<details>
+<summary><h2>🇰🇷 한국어</h2></summary>
+
+**XBOT Check**는 React, Vite 및 Capacitor로 구축된 안전한 오프라인 우선 Web3 지갑 관리 애플리케이션입니다. 생체 인식 인증, AES-256 암호화 및 기본 트랜잭션 서명 기능을 갖춘 암호화 자산용으로 매우 안전한 콜드 볼트(Cold Vault) 역할을 하도록 설계되었습니다.
+
+### ✨ 주요 기능
+- **🔒 최고의 보안**: 모든 개인 키와 시드 구문은 AES-256-CBC를 사용하여 로컬에서 강력하게 암호화됩니다.
+- **👁️ 생체 인식 인증**: 수동 PIN 코드가 필요 없이 기본 Android 생체 인식(FaceID/지문)으로 액세스를 보호합니다.
+- **📁 스마트 구성**: CSV를 통해 지갑을 가져오고 자동으로 폴더에 정리합니다.
+- **🧹 일괄 스윕(Batch Sweep) 엔진**: 한 번의 클릭으로 여러 지갑을 선택하고 기본 잔고(ETH, BNB, OKB)를 단일 목적지 주소로 스윕합니다.
+- **✍️ 오프라인 서명기**: 브로드캐스팅하기 전에 전적으로 기기에서 트랜잭션을 구성하고, 가스를 추정하고, 서명합니다.
+- **📊 대화형 대시보드**: 볼트의 총 가치 평가, 폴더별 자산 분포, 실시간 온체인 잔고를 모니터링합니다.
+- **📜 암호화된 기록**: 감사(Auditing)를 위해 모든 전송 및 일괄 스윕이 로컬에 안전하게 기록됩니다.
+- **💾 볼트 백업**: Google 드라이브나 콜드 스토리지에 안전하게 보관할 수 있도록 전체 볼트(지갑, 폴더, 설정)를 고도로 암호화된 `.xbot` 파일로 내보냅니다.
+
+### 🚀 설치 및 설정 가이드
+
+**사전 요구 사항**
+- [Node.js](https://nodejs.org/) (v18 이상 권장)
+- [Android Studio](https://developer.android.com/studio) (Android APK를 빌드하려는 경우)
+- Git
+
+**1. 리포지토리 복제 및 종속성 설치**
+```bash
+git clone https://github.com/haivcon/xbot.git
+cd xbot/xbot-check
+npm install
+```
+
+**2. 브라우저에서 로컬로 실행 (웹 모드)**
+```bash
+npm run dev
+```
+> **참고**: 생체 인식 인증 및 로컬 파일 시스템 기능은 웹 브라우저에서 모의(mock)되거나 우회되는 기본 Capacitor 플러그인에 의존합니다.
+
+**3. Android용 빌드 (APK)**
+```bash
+npm run build
+npx cap sync android
+npx cap open android
+```
+Android Studio가 열리면:
+- Gradle이 동기화를 완료할 때까지 기다립니다.
+- **Play** 버튼을 클릭하여 에뮬레이터/기기에서 실행하거나,
+- `Build > Build Bundle(s) / APK(s) > Build APK(s)`로 이동하여 설치 가능한 `.apk` 파일을 생성합니다.
+
+### 📖 사용 방법
+1. **첫 실행**: 앱을 엽니다. 기기의 생체 인식 데이터에 안전하게 바인딩됩니다.
+2. **지갑 가져오기**: `+` 버튼을 클릭하여 지갑이 포함된 CSV 파일을 가져옵니다. 앱은 자동으로 열(주소, 개인 키, 잔고)을 매핑하고 파일 이름별로 그룹화합니다.
+3. **폴더 관리**: 상단 탭을 통해 탐색합니다. 전체 폴더의 이름을 바꾸거나 삭제하려면 탭을 두 번 클릭합니다.
+4. **일괄 스윕(Batch Sweep)**: "Select Mode(선택 모드)"를 활성화하고, 여러 지갑을 선택한 다음 `Sweep` 버튼을 클릭하여 자금을 단일 주소로 통합합니다.
+5. **볼트 백업**: 암호화된 `.xbot` 파일을 내보내려면 `Settings > Backup Vault`로 이동합니다.
+
+### ⚠️ 보안 주의 사항
+- **`.xbot` 백업 파일이나 이를 암호화하는 데 사용된 비밀번호를 절대 공유하지 마십시오.**
+- 이 애플리케이션은 매우 민감한 개인 키를 저장합니다. **항상 기기에 안전한 화면 잠금(PIN/비밀번호/생체 인식)이 활성화되어 있는지 확인하십시오.** 기기의 화면 잠금을 해제하면 Android Keystore에서 생체 인식 키를 삭제하여 자산을 보호하기 위해 볼트에 액세스할 수 없게 됩니다.
+
+</details>
+
+---
+
+<details>
+<summary><h2>🇷🇺 Русский</h2></summary>
+
+**XBOT Check** — это безопасное, автономное приложение для управления кошельками Web3, созданное с помощью React, Vite и Capacitor. Оно работает как надежное холодное хранилище (Cold Vault) для ваших криптоактивов и оснащено биометрической аутентификацией, шифрованием AES-256, функцией массовой отправки средств и встроенным подписанием транзакций.
+
+### ✨ Основные возможности
+- **🔒 Максимальная безопасность**: Все приватные ключи и seed-фразы надежно зашифрованы локально с использованием AES-256-CBC.
+- **👁️ Биометрия**: Доступ защищен встроенной биометрической аутентификацией Android (FaceID / Отпечаток пальца) — ручной ввод PIN-кода не требуется.
+- **📁 Умная организация**: Импортируйте кошельки через CSV и автоматически распределяйте их по папкам.
+- **🧹 Массовый перевод (Batch Sweep)**: Выберите несколько кошельков и переведите их баланс (ETH, BNB, OKB) на один адрес в один клик.
+- **✍️ Автономное подписание**: Формируйте транзакции, рассчитывайте газ и подписывайте их полностью на вашем устройстве перед отправкой в сеть.
+- **📊 Интерактивная панель**: Отслеживайте общую стоимость вашего хранилища, распределение активов по папкам и балансы в реальном времени.
+- **📜 Зашифрованная история**: Все отправки средств надежно сохраняются в локальном журнале для последующего контроля.
+- **💾 Резервное копирование**: Экспортируйте все хранилище (кошельки, папки, настройки) в виде надежно зашифрованного файла `.xbot` для безопасного хранения на Google Drive или внешнем носителе.
+
+### 🚀 Руководство по установке
+
+**Требования**
+- [Node.js](https://nodejs.org/) (рекомендуется v18 и выше)
+- [Android Studio](https://developer.android.com/studio) (для создания APK для Android)
+- Git
+
+**1. Клонирование и установка зависимостей**
+```bash
+git clone https://github.com/haivcon/xbot.git
+cd xbot/xbot-check
+npm install
+```
+
+**2. Запуск в браузере (Web Mode)**
+```bash
+npm run dev
+```
+> **Примечание**: Биометрическая аутентификация и локальная файловая система зависят от нативных плагинов Capacitor, которые не работают в веб-браузере.
+
+**3. Сборка для Android (APK)**
+```bash
+npm run build
+npx cap sync android
+npx cap open android
+```
+Когда откроется Android Studio:
+- Дождитесь окончания синхронизации Gradle.
+- Нажмите кнопку **Play** для запуска на эмуляторе/устройстве, ИЛИ
+- Перейдите в `Build > Build Bundle(s) / APK(s) > Build APK(s)`, чтобы сгенерировать установочный `.apk` файл.
+
+### 📖 Как использовать
+1. **Первый запуск**: Откройте приложение. Оно безопасно привяжется к биометрическим данным вашего устройства.
+2. **Импорт кошельков**: Нажмите кнопку `+`, чтобы импортировать CSV-файл с вашими кошельками. Приложение автоматически сопоставит столбцы (Адрес, Приватный ключ, Баланс) и сгруппирует их по имени файла.
+3. **Управление папками**: Используйте верхние вкладки для навигации. Дважды щелкните вкладку, чтобы переименовать или удалить всю папку.
+4. **Массовый перевод (Sweep)**: Включите «Select Mode», выберите несколько кошельков и нажмите кнопку `Sweep`, чтобы объединить средства на одном адресе.
+5. **Резервное копирование**: Перейдите в `Settings > Backup Vault`, чтобы экспортировать зашифрованный файл `.xbot`.
+
+### ⚠️ Предупреждение о безопасности
+- **Никогда не делитесь файлами резервных копий `.xbot` или паролем, используемым для их шифрования.**
+- В этом приложении хранятся конфиденциальные приватные ключи. **Всегда проверяйте, включена ли на вашем устройстве надежная блокировка экрана (PIN/Пароль/Биометрия).** Если вы отключите блокировку экрана устройства, Android Keystore удалит биометрические ключи, сделав хранилище недоступным для защиты ваших активов от кражи.
+
+</details>
+
+---
+
+<details>
+<summary><h2>🇮🇩 Bahasa Indonesia</h2></summary>
+
+**XBOT Check** adalah aplikasi manajemen dompet Web3 yang aman, offline-first, dan dibangun dengan React, Vite, dan Capacitor. Aplikasi ini dirancang untuk berfungsi sebagai Cold Vault yang sangat aman untuk aset kripto Anda, dilengkapi dengan otentikasi biometrik, enkripsi AES-256, fungsi batch sweep, dan kemampuan penandatanganan transaksi secara offline.
+
+### ✨ Fitur Utama
+- **🔒 Keamanan Tertinggi**: Semua private key dan seed phrase dienkripsi secara mendalam secara lokal menggunakan AES-256-CBC.
+- **👁️ Otentikasi Biometrik**: Akses dilindungi oleh Biometrik asli Android (FaceID / Sidik Jari) — tidak perlu PIN manual.
+- **📁 Pengorganisasian Pintar**: Impor dompet melalui CSV dan atur secara otomatis ke dalam folder.
+- **🧹 Batch Sweep**: Pilih beberapa dompet dan pindahkan saldo (ETH, BNB, OKB) mereka ke satu alamat tujuan hanya dengan satu klik.
+- **✍️ Penandatangan Offline**: Buat, perkirakan gas, dan tanda tangani transaksi sepenuhnya di perangkat Anda sebelum menyiarkannya.
+- **📊 Dasbor Interaktif**: Pantau total valuasi Vault Anda, distribusi aset di seluruh folder, dan saldo on-chain secara langsung.
+- **📜 Riwayat Terenkripsi**: Semua pengiriman dan batch sweep Anda dicatat dengan aman secara lokal untuk tujuan audit.
+- **💾 Cadangan Vault**: Ekspor seluruh vault Anda (dompet, folder, pengaturan) sebagai file `.xbot` yang sangat terenkripsi untuk penyimpanan aman di Google Drive atau cold storage.
+
+### 🚀 Panduan Instalasi & Pengaturan
+
+**Prasyarat**
+- [Node.js](https://nodejs.org/) (disarankan v18 ke atas)
+- [Android Studio](https://developer.android.com/studio) (jika Anda ingin membuat APK Android)
+- Git
+
+**1. Klon & Instal Dependensi**
+```bash
+git clone https://github.com/haivcon/xbot.git
+cd xbot/xbot-check
+npm install
+```
+
+**2. Jalankan Secara Lokal di Browser (Web Mode)**
+```bash
+npm run dev
+```
+> **Catatan**: Fitur otentikasi biometrik dan sistem file lokal bergantung pada plugin asli Capacitor, yang di-mock atau dilewati di browser web.
+
+**3. Buat Aplikasi Android (APK)**
+```bash
+npm run build
+npx cap sync android
+npx cap open android
+```
+Setelah Android Studio terbuka:
+- Tunggu Gradle selesai mensinkronisasi.
+- Klik tombol **Play** untuk menjalankan di emulator/perangkat, ATAU
+- Buka `Build > Build Bundle(s) / APK(s) > Build APK(s)` untuk menghasilkan file `.apk` yang dapat diinstal.
+
+### 📖 Cara Menggunakan
+1. **Peluncuran Pertama**: Buka aplikasi. Aplikasi ini akan mengikat secara aman ke data biometrik perangkat Anda.
+2. **Impor Dompet**: Klik tombol `+` untuk mengimpor file CSV yang berisi dompet Anda. Aplikasi akan secara otomatis memetakan kolom (Alamat, Private Key, Saldo) dan mengelompokkannya berdasarkan nama file.
+3. **Kelola Folder**: Navigasikan melalui tab atas. Klik dua kali tab untuk mengganti nama atau menghapus seluruh folder.
+4. **Batch Sweep**: Aktifkan "Select Mode", centang beberapa dompet, dan klik tombol `Sweep` untuk mengonsolidasikan dana ke satu alamat.
+5. **Cadangkan Vault**: Buka `Settings > Backup Vault` untuk mengekspor file `.xbot` yang terenkripsi.
+
+### ⚠️ Pemberitahuan Keamanan
+- **Jangan pernah membagikan file cadangan `.xbot` Anda atau kata sandi yang digunakan untuk mengenkripsinya.**
+- Aplikasi ini menyimpan Private Key yang sangat sensitif. **Selalu pastikan perangkat Anda memiliki kunci layar yang aman (PIN/Kata Sandi/Biometrik) diaktifkan.** Jika Anda menghapus kunci layar perangkat Anda, Android Keystore akan menghapus kunci biometrik, membuat vault tidak dapat diakses untuk melindungi aset Anda dari pencurian.
 
 </details>
