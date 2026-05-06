@@ -577,6 +577,12 @@ Built with **React 19 + Vite 6**, featuring glassmorphism design, dark/light mod
 
 ---
 
+### 🧳 XBOT Check (Cold Storage Vault)
+XBOT Check is a standalone secure, offline-first Web3 wallet management application built with React, Vite, and Capacitor. It acts as a highly secure Cold Vault for your crypto assets, featuring biometric authentication, AES-256 encryption, batch sweeping, and native transaction signing.
+👉 **[View the XBOT Check Installation Guide & Features](xbot-check/README.md)**
+
+---
+
 ### 🎮 Command Reference
 
 #### 🤖 AI Chat
@@ -928,6 +934,11 @@ cd .. && pm2 restart xbot
 
 ---
 
+### 🧳 XBOT Check (冷钱包应用)
+XBOT Check 是一款独立的、安全离线优先的 Web3 钱包管理应用，使用 React, Vite 和 Capacitor 构建。它作为高度安全的加密资产冷钱包 (Cold Vault)，具有生物识别认证、AES-256加密、批量归集功能和原生交易签名能力。
+👉 **[查看 XBOT Check 安装指南与功能特性](xbot-check/README.md)**
+
+---
 ### 🎮 指令参考
 * `/ai <内容>` - AI 对话 | `/swap <输入> <输出> <数量>` - 闪兑
 * `/mywallet` - 钱包管理 | `/contract <地址>` - 代币查询
@@ -1258,6 +1269,12 @@ cd .. && pm2 restart xbot
 | 🏆 **Xếp Hạng** | Bảng xếp hạng game |
 | 🌐 **Social Hub** | Cộng đồng, bài viết, nhắn tin, xếp hạng |
 | ⚙️ **Cài Đặt** | Tuỳ chọn người dùng |
+
+---
+
+### 🧳 XBOT Check (Kho Lưu Trữ Lạnh)
+XBOT Check là một ứng dụng quản lý ví Web3 ngoại tuyến độc lập, bảo mật cao, được xây dựng bằng React, Vite và Capacitor. Ứng dụng hoạt động như một Kho Lưu Trữ Lạnh (Cold Vault) an toàn tuyệt đối cho tài sản tiền điện tử của bạn, nổi bật với xác thực sinh trắc học, mã hóa AES-256, gom số dư hàng loạt (batch sweep) và ký giao dịch ngoại tuyến.
+👉 **[Xem Hướng Dẫn Cài Đặt & Tính Năng của XBOT Check](xbot-check/README.md)**
 
 ---
 
