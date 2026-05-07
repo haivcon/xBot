@@ -23,7 +23,7 @@ import CreateWalletModal from './components/CreateWalletModal';
 // Utils & Hooks
 import { saveWallets, loadWallets, loadApiConfig, saveApiConfig, getEncryptionKey, saveTxRecord } from './utils/storage';
 import { exportVaultBackup, parseVaultBackupFile } from './utils/backupUtils';
-import { fetchWalletBalances } from './utils/okxApi';
+import { fetchBatchBalances } from './utils/okxApi';
 import useAutoLock from './hooks/useAutoLock';
 import usePullToRefresh from './hooks/usePullToRefresh';
 import { useToast } from './contexts/ToastContext';
@@ -46,6 +46,7 @@ export default function App() {
   const [sortOrder, setSortOrder] = useState('none');
   const [activeFilter, setActiveFilter] = useState('all');
   const [offlineMode, setOfflineMode] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(null); // { done, total } or null
 
   // Modals
   const [qrModalData, setQrModalData] = useState({ isOpen: false, data: '', title: '', subtitle: '' });
@@ -235,50 +236,59 @@ export default function App() {
       return;
     }
     setRefreshing(true);
+    setSyncProgress({ done: 0, total: 0 });
 
     try {
       const currentWallets = [...wallets];
-      let updatedCount = 0;
 
       const targetWallets = activeFolder === 'All'
         ? currentWallets
         : currentWallets.filter(w => (w.groupId || 'Imported') === activeFolder);
 
-      for (let i = 0; i < targetWallets.length; i++) {
-        const w = targetWallets[i];
-        if (!w.address) continue;
+      const addresses = targetWallets.map(w => w.address).filter(Boolean);
 
-        try {
-          await new Promise(r => setTimeout(r, 200));
-          const data = await fetchWalletBalances(w.address, config);
+      if (addresses.length === 0) {
+        showToast('No wallets with addresses to sync', 'info');
+        setRefreshing(false);
+        setSyncProgress(null);
+        return;
+      }
 
-          if (data && data.totalUsdValue) {
-            const originalIndex = currentWallets.findIndex(orig => orig.address === w.address);
-            if (originalIndex !== -1) {
-              currentWallets[originalIndex].balance = parseFloat(data.totalUsdValue).toFixed(2);
-              // #7: Store token assets
-              if (data.tokenAssets && data.tokenAssets.length > 0) {
-                currentWallets[originalIndex].tokenAssets = data.tokenAssets;
-              }
-              updatedCount++;
+      setSyncProgress({ done: 0, total: addresses.length });
+
+      // Batch fetch with progress callback
+      const results = await fetchBatchBalances(addresses, config, 10, (done, total) => {
+        setSyncProgress({ done, total });
+      });
+
+      // Apply results to wallets
+      let updatedCount = 0;
+      for (const [addrLower, data] of results) {
+        if (!data) continue;
+        // Find all wallets matching this address (case-insensitive)
+        for (let i = 0; i < currentWallets.length; i++) {
+          if (currentWallets[i].address?.toLowerCase() === addrLower) {
+            currentWallets[i].balance = data.totalUsdValue;
+            if (data.tokenAssets && data.tokenAssets.length > 0) {
+              currentWallets[i].tokenAssets = data.tokenAssets;
             }
+            updatedCount++;
           }
-        } catch (err) {
-          console.error(`Failed to sync ${w.address}:`, err);
         }
       }
 
       if (updatedCount > 0) {
         setWallets([...currentWallets]);
         await saveWallets(currentWallets, aesKey);
-        showToast(`Synced balances for ${updatedCount} wallets`, 'success');
+        showToast(`Synced ${updatedCount} wallets (${results.size} unique addresses)`, 'success');
       } else {
-        showToast('No balances updated (rate limits or empty wallets)', 'info');
+        showToast('No balances updated', 'info');
       }
     } catch (e) {
-      showToast("Failed to run Live Sync: " + e.message, 'error');
+      showToast('Live Sync failed: ' + e.message, 'error');
     }
     setRefreshing(false);
+    setSyncProgress(null);
   };
 
   // ─── Wallet Operations ───
@@ -502,7 +512,10 @@ export default function App() {
                 className="flex items-center gap-2 text-xs font-medium text-brand-400 bg-brand-500/10 px-3 py-2 rounded-lg hover:bg-brand-500/20 transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-                {refreshing ? 'Syncing...' : 'Live Sync'}
+                {refreshing
+                  ? (syncProgress ? `${syncProgress.done}/${syncProgress.total}` : 'Syncing...')
+                  : 'Live Sync'
+                }
               </button>
             )}
           </div>
@@ -555,7 +568,10 @@ export default function App() {
               selectMode={selectMode} onSelectToggle={() => { setSelectMode(!selectMode); setSelectedAddrs(new Set()); }}
               onUpload={handleFileUpload} loading={loading}
               activeFilter={activeFilter} onFilterChange={setActiveFilter}
-              selectedCount={selectedAddrs.size} onSweep={() => setShowSweep(true)}
+              selectedCount={selectedAddrs.size} onSweep={() => {
+                if (offlineMode) { showToast('Offline Mode is enabled. Disable it in Settings to use Sweep.', 'warning'); return; }
+                setShowSweep(true);
+              }}
             />
 
             <div className="space-y-3">
@@ -575,7 +591,10 @@ export default function App() {
                       <WalletCard
                         wallet={w}
                         onShowQR={(data, title, subtitle) => setQrModalData({ isOpen: true, data, title, subtitle })}
-                        onSendFunds={(wallet) => setSendModalWallet(wallet)}
+                        onSendFunds={(wallet) => {
+                          if (offlineMode) { showToast('Offline Mode is enabled. Disable it in Settings to send.', 'warning'); return; }
+                          setSendModalWallet(wallet);
+                        }}
                         onDelete={() => handleDeleteWallet(w)}
                         onRename={(newName) => handleRenameWallet(w, newName)}
                       />
