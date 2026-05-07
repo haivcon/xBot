@@ -78,10 +78,10 @@ export default function WalletCard({ wallet, onShowQR, onSendFunds, onDelete, on
                 try { await onRefresh(wallet); } finally { setRefreshing(false); }
               }}
               disabled={refreshing}
-              className="p-1.5 rounded-full hover:bg-surface-700 text-surface-400 hover:text-brand-400 transition-colors disabled:opacity-50"
+              className="p-2 rounded-lg bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition-colors disabled:opacity-50"
               title="Refresh balance"
             >
-              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
           )}
           {expanded ? <ChevronUp size={20} className="text-surface-500" /> : <ChevronDown size={20} className="text-surface-500" />}

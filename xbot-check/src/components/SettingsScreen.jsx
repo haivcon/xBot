@@ -40,20 +40,6 @@ export default function SettingsScreen({ aesKey, onBack, onWipe, offlineMode, on
         showToast(success ? 'Settings saved successfully!' : 'Failed to save settings.', success ? 'success' : 'error');
     };
 
-    const handleExportDeviceLocked = async () => {
-        setExporting(true);
-        try {
-            const wallets = await loadWallets(aesKey);
-            const currentConfig = await loadApiConfig(aesKey);
-            const success = await exportVaultBackup(wallets, currentConfig, aesKey);
-            if (!success) showToast('Export failed.', 'error');
-            else showToast('Device-locked backup exported', 'success');
-        } catch (e) {
-            showToast('Error exporting backup.', 'error');
-        }
-        setExporting(false);
-    };
-
     // #14: Portable backup with password
     const handleExportPortable = async () => {
         if (!backupPassword || backupPassword.length < 6) {
@@ -231,27 +217,15 @@ export default function SettingsScreen({ aesKey, onBack, onWipe, offlineMode, on
                     </div>
 
                     <div className="space-y-3">
-                        <button
-                            onClick={handleExportDeviceLocked}
-                            disabled={exporting}
-                            className="w-full bg-surface-800 hover:bg-surface-700 text-white border border-surface-700 font-medium py-3 px-4 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                            <Lock size={16} />
-                            {exporting ? 'Exporting...' : 'Device-Locked Backup'}
-                        </button>
-                        <p className="text-xs text-surface-500 text-center">
-                            Encrypted with your device biometric key. Only restorable on this device.
-                        </p>
-
-                        {/* #14: Portable */}
+                        {/* Password Backup (Default & Only Option) */}
                         {!showPasswordInput ? (
                             <button
                                 onClick={() => setShowPasswordInput(true)}
                                 disabled={exporting}
                                 className="w-full bg-surface-800 hover:bg-surface-700 text-white border border-surface-700 font-medium py-3 px-4 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                             >
-                                <Key size={16} />
-                                Portable Backup (Password)
+                                <Lock size={16} />
+                                Export Vault (Requires Password)
                             </button>
                         ) : (
                             <div className="space-y-3 bg-surface-800/50 p-4 rounded-lg border border-surface-700">
