@@ -46,7 +46,16 @@ export const fetchWalletBalances = async (address, config) => {
         // Return total value or process it. OKX API returns totalUsdValue
         // Response format usually has data[0].totalUsdValue
         if (json.code === '0' && json.data && json.data.length > 0) {
-            return json.data[0];
+            const entry = json.data[0];
+            // #7: Parse token details if available
+            const tokenAssets = (entry.tokenAssets || entry.tokens || []).map(t => ({
+                symbol: t.symbol || t.tokenSymbol || '?',
+                balance: t.holdingAmount || t.balance || '0',
+                usdValue: t.tokenPrice ? (parseFloat(t.holdingAmount || 0) * parseFloat(t.tokenPrice)).toFixed(2) : (t.usdValue || ''),
+                logoUrl: t.tokenLogo || t.logoUrl || '',
+                tokenAddress: t.tokenContractAddress || t.tokenAddress || '',
+            }));
+            return { ...entry, tokenAssets };
         } else {
             throw new Error(json.msg || "Failed to fetch balance");
         }

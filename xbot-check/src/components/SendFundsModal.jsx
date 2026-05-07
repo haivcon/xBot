@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { X, Send, AlertTriangle, Loader2 } from 'lucide-react';
 import { ethers } from 'ethers';
+import { reauthenticate } from '../hooks/useReauth';
+import { useToast } from '../contexts/ToastContext';
 
 const NETWORKS = [
   { name: 'X Layer Mainnet', rpc: 'https://rpc.xlayer.tech', chainId: 196, symbol: 'OKB' },
@@ -16,6 +18,7 @@ export default function SendFundsModal({ wallet, onClose, onTxComplete }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [txHash, setTxHash] = useState('');
+  const { showToast } = useToast();
 
   const handleSend = async () => {
     setError('');
@@ -33,6 +36,13 @@ export default function SendFundsModal({ wallet, onClose, onTxComplete }) {
 
     if (!wallet.privateKey) {
       setError("This wallet has no private key available.");
+      return;
+    }
+
+    // #2: Re-authenticate before signing
+    const authed = await reauthenticate('Authenticate to sign transaction');
+    if (!authed) {
+      showToast('Authentication required to send funds', 'warning');
       return;
     }
 

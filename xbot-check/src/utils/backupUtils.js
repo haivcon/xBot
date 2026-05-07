@@ -13,10 +13,12 @@ const decryptBackup = (cipherText, key) => {
     return JSON.parse(decryptedStr);
 };
 
+// Existing: Device-locked backup (uses device AES key)
 export const exportVaultBackup = async (wallets, config, aesKey) => {
     try {
         const backupPayload = {
-            version: 1,
+            version: 2,
+            portable: false,
             timestamp: new Date().toISOString(),
             wallets,
             config
@@ -25,7 +27,6 @@ export const exportVaultBackup = async (wallets, config, aesKey) => {
         const encryptedData = encryptBackup(backupPayload, aesKey);
         const fileName = `xbot_vault_${new Date().getTime()}.xbot`;
 
-        // Write to Cache dir temporarily
         const fileResult = await Filesystem.writeFile({
             path: fileName,
             data: encryptedData,
@@ -33,10 +34,9 @@ export const exportVaultBackup = async (wallets, config, aesKey) => {
             encoding: Encoding.UTF8
         });
 
-        // Share the file natively
         await Share.share({
             title: 'XBOT Vault Backup',
-            text: 'Here is your encrypted XBOT Két sắt backup.',
+            text: 'Here is your encrypted XBOT vault backup.',
             url: fileResult.uri,
             dialogTitle: 'Save Vault Backup'
         });
@@ -48,9 +48,44 @@ export const exportVaultBackup = async (wallets, config, aesKey) => {
     }
 };
 
-export const parseVaultBackupFile = async (base64Data, aesKey) => {
+// #14: Portable backup (uses user-chosen password)
+export const exportPortableBackup = async (wallets, config, userPassword) => {
     try {
-        // Decode base64 to string
+        const backupPayload = {
+            version: 2,
+            portable: true,
+            timestamp: new Date().toISOString(),
+            wallets,
+            config
+        };
+
+        const encryptedData = encryptBackup(backupPayload, userPassword);
+        const fileName = `xbot_portable_${new Date().getTime()}.xbot`;
+
+        const fileResult = await Filesystem.writeFile({
+            path: fileName,
+            data: encryptedData,
+            directory: Directory.Cache,
+            encoding: Encoding.UTF8
+        });
+
+        await Share.share({
+            title: 'XBOT Portable Backup',
+            text: 'Password-protected XBOT vault backup. Can be restored on any device.',
+            url: fileResult.uri,
+            dialogTitle: 'Save Portable Backup'
+        });
+
+        return true;
+    } catch (e) {
+        console.error("Portable backup export failed", e);
+        return false;
+    }
+};
+
+// Parse backup file — auto-detect format
+export const parseVaultBackupFile = async (base64Data, aesKey, userPassword = null) => {
+    try {
         const binString = atob(base64Data);
         const bytes = new Uint8Array(binString.length);
         for (let i = 0; i < binString.length; i++) {
@@ -58,15 +93,30 @@ export const parseVaultBackupFile = async (base64Data, aesKey) => {
         }
         const encryptedText = new TextDecoder().decode(bytes);
 
-        const decrypted = decryptBackup(encryptedText, aesKey);
-        
+        // Try device key first
+        let decrypted = null;
+        try {
+            decrypted = decryptBackup(encryptedText, aesKey);
+        } catch {
+            // Device key failed — may be portable
+        }
+
+        // If device key worked but it's marked portable, or device key failed
+        if (!decrypted && userPassword) {
+            decrypted = decryptBackup(encryptedText, userPassword);
+        }
+
+        if (!decrypted) {
+            throw new Error("Could not decrypt. Try providing a password for portable backups.");
+        }
+
         if (!decrypted.wallets || !Array.isArray(decrypted.wallets)) {
             throw new Error("Invalid backup format");
         }
-        
+
         return decrypted;
     } catch (e) {
         console.error("Backup import failed", e);
-        throw new Error("Failed to decrypt backup. Are you using the correct device / PIN?");
+        throw new Error(e.message || "Failed to decrypt backup. Are you using the correct device / password?");
     }
 };

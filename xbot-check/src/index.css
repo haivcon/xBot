@@ -1,13 +1,21 @@
 @import "tailwindcss";
 
 @theme {
+  --color-surface-950: #0a0c10;
   --color-surface-900: #0f1115;
   --color-surface-800: #161921;
   --color-surface-700: #1f232e;
+  --color-surface-600: #2a2f3d;
+  --color-surface-500: #6b7280;
+  --color-surface-400: #9ca3af;
+  --color-surface-300: #d1d5db;
   --color-surface-200: #a1a1aa;
   --color-surface-100: #f4f4f5;
+  --color-surface-50: #fafafa;
+  --color-brand-300: #7dd3fc;
   --color-brand-400: #38bdf8;
   --color-brand-500: #0ea5e9;
+  --color-brand-600: #0284c7;
   --color-emerald-400: #34d399;
   --color-emerald-500: #10b981;
   --color-amber-400: #fbbf24;
@@ -27,6 +35,50 @@ body {
   border-radius: 1rem;
 }
 
+/* #11: Light Theme Override */
+.theme-light body,
+.theme-light {
+  --color-surface-950: #ffffff;
+  --color-surface-900: #f8fafc;
+  --color-surface-800: #f1f5f9;
+  --color-surface-700: #e2e8f0;
+  --color-surface-600: #cbd5e1;
+  --color-surface-500: #94a3b8;
+  --color-surface-400: #64748b;
+  --color-surface-300: #475569;
+  --color-surface-200: #334155;
+  --color-surface-100: #1e293b;
+  --color-surface-50: #0f172a;
+}
+
+.theme-light body {
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+.theme-light .glass-card {
+  background-color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* #12: Toast slide-down animation */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.25s ease-out;
+}
+
+/* Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -39,4 +91,12 @@ body {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
