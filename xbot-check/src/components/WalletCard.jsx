@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Wallet, Key, Check, Copy, Eye, EyeOff, ChevronDown, ChevronUp, QrCode, Send, Pencil, Trash2 } from 'lucide-react';
+import { Wallet, Key, Check, Copy, Eye, EyeOff, ChevronDown, ChevronUp, QrCode, Send, Pencil, Trash2, RefreshCw } from 'lucide-react';
 
 const AUTO_HIDE_MS = 30000; // 30 seconds
 
-export default function WalletCard({ wallet, onShowQR, onSendFunds, onDelete, onRename }) {
+export default function WalletCard({ wallet, onShowQR, onSendFunds, onDelete, onRename, onRefresh }) {
   const [expanded, setExpanded] = useState(false);
   const [showPk, setShowPk] = useState(false);
   const [showSeed, setShowSeed] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(wallet.name || '');
+  const [refreshing, setRefreshing] = useState(false);
 
   // #1: Auto-hide PK after 30s
   useEffect(() => {
@@ -64,11 +65,25 @@ export default function WalletCard({ wallet, onShowQR, onSendFunds, onDelete, on
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="text-right">
             <p className="text-white font-semibold">${wallet.balance || '0.00'}</p>
             <p className="text-xs text-surface-400">Balance</p>
           </div>
+          {onRefresh && (
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                setRefreshing(true);
+                try { await onRefresh(wallet); } finally { setRefreshing(false); }
+              }}
+              disabled={refreshing}
+              className="p-1.5 rounded-full hover:bg-surface-700 text-surface-400 hover:text-brand-400 transition-colors disabled:opacity-50"
+              title="Refresh balance"
+            >
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            </button>
+          )}
           {expanded ? <ChevronUp size={20} className="text-surface-500" /> : <ChevronDown size={20} className="text-surface-500" />}
         </div>
       </div>

@@ -23,7 +23,7 @@ import CreateWalletModal from './components/CreateWalletModal';
 // Utils & Hooks
 import { saveWallets, loadWallets, loadApiConfig, saveApiConfig, getEncryptionKey, saveTxRecord } from './utils/storage';
 import { exportVaultBackup, parseVaultBackupFile } from './utils/backupUtils';
-import { fetchBatchBalances } from './utils/okxApi';
+import { fetchBatchBalances, fetchWalletBalances } from './utils/okxApi';
 import useAutoLock from './hooks/useAutoLock';
 import usePullToRefresh from './hooks/usePullToRefresh';
 import { useToast } from './contexts/ToastContext';
@@ -289,6 +289,41 @@ export default function App() {
     }
     setRefreshing(false);
     setSyncProgress(null);
+  };
+
+  // Per-wallet refresh
+  const handleRefreshSingleWallet = async (wallet) => {
+    if (offlineMode) {
+      showToast('Offline Mode is enabled. Disable it in Settings.', 'warning');
+      return;
+    }
+    const config = await loadApiConfig(aesKey);
+    if (!config.apiKey || !config.secretKey) {
+      showToast('Set your OKX API Key in Settings first.', 'warning');
+      return;
+    }
+    if (!wallet.address) return;
+
+    try {
+      const data = await fetchWalletBalances(wallet.address, config);
+      if (data) {
+        const updated = wallets.map(w => {
+          if (w.address?.toLowerCase() === wallet.address.toLowerCase()) {
+            return {
+              ...w,
+              balance: data.totalUsdValue,
+              tokenAssets: data.tokenAssets?.length > 0 ? data.tokenAssets : w.tokenAssets
+            };
+          }
+          return w;
+        });
+        setWallets(updated);
+        await saveWallets(updated, aesKey);
+        showToast(`Updated balance for ${wallet.name || wallet.address.substring(0, 10)}`, 'success');
+      }
+    } catch (e) {
+      showToast('Failed to refresh: ' + e.message, 'error');
+    }
   };
 
   // ─── Wallet Operations ───
@@ -597,6 +632,7 @@ export default function App() {
                         }}
                         onDelete={() => handleDeleteWallet(w)}
                         onRename={(newName) => handleRenameWallet(w, newName)}
+                        onRefresh={handleRefreshSingleWallet}
                       />
                     </div>
                   </div>
