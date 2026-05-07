@@ -41,6 +41,9 @@ export const exportVaultBackup = async (wallets, config, aesKey) => {
             dialogTitle: 'Save Vault Backup'
         });
 
+        // Clean up cache after share
+        try { await Filesystem.deleteFile({ path: fileName, directory: Directory.Cache }); } catch {}
+
         return true;
     } catch (e) {
         console.error("Backup export failed", e);
@@ -76,6 +79,9 @@ export const exportPortableBackup = async (wallets, config, userPassword) => {
             dialogTitle: 'Save Portable Backup'
         });
 
+        // Clean up cache after share
+        try { await Filesystem.deleteFile({ path: fileName, directory: Directory.Cache }); } catch {}
+
         return true;
     } catch (e) {
         console.error("Portable backup export failed", e);
@@ -86,12 +92,19 @@ export const exportPortableBackup = async (wallets, config, userPassword) => {
 // Parse backup file — auto-detect format
 export const parseVaultBackupFile = async (base64Data, aesKey, userPassword = null) => {
     try {
-        const binString = atob(base64Data);
-        const bytes = new Uint8Array(binString.length);
-        for (let i = 0; i < binString.length; i++) {
-            bytes[i] = binString.charCodeAt(i);
+        // Try base64 decode first, fallback to raw text (some Capacitor versions return raw data)
+        let encryptedText;
+        try {
+            const binString = atob(base64Data);
+            const bytes = new Uint8Array(binString.length);
+            for (let i = 0; i < binString.length; i++) {
+                bytes[i] = binString.charCodeAt(i);
+            }
+            encryptedText = new TextDecoder().decode(bytes);
+        } catch {
+            // base64 decode failed — treat file.data as raw text
+            encryptedText = base64Data;
         }
-        const encryptedText = new TextDecoder().decode(bytes);
 
         // Try device key first
         let decrypted = null;

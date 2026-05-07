@@ -103,7 +103,7 @@ export default function App() {
   const handleFileUpload = async () => {
     try {
       const result = await FilePicker.pickFiles({
-        types: ['text/csv', 'text/comma-separated-values', 'application/csv', '.csv', 'application/octet-stream'],
+        types: ['text/csv', 'text/comma-separated-values', 'application/csv', '.csv', 'application/octet-stream', '.xbot', '*/*'],
         multiple: false,
         readData: true
       });

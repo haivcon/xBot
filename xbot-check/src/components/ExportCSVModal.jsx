@@ -7,6 +7,7 @@ const COLUMNS = [
   { key: 'name', label: 'Name', default: true },
   { key: 'address', label: 'Address', default: true },
   { key: 'balance', label: 'Balance', default: true },
+  { key: 'groupId', label: 'Folder', default: true },
   { key: 'privateKey', label: 'Private Key', default: false, sensitive: true },
   { key: 'seedPhrase', label: 'Seed Phrase', default: false, sensitive: true },
 ];
@@ -35,8 +36,8 @@ export default function ExportCSVModal({ wallets, onClose }) {
     const header = cols.map(c => c.label).join(',');
     const rows = wallets.map(w =>
       cols.map(c => {
-        const val = w[c.key] || '';
-        return `"${String(val).replace(/"/g, '""')}"`;
+        const val = String(w[c.key] || '').replace(/\r?\n/g, ' ').replace(/"/g, '""');
+        return `"${val}"`;
       }).join(',')
     );
     return [header, ...rows].join('\n');
@@ -69,6 +70,8 @@ export default function ExportCSVModal({ wallets, onClose }) {
         url: result.uri,
         dialogTitle: 'Save CSV Export'
       });
+      // Clean up cache
+      try { await Filesystem.deleteFile({ path: fileName, directory: Directory.Cache }); } catch {}
       showToast('CSV exported successfully', 'success');
     } catch (e) {
       // Fallback: copy to clipboard
