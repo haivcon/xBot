@@ -59,6 +59,30 @@ Once Android Studio opens:
 4. **Batch Sweep**: Enable "Select Mode", tick multiple wallets, and click the `Sweep` button to consolidate funds to a single address.
 5. **Backup Vault**: Go to `Settings > Backup Vault` to export an encrypted `.xbot` file.
 
+### 🔑 OKX API Setup (Optional — for Live Sync & DeFi)
+
+The app works fully **offline** by default. If you want **live on-chain balance sync**, you'll need a free OKX OnchainOS API key:
+
+1. Visit the **[OKX OnchainOS Dev Portal](https://web3.okx.com/vi/onchainos/dev-portal/project)**
+2. Sign in with your OKX account (create one for free if needed)
+3. Click **"Create Project"** → enter any project name (e.g., "XBOT Vault")
+4. Go to your project → **"API Keys"** tab → **"Create API Key"**
+5. Set a **Passphrase** (you'll need this later)
+6. Copy the three values: **API Key**, **Secret Key**, **Passphrase**
+7. In the app, go to **Settings** → paste all three values → **Save**
+
+> **Note**: The API key is only used for read-only balance queries. It does NOT have access to trade, withdraw, or move your funds.
+
+### ✈️ Offline Mode
+
+XBOT Check is designed as an **offline-first** application. You can enable **Offline Mode** in Settings to completely disable all network features:
+
+- ✅ **Works offline**: Import CSV, manage wallets, view data, create wallets, backup/restore
+- ✅ **Works offline**: Sign transactions (they will be broadcast only when you go online)
+- ❌ **Requires internet**: Live Sync (balance refresh), Send/Sweep transactions
+- When Offline Mode is enabled, the header shows a **yellow "Offline" badge** instead of the "Live Sync" button
+- Your offline preference is **persisted** across app restarts
+
 ### 🛠️ Tech Stack
 - **Frontend**: React 19, TailwindCSS v4, Lucide Icons
 - **Web3**: ethers.js v6

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Key, Trash2, ShieldAlert, Sun, Moon, Download, Lock } from 'lucide-react';
+import { ArrowLeft, Key, Trash2, ShieldAlert, Sun, Moon, Download, Lock, Wifi, WifiOff, ExternalLink } from 'lucide-react';
 import { loadApiConfig, saveApiConfig, wipeAllData, loadWallets } from '../utils/storage';
 import { exportVaultBackup, exportPortableBackup } from '../utils/backupUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 
-export default function SettingsScreen({ aesKey, onBack, onWipe }) {
+export default function SettingsScreen({ aesKey, onBack, onWipe, offlineMode, onToggleOffline }) {
     const [config, setConfig] = useState({ apiKey: '', secretKey: '', passphrase: '' });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -122,9 +122,26 @@ export default function SettingsScreen({ aesKey, onBack, onWipe }) {
                     </button>
                 </div>
 
+                {/* Offline Mode Toggle */}
+                <div className="glass-card p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        {offlineMode ? <WifiOff size={20} className="text-yellow-400" /> : <Wifi size={20} className="text-green-400" />}
+                        <div>
+                            <p className="text-white font-medium text-sm">Offline Mode</p>
+                            <p className="text-xs text-surface-400">{offlineMode ? 'All network features disabled' : 'Online — API features available'}</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onToggleOffline}
+                        className={`relative w-12 h-6 rounded-full transition-colors ${offlineMode ? 'bg-yellow-500' : 'bg-surface-700'}`}
+                    >
+                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${offlineMode ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                    </button>
+                </div>
+
                 {/* OKX API Key */}
-                <div className="glass-card p-6">
-                    <div className="flex items-center gap-3 mb-6">
+                <div className={`glass-card p-6 ${offlineMode ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-full bg-brand-500/10 flex items-center justify-center">
                             <Key size={20} className="text-brand-400" />
                         </div>
@@ -133,6 +150,34 @@ export default function SettingsScreen({ aesKey, onBack, onWipe }) {
                             <p className="text-xs text-surface-400">Required for DeFi (swap, live balance, gas)</p>
                         </div>
                     </div>
+
+                    {/* Registration guide */}
+                    <div className="bg-brand-500/10 border border-brand-500/20 rounded-lg p-4 mb-4">
+                        <p className="text-sm text-brand-300 font-medium mb-2">📋 How to get your API Key</p>
+                        <ol className="text-xs text-surface-300 space-y-1.5 list-decimal list-inside leading-relaxed">
+                            <li>Open the OKX Dev Portal and sign in with your OKX account</li>
+                            <li>Click <strong>"Create Project"</strong> → enter any project name</li>
+                            <li>After creation, go to your project → <strong>"API Keys"</strong> tab</li>
+                            <li>Click <strong>"Create API Key"</strong>, set a passphrase</li>
+                            <li>Copy <strong>API Key</strong>, <strong>Secret Key</strong> and <strong>Passphrase</strong> below</li>
+                        </ol>
+                        <a
+                            href="https://web3.okx.com/vi/onchainos/dev-portal/project"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 flex items-center gap-1.5 text-brand-400 hover:text-brand-300 text-xs font-medium transition-colors"
+                        >
+                            <ExternalLink size={14} />
+                            Open OKX OnchainOS Dev Portal →
+                        </a>
+                    </div>
+
+                    {offlineMode && (
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4 text-xs text-yellow-400 flex items-center gap-2">
+                            <WifiOff size={14} />
+                            API is disabled in Offline Mode. Toggle it off above to use online features.
+                        </div>
+                    )}
 
                     <div className="space-y-4">
                         <div>

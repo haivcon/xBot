@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Preferences } from '@capacitor/preferences';
 import Papa from 'papaparse';
 import {
-  UploadCloud, ShieldAlert, BarChart3, Clock, Settings, RefreshCw, FileDown, Plus, CheckSquare, Square
+  UploadCloud, ShieldAlert, BarChart3, Clock, Settings, RefreshCw, FileDown, Plus, CheckSquare, Square, WifiOff
 } from 'lucide-react';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 
@@ -44,6 +45,7 @@ export default function App() {
   const [activeFolder, setActiveFolder] = useState('All');
   const [sortOrder, setSortOrder] = useState('none');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [offlineMode, setOfflineMode] = useState(false);
 
   // Modals
   const [qrModalData, setQrModalData] = useState({ isOpen: false, data: '', title: '', subtitle: '' });
@@ -88,6 +90,13 @@ export default function App() {
       }
     };
     authenticate();
+  }, []);
+
+  // Load offline mode preference
+  useEffect(() => {
+    Preferences.get({ key: 'xbot_offline_mode' }).then(({ value }) => {
+      if (value === 'true') setOfflineMode(true);
+    }).catch(() => {});
   }, []);
 
   // ─── File Upload (CSV / .xbot) ───
@@ -190,6 +199,10 @@ export default function App() {
 
   // ─── Live Balance Sync ───
   const refreshLiveBalances = async () => {
+    if (offlineMode) {
+      showToast('Offline Mode is enabled. Disable it in Settings to use Live Sync.', 'warning');
+      return;
+    }
     const config = await loadApiConfig(aesKey);
     if (!config.apiKey || !config.secretKey) {
       showToast('Please set your complete OKX API Key in Settings first.', 'warning');
@@ -339,7 +352,19 @@ export default function App() {
   }
 
   if (currentView === 'settings') {
-    return <SettingsScreen aesKey={aesKey} onBack={() => setCurrentView('home')} onWipe={handleWipe} />;
+    return (
+      <SettingsScreen
+        aesKey={aesKey}
+        onBack={() => setCurrentView('home')}
+        onWipe={handleWipe}
+        offlineMode={offlineMode}
+        onToggleOffline={() => {
+          const next = !offlineMode;
+          setOfflineMode(next);
+          Preferences.set({ key: 'xbot_offline_mode', value: String(next) }).catch(() => {});
+        }}
+      />
+    );
   }
   if (currentView === 'dashboard') {
     return <DashboardView wallets={wallets} onBack={() => setCurrentView('home')} />;
@@ -426,14 +451,21 @@ export default function App() {
                 ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
               </h2>
             </div>
-            <button
-              onClick={refreshLiveBalances}
-              disabled={refreshing}
-              className="flex items-center gap-2 text-xs font-medium text-brand-400 bg-brand-500/10 px-3 py-2 rounded-lg hover:bg-brand-500/20 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-              {refreshing ? 'Syncing...' : 'Live Sync'}
-            </button>
+            {offlineMode ? (
+              <div className="flex items-center gap-2 text-xs font-medium text-yellow-400 bg-yellow-500/10 px-3 py-2 rounded-lg">
+                <WifiOff size={14} />
+                Offline
+              </div>
+            ) : (
+              <button
+                onClick={refreshLiveBalances}
+                disabled={refreshing}
+                className="flex items-center gap-2 text-xs font-medium text-brand-400 bg-brand-500/10 px-3 py-2 rounded-lg hover:bg-brand-500/20 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+                {refreshing ? 'Syncing...' : 'Live Sync'}
+              </button>
+            )}
           </div>
         )}
       </header>
