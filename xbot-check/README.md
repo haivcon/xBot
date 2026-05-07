@@ -11,7 +11,19 @@
 
 **XBOT Check** is a secure, offline-first Web3 wallet management application built with React, Vite, and Capacitor. It is designed to act as a highly secure Cold Vault for your crypto assets, featuring biometric authentication, AES-256 encryption, and native transaction signing capabilities.
 
-### ✨ Key Features
+### 🚀 What's New in v2.1.0 (Current Update)
+- **Major API Overhaul**: Migrated to official OKX OnchainOS endpoints (`/api/v5/wallet/asset/all-token-balances-by-address`).
+- **N+1 API Optimization**: Implemented batch processing (10 wallets per request) with address deduplication, reducing network overhead by 90%.
+- **Resilience Engineering**: Added exponential backoff retry logic (1s, 2s, 4s) to automatically handle HTTP 429 Too Many Requests errors.
+- **Offline Safety Guards**: Transactions, Send, and Sweep modals are now strictly guarded against opening when Offline Mode is active.
+- **Password-Protected Vaults**: Deprecated 'Device-Locked Backups' to prevent catastrophic data loss on app wipe. 'Portable Password Backups' are now the enforced standard.
+- **Enhanced UI**: Added per-wallet live refresh buttons and numerical batch sync progress indicators.
+- **Data Integrity**: Exported CSVs now retain folder structures and automatically sanitize corrupted newlines.
+
+<details>
+<summary><b>📦 Previous Core Features (v2.0.0)</b></summary>
+<br>
+
 - **🔒 Ultimate Security**: All private keys and seed phrases are heavily encrypted locally using AES-256-CBC.
 - **👁️ Biometric Auth**: Access is protected by native Android Biometrics (FaceID / Fingerprint) — no manual PIN codes required.
 - **📁 Smart Organization**: Import wallets via CSV and automatically organize them into folders.
@@ -19,7 +31,8 @@
 - **✍️ Offline Signer**: Construct, estimate gas, and sign transactions entirely on your device before broadcasting.
 - **📊 Interactive Dashboard**: Monitor your vault's total valuation, asset distribution across folders, and live on-chain balances.
 - **📜 Encrypted History**: All your sends and batch sweeps are securely logged locally for auditing.
-- **💾 Vault Backups**: Export your entire vault (wallets, folders, settings) as a highly encrypted `.xbot` file for safe storage on Google Drive or cold storage.
+
+</details>
 
 ### 🚀 Installation & Setup Guide
 
