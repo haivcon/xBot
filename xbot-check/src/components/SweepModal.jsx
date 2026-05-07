@@ -86,8 +86,8 @@ export default function SweepModal({ selectedWallets, onClose, onTxComplete }) {
             continue;
           }
 
-          const tx = await contract.transfer(toAddress, balance);
           const decimals = await contract.decimals().catch(() => 18);
+          const tx = await contract.transfer(toAddress, balance);
 
           txResults.push({
             address: w.address, status: 'success', hash: tx.hash,

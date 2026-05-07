@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { List } from 'react-window';
 import Papa from 'papaparse';
 import {
   UploadCloud, ShieldAlert, BarChart3, Clock, Settings, RefreshCw, FileDown, Plus, CheckSquare, Square
@@ -59,8 +58,10 @@ export default function App() {
   const [editingFolder, setEditingFolder] = useState(null);
   const [editFolderName, setEditFolderName] = useState('');
 
-  // Import password prompt for portable backups
-  const [importPasswordPrompt, setImportPasswordPrompt] = useState(null);
+  // #14: Password prompt for portable backup import
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [pendingBackupData, setPendingBackupData] = useState(null);
+  const [importPassword, setImportPassword] = useState('');
 
   const { showToast } = useToast();
   const confirm = useConfirm();
@@ -109,10 +110,11 @@ export default function App() {
             try {
               backup = await parseVaultBackupFile(file.data, aesKey);
             } catch {
-              // Device key failed — ask for password (#14)
-              const password = prompt("This appears to be a portable backup. Enter your password:");
-              if (!password) { setLoading(false); return; }
-              backup = await parseVaultBackupFile(file.data, aesKey, password);
+              // Device key failed — show password prompt (#14)
+              setPendingBackupData(file.data);
+              setShowPasswordPrompt(true);
+              setLoading(false);
+              return;
             }
 
             const newWallets = [...wallets, ...backup.wallets];
@@ -304,6 +306,26 @@ export default function App() {
   // #8: Pull-to-refresh
   const { handlers: pullHandlers } = usePullToRefresh(refreshLiveBalances);
 
+  // #14: Handle portable backup password submission
+  const handleImportWithPassword = async () => {
+    if (!importPassword || !pendingBackupData) return;
+    try {
+      const backup = await parseVaultBackupFile(pendingBackupData, aesKey, importPassword);
+      const newWallets = [...wallets, ...backup.wallets];
+      setWallets(newWallets);
+      await saveWallets(newWallets, aesKey);
+      if (backup.config && backup.config.apiKey) {
+        await saveApiConfig(backup.config, aesKey);
+      }
+      showToast(`Backup imported: ${backup.wallets.length} wallets`, 'success');
+    } catch (err) {
+      showToast(err.message || 'Wrong password or corrupted file', 'error');
+    }
+    setShowPasswordPrompt(false);
+    setPendingBackupData(null);
+    setImportPassword('');
+  };
+
   // ─── View Router ───
   if (authError) return <AuthErrorScreen error={authError} />;
 
@@ -355,31 +377,7 @@ export default function App() {
     return acc + (isNaN(val) ? 0 : val);
   }, 0);
 
-  // #9: Row renderer for react-window
-  const ROW_HEIGHT = 80;
-  const Row = ({ index, style }) => {
-    const w = filteredWallets[index];
-    return (
-      <div style={style} className="px-0 pb-3">
-        <div className="flex items-start gap-2">
-          {selectMode && (
-            <button onClick={() => toggleSelect(w.address)} className="mt-5 flex-shrink-0">
-              {selectedAddrs.has(w.address) ? <CheckSquare size={20} className="text-yellow-400" /> : <Square size={20} className="text-surface-500" />}
-            </button>
-          )}
-          <div className="flex-1">
-            <WalletCard
-              wallet={w}
-              onShowQR={(data, title, subtitle) => setQrModalData({ isOpen: true, data, title, subtitle })}
-              onSendFunds={(wallet) => setSendModalWallet(wallet)}
-              onDelete={() => handleDeleteWallet(w)}
-              onRename={(newName) => handleRenameWallet(w, newName)}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  };
+
 
   return (
     <div className="min-h-screen bg-surface-950 text-surface-50 font-sans selection:bg-brand-500/30">
@@ -489,22 +487,11 @@ export default function App() {
               selectedCount={selectedAddrs.size} onSweep={() => setShowSweep(true)}
             />
 
-            {/* #9: Virtualized List for 100+ wallets, normal list otherwise */}
             <div className="space-y-3">
               {filteredWallets.length === 0 ? (
                 <div className="text-center py-10 text-surface-500">
                   No wallets found matching your criteria.
                 </div>
-              ) : filteredWallets.length > 100 ? (
-                <List
-                  height={600}
-                  itemCount={filteredWallets.length}
-                  itemSize={() => ROW_HEIGHT}
-                  width="100%"
-                  className="custom-scrollbar"
-                >
-                  {Row}
-                </List>
               ) : (
                 filteredWallets.map((w, i) => (
                   <div key={w.address || i} className="flex items-start gap-2">
@@ -565,6 +552,30 @@ export default function App() {
           onSave={handleSaveNewWallet}
           onShowQR={(data, title, subtitle) => setQrModalData({ isOpen: true, data, title, subtitle })}
         />
+      )}
+
+      {/* #14: Password prompt for portable backup import */}
+      {showPasswordPrompt && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-surface-900 border border-surface-700 w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h3 className="text-white font-bold mb-2">Portable Backup Detected</h3>
+            <p className="text-surface-400 text-sm mb-4">This backup was encrypted with a password. Enter it to restore.</p>
+            <input
+              type="password" autoFocus
+              value={importPassword}
+              onChange={(e) => setImportPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleImportWithPassword()}
+              placeholder="Backup password"
+              className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 text-sm text-white mb-4 focus:outline-none focus:border-brand-500 placeholder:text-surface-600"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => { setShowPasswordPrompt(false); setPendingBackupData(null); setImportPassword(''); }}
+                className="flex-1 bg-surface-800 hover:bg-surface-700 text-surface-300 py-2.5 rounded-lg font-medium transition-colors">Cancel</button>
+              <button onClick={handleImportWithPassword}
+                className="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-lg font-medium transition-colors">Decrypt</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -8,15 +8,17 @@ const AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
  */
 export default function useAutoLock(onLock, enabled = true) {
   const timerRef = useRef(null);
+  const onLockRef = useRef(onLock);
+  onLockRef.current = onLock;
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (enabled) {
       timerRef.current = setTimeout(() => {
-        onLock();
+        onLockRef.current();
       }, AUTO_LOCK_MS);
     }
-  }, [onLock, enabled]);
+  }, [enabled]);
 
   useEffect(() => {
     if (!enabled) return;
