@@ -18,7 +18,7 @@ export default function SettingsScreen({ aesKey, onBack, onWipe, offlineMode, on
 
     const { theme, toggleTheme } = useTheme();
     const { showToast } = useToast();
-    const confirm = useConfirm();
+    const showConfirm = useConfirm();
 
     useEffect(() => {
         const fetchApiConfig = async () => {
@@ -83,7 +83,7 @@ export default function SettingsScreen({ aesKey, onBack, onWipe, offlineMode, on
     };
 
     const handleWipe = async () => {
-        const ok = await confirm("WARNING: This will delete all encrypted wallets and API keys from this device. You will lose access to this vault. Are you sure?", { danger: true });
+        const ok = await showConfirm("WARNING: This will delete all encrypted wallets and API keys from this device. You will lose access to this vault. Are you sure?", { danger: true });
         if (!ok) return;
         await wipeAllData();
         onWipe();
@@ -97,7 +97,7 @@ export default function SettingsScreen({ aesKey, onBack, onWipe, offlineMode, on
                 <button onClick={onBack} className="p-2 rounded-full hover:bg-surface-800 transition-colors">
                     <ArrowLeft size={24} className="text-surface-300" />
                 </button>
-                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-surface-400">
+                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-surface-400 pr-1">
                     Vault Settings
                 </h1>
                 <div className="w-10"></div>

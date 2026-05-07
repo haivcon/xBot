@@ -66,7 +66,7 @@ export default function App() {
   const [importPassword, setImportPassword] = useState('');
 
   const { showToast } = useToast();
-  const confirm = useConfirm();
+  const showConfirm = useConfirm();
 
   // #3: Auto-lock after 5min idle
   useAutoLock(() => {
@@ -126,7 +126,18 @@ export default function App() {
               return;
             }
 
-            const newWallets = [...wallets, ...backup.wallets];
+            // Filter duplicates from backup
+            const existingAddrs = new Set(wallets.map(w => w.address?.toLowerCase()).filter(Boolean));
+            const uniqueBackup = backup.wallets.filter(w => {
+              if (!w.address) return true;
+              const lower = w.address.toLowerCase();
+              if (existingAddrs.has(lower)) return false;
+              existingAddrs.add(lower);
+              return true;
+            });
+            const skipped = backup.wallets.length - uniqueBackup.length;
+
+            const newWallets = [...wallets, ...uniqueBackup];
             setWallets(newWallets);
             await saveWallets(newWallets, aesKey);
 
@@ -134,7 +145,9 @@ export default function App() {
               await saveApiConfig(backup.config, aesKey);
             }
 
-            showToast(`Backup imported: ${backup.wallets.length} wallets`, 'success');
+            let msg = `Backup imported: ${uniqueBackup.length} wallets`;
+            if (skipped > 0) msg += ` (${skipped} duplicates skipped)`;
+            showToast(msg, 'success');
             setLoading(false);
             return;
           } catch (err) {
@@ -179,10 +192,23 @@ export default function App() {
               return normalizedRow;
             });
 
-            const newWallets = [...wallets, ...normalizedData];
+            // Filter duplicates: skip wallets whose address already exists in vault
+            const existingAddrs = new Set(wallets.map(w => w.address?.toLowerCase()).filter(Boolean));
+            const uniqueNew = normalizedData.filter(w => {
+              if (!w.address) return true; // keep entries without address
+              const lower = w.address.toLowerCase();
+              if (existingAddrs.has(lower)) return false;
+              existingAddrs.add(lower); // also dedup within the import batch
+              return true;
+            });
+            const skippedCount = normalizedData.length - uniqueNew.length;
+
+            const newWallets = [...wallets, ...uniqueNew];
             setWallets(newWallets);
             await saveWallets(newWallets, aesKey);
-            showToast(`Imported ${normalizedData.length} wallets from ${folderName}`, 'success');
+            let msg = `Imported ${uniqueNew.length} wallets from ${folderName}`;
+            if (skippedCount > 0) msg += ` (${skippedCount} duplicates skipped)`;
+            showToast(msg, 'success');
             setLoading(false);
           },
           error: (err) => {
@@ -264,7 +290,7 @@ export default function App() {
   };
 
   const handleDeleteWallet = async (walletToDelete) => {
-    const ok = await confirm(`Delete wallet "${walletToDelete.name || walletToDelete.address?.substring(0, 10)}"?`);
+    const ok = await showConfirm(`Delete wallet "${walletToDelete.name || walletToDelete.address?.substring(0, 10)}"?`);
     if (!ok) return;
     const updated = wallets.filter(w => w.address !== walletToDelete.address);
     setWallets(updated);
@@ -273,7 +299,7 @@ export default function App() {
   };
 
   const handleDeleteFolder = async (folderName) => {
-    const ok = await confirm(`Delete all wallets in folder "${folderName}"?`, { danger: true });
+    const ok = await showConfirm(`Delete all wallets in folder "${folderName}"?`, { danger: true });
     if (!ok) return;
     const updated = wallets.filter(w => (w.groupId || 'Imported') !== folderName);
     setWallets(updated);
@@ -324,13 +350,26 @@ export default function App() {
     if (!importPassword || !pendingBackupData) return;
     try {
       const backup = await parseVaultBackupFile(pendingBackupData, aesKey, importPassword);
-      const newWallets = [...wallets, ...backup.wallets];
+      // Dedup
+      const existingAddrs = new Set(wallets.map(w => w.address?.toLowerCase()).filter(Boolean));
+      const uniqueBackup = backup.wallets.filter(w => {
+        if (!w.address) return true;
+        const lower = w.address.toLowerCase();
+        if (existingAddrs.has(lower)) return false;
+        existingAddrs.add(lower);
+        return true;
+      });
+      const skipped = backup.wallets.length - uniqueBackup.length;
+
+      const newWallets = [...wallets, ...uniqueBackup];
       setWallets(newWallets);
       await saveWallets(newWallets, aesKey);
       if (backup.config && backup.config.apiKey) {
         await saveApiConfig(backup.config, aesKey);
       }
-      showToast(`Backup imported: ${backup.wallets.length} wallets`, 'success');
+      let msg = `Backup imported: ${uniqueBackup.length} wallets`;
+      if (skipped > 0) msg += ` (${skipped} duplicates skipped)`;
+      showToast(msg, 'success');
     } catch (err) {
       showToast(err.message || 'Wrong password or corrupted file', 'error');
     }
@@ -414,8 +453,8 @@ export default function App() {
             <div className="w-8 h-8 bg-brand-500 rounded flex items-center justify-center">
               <ShieldAlert size={18} className="text-white" />
             </div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-surface-400">
-              Vault
+            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-surface-400 pr-1">
+              XBOT Vault
             </h1>
           </div>
           <div className="flex items-center gap-1">
