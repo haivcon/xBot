@@ -6,17 +6,23 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ConfirmProvider } from './contexts/ConfirmContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { MasterPasswordProvider } from './contexts/MasterPasswordContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <LanguageProvider>
-      <ThemeProvider>
-        <ToastProvider>
-          <ConfirmProvider>
-            <App />
-          </ConfirmProvider>
-        </ToastProvider>
-      </ThemeProvider>
-    </LanguageProvider>
+    <ErrorBoundary>
+      <LanguageProvider>
+        <ThemeProvider>
+          <MasterPasswordProvider>
+            <ToastProvider>
+              <ConfirmProvider>
+                <App />
+              </ConfirmProvider>
+            </ToastProvider>
+          </MasterPasswordProvider>
+        </ThemeProvider>
+      </LanguageProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

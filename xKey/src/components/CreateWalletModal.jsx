@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { X, Plus, Copy, Check, QrCode, Wallet, RefreshCw, Keyboard, AlertTriangle, Info } from 'lucide-react';
+import { X, Plus, Copy, Check, QrCode, Wallet, RefreshCw, Keyboard, AlertTriangle, Info, Camera } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useToast } from '../contexts/ToastContext';
 import { useT } from '../contexts/LanguageContext';
+import QRScannerModal from './QRScannerModal';
+
+const NETWORKS = ['ETH', 'BSC', 'Polygon', 'Arbitrum', 'Optimism', 'Solana', 'Tron', 'Base'];
 
 export default function CreateWalletModal({ onClose, onSave, onShowQR, existingWallets = [] }) {
   const [tab, setTab] = useState('manual');
@@ -17,7 +20,9 @@ export default function CreateWalletModal({ onClose, onSave, onShowQR, existingW
   const [manualSeed, setManualSeed] = useState('');
   const [manualBalance, setManualBalance] = useState('');
   const [manualNotes, setManualNotes] = useState('');
+  const [manualNetwork, setManualNetwork] = useState('ETH');
   const [duplicateWarning, setDuplicateWarning] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
 
   const generateWallet = () => {
     const w = ethers.Wallet.createRandom();
@@ -38,7 +43,7 @@ export default function CreateWalletModal({ onClose, onSave, onShowQR, existingW
 
   const handleSaveGenerated = () => {
     if (!wallet) return;
-    onSave({ name: walletName || 'New Wallet', address: wallet.address, privateKey: wallet.privateKey, seedPhrase: wallet.mnemonic, balance: '0.00', createdAt: Date.now() });
+    onSave({ name: walletName || 'New Wallet', address: wallet.address, privateKey: wallet.privateKey, seedPhrase: wallet.mnemonic, balance: '0.00', network: 'ETH', createdAt: Date.now() });
     showToast(t('createWallet.walletCreated'), 'success');
     onClose();
   };
@@ -48,7 +53,7 @@ export default function CreateWalletModal({ onClose, onSave, onShowQR, existingW
       showToast(t('createWallet.fillRequired'), 'warning');
       return;
     }
-    onSave({ name: walletName || 'Manual Wallet', address: manualAddress.trim(), privateKey: manualPK.trim(), seedPhrase: manualSeed.trim(), balance: manualBalance.trim() || '0.00', notes: manualNotes.trim(), createdAt: Date.now() });
+    onSave({ name: walletName || 'Manual Wallet', address: manualAddress.trim(), privateKey: manualPK.trim(), seedPhrase: manualSeed.trim(), balance: manualBalance.trim() || '0.00', notes: manualNotes.trim(), network: manualNetwork, createdAt: Date.now() });
     showToast(duplicateWarning ? t('createWallet.walletAddedDuplicate') : t('createWallet.walletAdded'), 'success');
     onClose();
   };
@@ -87,12 +92,25 @@ export default function CreateWalletModal({ onClose, onSave, onShowQR, existingW
 
               <div>
                 <label className="block text-xs font-medium text-surface-400 mb-1">{t('createWallet.address')} <span className="text-surface-600">{t('createWallet.addressRequired')}</span></label>
-                <input type="text" value={manualAddress} onChange={(e) => { setManualAddress(e.target.value); checkDuplicate(e.target.value); }} placeholder="0x..."
-                  className={`w-full bg-surface-800 border rounded-lg px-4 py-3 text-sm text-white font-mono focus:outline-none placeholder:text-surface-600 ${duplicateWarning ? 'border-yellow-500/50 focus:border-yellow-500' : 'border-surface-700 focus:border-brand-500'}`} />
+                <div className="flex gap-2">
+                  <input type="text" value={manualAddress} onChange={(e) => { setManualAddress(e.target.value); checkDuplicate(e.target.value); }} placeholder="0x..."
+                    className={`flex-1 bg-surface-800 border rounded-lg px-4 py-3 text-sm text-white font-mono focus:outline-none placeholder:text-surface-600 ${duplicateWarning ? 'border-yellow-500/50 focus:border-yellow-500' : 'border-surface-700 focus:border-brand-500'}`} />
+                  <button onClick={() => setShowQRScanner(true)} className="btn-glow flex-shrink-0 bg-surface-800 border border-surface-700 hover:bg-surface-700 text-brand-400 px-3 rounded-lg transition-colors" title={t('createWallet.scanQR')}>
+                    <Camera size={18} />
+                  </button>
+                </div>
                 {duplicateWarning && (
                   <div className="flex items-center gap-1.5 mt-1.5 text-yellow-400 text-xs"><AlertTriangle size={12} /><span>{t('createWallet.duplicateWarning')}</span></div>
                 )}
                 <p className="text-[11px] text-surface-500 mt-1.5 flex items-start gap-1"><Info size={10} className="mt-0.5 flex-shrink-0" />{t('createWallet.addressExplain')}</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-surface-400 mb-1">{t('createWallet.network')}</label>
+                <select value={manualNetwork} onChange={(e) => setManualNetwork(e.target.value)}
+                  className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500">
+                  {NETWORKS.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
               </div>
 
               <div>
@@ -220,6 +238,17 @@ export default function CreateWalletModal({ onClose, onSave, onShowQR, existingW
           </div>
         )}
       </div>
+      {showQRScanner && (
+        <QRScannerModal
+          onResult={({ text, type }) => {
+            if (type === 'address') { setManualAddress(text); checkDuplicate(text); }
+            else if (type === 'privateKey') setManualPK(text);
+            else if (type === 'seedPhrase') setManualSeed(text);
+            else setManualAddress(text);
+          }}
+          onClose={() => setShowQRScanner(false)}
+        />
+      )}
     </div>
   );
 }

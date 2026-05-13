@@ -12,6 +12,7 @@ export default function ActionBar({
 
   const FILTER_OPTIONS = [
     { key: 'all', label: t('actionBar.allWallets') },
+    { key: 'pinned', label: t('actionBar.pinned') },
     { key: 'hasPk', label: t('actionBar.hasPk') },
     { key: 'hasSeed', label: t('actionBar.hasSeed') },
     { key: 'hasBalance', label: t('actionBar.hasBalance') },

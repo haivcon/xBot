@@ -1,22 +1,35 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { Preferences } from '@capacitor/preferences';
 
-const AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
+const AUTOLOCK_KEY = 'xkey_autolock_ms';
+const DEFAULT_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Auto-lock the vault after N minutes of inactivity.
- * Listens to touch, mouse, and keyboard events to reset the timer.
+ * Reads timeout from Preferences (configurable in Settings).
  */
 export default function useAutoLock(onLock, enabled = true) {
   const timerRef = useRef(null);
   const onLockRef = useRef(onLock);
+  const timeoutRef = useRef(DEFAULT_MS);
   onLockRef.current = onLock;
+
+  // Load saved timeout on mount
+  useEffect(() => {
+    Preferences.get({ key: AUTOLOCK_KEY }).then(({ value }) => {
+      if (value) {
+        const ms = parseInt(value);
+        if (ms > 0) timeoutRef.current = ms;
+      }
+    }).catch(() => {});
+  }, []);
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (enabled) {
       timerRef.current = setTimeout(() => {
         onLockRef.current();
-      }, AUTO_LOCK_MS);
+      }, timeoutRef.current);
     }
   }, [enabled]);
 
@@ -33,3 +46,5 @@ export default function useAutoLock(onLock, enabled = true) {
     };
   }, [resetTimer, enabled]);
 }
+
+export { AUTOLOCK_KEY, DEFAULT_MS };

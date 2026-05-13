@@ -43,10 +43,28 @@ export default {
   settings: {
     title: "Settings",
     appearance: "Appearance",
-    darkMode: "Dark Mode",
-    lightMode: "Light Mode",
+    darkMode: "Dark",
+    lightMode: "Light",
+    amoledMode: "AMOLED",
     language: "Language",
     languageDesc: "Select your preferred language",
+    security: "Security",
+    securityDesc: "Auto-lock, clipboard, master password",
+    autoLock: "Auto-Lock Timeout",
+    autoLockSaved: "Auto-lock timeout saved",
+    customMinutes: "Custom (minutes)",
+    clipboardClear: "Clipboard Auto-Clear",
+    clipboardSaved: "Clipboard timeout saved",
+    customSeconds: "Custom (seconds)",
+    masterPassword: "Master Password",
+    masterPasswordDesc: "Optional extra layer for viewing Private Keys and Seed Phrases",
+    setMasterPassword: "Set Master Password",
+    removeMasterPassword: "Remove Master Password",
+    masterPasswordSet: "Master password enabled",
+    masterPasswordRemoved: "Master password removed",
+    removeMPConfirm: "Remove master password? PK/Seed will be viewable with only biometric auth.",
+    mpEnabled: "Enabled",
+    mpDisabled: "Disabled",
     backupTitle: "Vault Backup",
     backupSubtitle: "Encrypted & portable — works on any device",
     backupInfo: "Your wallets are encrypted with a password you choose. This backup can be restored on any device — even after a data wipe.",
@@ -101,6 +119,8 @@ export default {
     addressExplain: "The public address of the wallet (starts with 0x for EVM chains). This is safe to share — it's like your bank account number.",
     pkExplain: "The secret key that controls this wallet. Anyone with the private key can spend all funds. NEVER share it.",
     seedExplain: "12 or 24 words that can regenerate the private key. Store offline, never screenshot or share.",
+    network: "Network",
+    scanQR: "Scan QR",
   },
 
   // ─── Wallet Card ───
@@ -122,11 +142,18 @@ export default {
     notesPlaceholder: "Notes...",
     autoHide: "(auto-hides in 30s)",
     pkWarning: "Anyone with this key has full control of the wallet.",
+    pin: "Pin",
+    unpin: "Unpin",
+    pinned: "Pinned",
+    network: "Network",
+    clipboardCleared: "Clipboard cleared",
+    masterPasswordRequired: "Enter master password to view",
+    masterPasswordWrong: "Wrong master password",
   },
 
   // ─── Action Bar ───
   actionBar: {
-    searchPlaceholder: "Search by address or name...",
+    searchPlaceholder: "Search by address, name, notes...",
     allWallets: "All Wallets",
     hasPk: "Has Private Key",
     hasSeed: "Has Seed Phrase",
@@ -140,6 +167,8 @@ export default {
     balanceHigh: "Balance High → Low",
     balanceLow: "Balance Low → High",
     addressAsc: "Address A → Z",
+    allNetworks: "All Networks",
+    pinned: "Pinned",
   },
 
   // ─── Duplicate Detector ───
@@ -158,9 +187,14 @@ export default {
     activeBalance: "Active (Balance > 0)",
     emptyWallets: "Empty Wallets",
     withPK: "With Private Key",
+    withSeed: "With Seed Phrase",
     distribution: "Asset Distribution by Folder",
+    chainDistribution: "Distribution by Network",
+    importTimeline: "Import Timeline",
     folders: "folders",
+    networks: "networks",
     totalValue: "Total Vault Value",
+    walletsAdded: "wallets added",
   },
 
   // ─── Export CSV ───
@@ -178,6 +212,7 @@ export default {
     colFolder: "Folder",
     colPrivateKey: "Private Key",
     colSeedPhrase: "Seed Phrase",
+    colNetwork: "Network",
   },
 
   // ─── Auth Error ───
@@ -188,5 +223,24 @@ export default {
     wipeExplain: "Your encryption key was lost or corrupted (usually happens if you removed your phone's screen lock). This will permanently delete all vault data. This cannot be undone.",
     confirmWipe: "Confirm Wipe",
     wiping: "Wiping...",
+  },
+
+  // ─── Onboarding ───
+  onboarding: {
+    slide1Title: "100% Offline Security",
+    slide1Desc: "Your private keys and seed phrases never leave your device. Zero network connections, zero tracking.",
+    slide2Title: "Military-Grade Encryption",
+    slide2Desc: "Double-layer AES-256 encryption with biometric authentication. Your keys are protected by two independent encryption layers.",
+    slide3Title: "Portable Backups",
+    slide3Desc: "Create password-protected backup files that work on any device. Restore anytime, anywhere.",
+    next: "Next",
+    skip: "Skip",
+    getStarted: "Get Started",
+  },
+
+  // ─── QR Scanner ───
+  qrScanner: {
+    title: "Scan QR Code",
+    hint: "Point camera at a QR code containing an address, private key, or seed phrase",
   },
 };

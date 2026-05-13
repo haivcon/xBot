@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Wallet, Check, Copy, Eye, EyeOff, ChevronDown, ChevronUp, QrCode, Pencil, Trash2, Save, X, Settings2 } from 'lucide-react';
+import { Wallet, Check, Copy, Eye, EyeOff, ChevronDown, ChevronUp, QrCode, Pencil, Trash2, Save, X, Settings2, Pin, PinOff } from 'lucide-react';
 import { useT } from '../contexts/LanguageContext';
 import { hapticTap, hapticSuccess, hapticWarning } from '../utils/haptics';
+import { secureCopy } from '../utils/clipboard';
 
 const AUTO_HIDE_MS = 30000;
 
-export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdit }) {
+const NETWORK_COLORS = {
+  ETH: { bg: 'bg-blue-500/15', text: 'text-blue-400', label: 'ETH' },
+  BSC: { bg: 'bg-yellow-500/15', text: 'text-yellow-400', label: 'BSC' },
+  Polygon: { bg: 'bg-purple-500/15', text: 'text-purple-400', label: 'MATIC' },
+  Arbitrum: { bg: 'bg-sky-500/15', text: 'text-sky-400', label: 'ARB' },
+  Optimism: { bg: 'bg-red-500/15', text: 'text-red-400', label: 'OP' },
+  Solana: { bg: 'bg-green-500/15', text: 'text-green-400', label: 'SOL' },
+  Tron: { bg: 'bg-red-600/15', text: 'text-red-300', label: 'TRX' },
+  Base: { bg: 'bg-blue-600/15', text: 'text-blue-300', label: 'BASE' },
+};
+
+export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdit, onPin }) {
   const [expanded, setExpanded] = useState(false);
   const [showPk, setShowPk] = useState(false);
   const [showSeed, setShowSeed] = useState(false);
@@ -19,7 +31,7 @@ export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdi
   useEffect(() => { if (!showPk) return; const tm = setTimeout(() => setShowPk(false), AUTO_HIDE_MS); return () => clearTimeout(tm); }, [showPk]);
   useEffect(() => { if (!showSeed) return; const tm = setTimeout(() => setShowSeed(false), AUTO_HIDE_MS); return () => clearTimeout(tm); }, [showSeed]);
 
-  const handleCopy = (text, field) => { navigator.clipboard.writeText(text); hapticTap(); setCopiedField(field); setTimeout(() => setCopiedField(null), 2000); };
+  const handleCopy = (text, field) => { secureCopy(text); setCopiedField(field); setTimeout(() => setCopiedField(null), 2000); };
   const formatDate = (ts) => { if (!ts) return null; const d = new Date(ts); return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
 
   const enterEditMode = () => {
@@ -66,7 +78,15 @@ export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdi
                 onClick={(e) => e.stopPropagation()} onChange={(e) => setEditName(e.target.value)}
                 onBlur={() => { onRename(editName); setRenaming(false); }} onKeyDown={(e) => { if (e.key === 'Enter') { onRename(editName); setRenaming(false); } }} />
             ) : (
-              <h3 className="text-white font-medium truncate">{wallet.name || t('walletCard.unnamed')}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-white font-medium truncate">{wallet.name || t('walletCard.unnamed')}</h3>
+                {wallet.pinned && <Pin size={12} className="text-amber-400 flex-shrink-0" />}
+                {wallet.network && NETWORK_COLORS[wallet.network] && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${NETWORK_COLORS[wallet.network].bg} ${NETWORK_COLORS[wallet.network].text}`}>
+                    {NETWORK_COLORS[wallet.network].label}
+                  </span>
+                )}
+              </div>
             )}
             <p className="text-surface-400 text-sm font-mono truncate">
               {wallet.address ? `${wallet.address.substring(0, 6)}...${wallet.address.substring(wallet.address.length - 4)}` : t('walletCard.noAddress')}
@@ -111,7 +131,8 @@ export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdi
           ) : (
             <>
               {/* Action Buttons */}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => { hapticTap(); onPin && onPin(); }} className="btn-glow flex items-center gap-1 text-xs text-surface-400 hover:text-amber-400 bg-surface-800 px-3 py-1.5 rounded-lg transition-colors">{wallet.pinned ? <PinOff size={12} /> : <Pin size={12} />} {wallet.pinned ? t('walletCard.unpin') : t('walletCard.pin')}</button>
                 <button onClick={() => { hapticTap(); setRenaming(true); }} className="btn-glow flex items-center gap-1 text-xs text-surface-400 hover:text-brand-400 bg-surface-800 px-3 py-1.5 rounded-lg transition-colors"><Pencil size={12} /> {t('walletCard.rename')}</button>
                 <button onClick={() => { hapticTap(); enterEditMode(); }} className="btn-glow flex items-center gap-1 text-xs text-surface-400 hover:text-cyan-400 bg-surface-800 px-3 py-1.5 rounded-lg transition-colors"><Settings2 size={12} /> {t('walletCard.edit')}</button>
                 <button onClick={() => { hapticWarning(); onDelete(); }} className="btn-glow btn-glow-danger flex items-center gap-1 text-xs text-surface-400 hover:text-red-400 bg-surface-800 px-3 py-1.5 rounded-lg transition-colors"><Trash2 size={12} /> {t('walletCard.delete')}</button>

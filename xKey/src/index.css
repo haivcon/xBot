@@ -96,6 +96,41 @@ body {
   color: #334155 !important;
 }
 
+/* ── AMOLED Dark Theme ── */
+.theme-amoled,
+.theme-amoled body {
+  --color-surface-950: #000000;
+  --color-surface-900: #000000;
+  --color-surface-800: #0a0a0a;
+  --color-surface-700: #141414;
+  --color-surface-600: #1e1e1e;
+  --color-surface-500: #6b7280;
+  --color-surface-400: #9ca3af;
+  --color-surface-300: #d1d5db;
+  --color-surface-200: #a1a1aa;
+  --color-surface-100: #f4f4f5;
+  --color-surface-50: #fafafa;
+}
+
+.theme-amoled body {
+  background-color: #000000;
+  color: #f4f4f5;
+}
+
+.theme-amoled .glass-card {
+  background-color: rgba(10, 10, 10, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  backdrop-filter: none;
+}
+
+.theme-amoled .btn-glow:active {
+  box-shadow: 0 0 14px rgba(14, 165, 233, 0.5);
+}
+
+.theme-amoled .btn-icon-glow:active {
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.6);
+}
+
 /* ── Toast Animation ── */
 @keyframes slide-down {
   from { opacity: 0; transform: translateY(-12px); }

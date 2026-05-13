@@ -17,6 +17,8 @@ import ActionBar from './components/ActionBar';
 import ExportCSVModal from './components/ExportCSVModal';
 import CreateWalletModal from './components/CreateWalletModal';
 import DuplicateDetector from './components/DuplicateDetector';
+import OnboardingScreen, { ONBOARDED_KEY } from './components/OnboardingScreen';
+import SkeletonCard from './components/SkeletonCard';
 
 // Utils & Hooks
 import { saveWallets, loadWallets, getEncryptionKey } from './utils/storage';
@@ -49,6 +51,10 @@ export default function App() {
   const [showCreateWallet, setShowCreateWallet] = useState(false);
   const [showDuplicates, setShowDuplicates] = useState(false);
 
+  // Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [vaultLoading, setVaultLoading] = useState(true);
+
   // Folder editing
   const [editingFolder, setEditingFolder] = useState(null);
   const [editFolderName, setEditFolderName] = useState('');
@@ -73,6 +79,10 @@ export default function App() {
   useEffect(() => {
     const authenticate = async () => {
       try {
+        // Check onboarding
+        const { value: onboarded } = await Preferences.get({ key: ONBOARDED_KEY });
+        if (!onboarded) { setShowOnboarding(true); }
+
         const key = await getEncryptionKey();
         setAesKey(key);
         const savedWallets = await loadWallets(key);
@@ -82,6 +92,7 @@ export default function App() {
       } catch (err) {
         setAuthError(err.message || "Failed to authenticate.");
       }
+      setVaultLoading(false);
     };
     authenticate();
   }, []);
@@ -237,10 +248,21 @@ export default function App() {
   // Save newly created wallet
   const handleSaveNewWallet = async (newWallet) => {
     const folder = activeFolder !== 'All' ? activeFolder : 'Created';
-    const walletWithGroup = { ...newWallet, groupId: newWallet.groupId || folder };
+    const walletWithGroup = { ...newWallet, groupId: newWallet.groupId || folder, network: newWallet.network || 'ETH', pinned: false };
     const updated = [...wallets, walletWithGroup];
     setWallets(updated);
     await saveWallets(updated, aesKey);
+  };
+
+  // Toggle pin
+  const handleTogglePin = async (wallet) => {
+    const idx = wallets.indexOf(wallet);
+    if (idx === -1) return;
+    const updated = [...wallets];
+    updated[idx] = { ...updated[idx], pinned: !updated[idx].pinned };
+    setWallets(updated);
+    await saveWallets(updated, aesKey);
+    hapticTap();
   };
 
   // Handle portable backup password submission
@@ -289,6 +311,10 @@ export default function App() {
   }, [wallets]);
 
   // ─── View Router ───
+  if (showOnboarding) {
+    return <OnboardingScreen onComplete={() => setShowOnboarding(false)} />;
+  }
+
   if (authError) return <AuthErrorScreen error={authError} />;
 
   if (!aesKey) {
@@ -319,18 +345,23 @@ export default function App() {
   const filteredWallets = wallets.filter(w => {
     // Folder filter
     if (activeFolder !== 'All' && (w.groupId || 'Imported') !== activeFolder) return false;
-    // Search filter
+    // Search filter — now includes notes
     const q = searchQuery.toLowerCase();
     const matchSearch = (w.name && w.name.toLowerCase().includes(q)) ||
-      (w.address && w.address.toLowerCase().includes(q));
+      (w.address && w.address.toLowerCase().includes(q)) ||
+      (w.notes && w.notes.toLowerCase().includes(q));
     if (!matchSearch) return false;
     // Advanced filter
     if (activeFilter === 'hasPk') return !!w.privateKey;
     if (activeFilter === 'hasSeed') return !!w.seedPhrase;
     if (activeFilter === 'hasBalance') return (parseFloat(w.balance || 0) || 0) > 0;
     if (activeFilter === 'empty') return (parseFloat(w.balance || 0) || 0) === 0;
+    if (activeFilter === 'pinned') return !!w.pinned;
     return true;
   }).sort((a, b) => {
+    // Pinned wallets always first
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
     switch (sortOrder) {
       case 'name-asc':
         return (a.name || '').localeCompare(b.name || '');
@@ -477,12 +508,13 @@ export default function App() {
               ) : (
                 filteredWallets.map((w, i) => (
                   <WalletCard
-                    key={w.address ? `${w.address}-${w.groupId}-${i}` : i}
+                    key={w._id || (w.address ? `${w.address}-${w.groupId}-${i}` : i)}
                     wallet={w}
                     onShowQR={(data, title, subtitle) => setQrModalData({ isOpen: true, data, title, subtitle })}
                     onDelete={() => handleDeleteWallet(w)}
                     onRename={(newName) => handleRenameWallet(w, newName)}
                     onEdit={(updatedFields) => handleEditWallet(w, updatedFields)}
+                    onPin={() => handleTogglePin(w)}
                   />
                 ))
               )}

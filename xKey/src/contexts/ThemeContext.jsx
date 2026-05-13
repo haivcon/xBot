@@ -8,33 +8,43 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
+const applyThemeClass = (theme) => {
+  const cl = document.documentElement.classList;
+  cl.remove('theme-light', 'theme-amoled');
+  if (theme === 'light') cl.add('theme-light');
+  else if (theme === 'amoled') cl.add('theme-amoled');
+};
+
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('dark');
+  const [theme, setThemeState] = useState('dark');
 
   useEffect(() => {
     Preferences.get({ key: THEME_KEY }).then(({ value }) => {
-      if (value === 'light') {
-        setTheme('light');
-        document.documentElement.classList.add('theme-light');
+      if (value && ['dark', 'light', 'amoled'].includes(value)) {
+        setThemeState(value);
+        applyThemeClass(value);
       }
     }).catch(() => {});
   }, []);
 
+  const setTheme = useCallback((next) => {
+    setThemeState(next);
+    applyThemeClass(next);
+    Preferences.set({ key: THEME_KEY, value: next }).catch(() => {});
+  }, []);
+
+  // Legacy toggle for backward compat
   const toggleTheme = useCallback(() => {
-    setTheme(prev => {
+    setThemeState(prev => {
       const next = prev === 'dark' ? 'light' : 'dark';
-      if (next === 'light') {
-        document.documentElement.classList.add('theme-light');
-      } else {
-        document.documentElement.classList.remove('theme-light');
-      }
+      applyThemeClass(next);
       Preferences.set({ key: THEME_KEY, value: next }).catch(() => {});
       return next;
     });
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

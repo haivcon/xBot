@@ -1,6 +1,7 @@
 import { Preferences } from '@capacitor/preferences';
 import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 import CryptoJS from 'crypto-js';
+import { runMigrations } from './migration';
 
 const STORAGE_KEYS = {
     WALLETS: 'xkey_wallets',
@@ -15,6 +16,40 @@ const BIOMETRIC_USER = 'xkey_vault';
  */
 const generateRandomKey = () => {
     return CryptoJS.lib.WordArray.random(32).toString();
+};
+
+/**
+ * Derive a secondary key from the primary key for per-field encryption.
+ * This means even if the outer encryption is broken, PK/Seed are still protected.
+ */
+const deriveFieldKey = (primaryKey) => {
+    return CryptoJS.HmacSHA256(primaryKey, 'xkey_field_salt_v1').toString();
+};
+
+/**
+ * Encrypt a single sensitive field (privateKey, seedPhrase)
+ */
+const encryptField = (value, fieldKey) => {
+    if (!value) return value;
+    // Prefix with 'xkf:' to identify already-encrypted fields
+    if (typeof value === 'string' && value.startsWith('xkf:')) return value;
+    return 'xkf:' + CryptoJS.AES.encrypt(value, fieldKey).toString();
+};
+
+/**
+ * Decrypt a single sensitive field
+ */
+const decryptField = (cipher, fieldKey) => {
+    if (!cipher) return cipher;
+    if (typeof cipher !== 'string' || !cipher.startsWith('xkf:')) return cipher;
+    try {
+        const raw = cipher.slice(4); // Remove 'xkf:' prefix
+        const bytes = CryptoJS.AES.decrypt(raw, fieldKey);
+        const result = bytes.toString(CryptoJS.enc.Utf8);
+        return result || cipher; // Return original if decrypt fails
+    } catch {
+        return cipher;
+    }
 };
 
 /**
@@ -97,11 +132,21 @@ const decryptData = (cipherText, key) => {
 };
 
 /**
- * Save encrypted wallets
+ * Save encrypted wallets with double-layer field encryption.
+ * Sensitive fields (privateKey, seedPhrase) are encrypted individually
+ * before the entire array is encrypted.
  */
 export const saveWallets = async (wallets, key) => {
     try {
-        const encrypted = encryptData(wallets, key);
+        const fieldKey = deriveFieldKey(key);
+        // Double-encrypt sensitive fields
+        const protected_ = wallets.map(w => ({
+            ...w,
+            privateKey: encryptField(w.privateKey, fieldKey),
+            seedPhrase: encryptField(w.seedPhrase, fieldKey),
+            _fieldEncrypted: true,
+        }));
+        const encrypted = encryptData(protected_, key);
         await Preferences.set({ key: STORAGE_KEYS.WALLETS, value: encrypted });
         return true;
     } catch (e) {
@@ -111,15 +156,33 @@ export const saveWallets = async (wallets, key) => {
 };
 
 /**
- * Load encrypted wallets
+ * Load encrypted wallets, run migrations, and decrypt field-level encryption.
  */
 export const loadWallets = async (key) => {
     const { value } = await Preferences.get({ key: STORAGE_KEYS.WALLETS });
     if (!value) return [];
-    return decryptData(value, key);
+    
+    let wallets = decryptData(value, key);
+    
+    // Run schema migrations
+    const { wallets: migrated, migrated: didMigrate } = await runMigrations(wallets);
+    wallets = migrated;
+    
+    // Decrypt field-level encryption
+    const fieldKey = deriveFieldKey(key);
+    wallets = wallets.map(w => ({
+        ...w,
+        privateKey: decryptField(w.privateKey, fieldKey),
+        seedPhrase: decryptField(w.seedPhrase, fieldKey),
+    }));
+    
+    // If migration happened, re-save with new schema + field encryption
+    if (didMigrate) {
+        await saveWallets(wallets, key);
+    }
+    
+    return wallets;
 };
-
-
 
 /**
  * Wipe all data

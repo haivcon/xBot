@@ -19,7 +19,7 @@ api_xlayer_dex.md
 node_modules/
 dashboard/node_modules/
 onchainos-skills-main
-
+tests
 # ─── Database ───
 *.db
 *.db-journal
