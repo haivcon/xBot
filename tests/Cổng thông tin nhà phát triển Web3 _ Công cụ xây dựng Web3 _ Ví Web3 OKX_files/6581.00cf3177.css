@@ -1,0 +1,1 @@
+#headerModeGas{justify-content:center}body[data-nav=false] .footer-container,body[data-nav=false] .header-container{display:none}body[data-nav=true] .footer-container,body[data-nav=true] .header-container{display:block}body .footer-container[data-hide=true]{display:none}body .footer-container[data-hide=false]{display:block}
