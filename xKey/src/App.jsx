@@ -21,6 +21,7 @@ import DuplicateDetector from './components/DuplicateDetector';
 // Utils & Hooks
 import { saveWallets, loadWallets, getEncryptionKey } from './utils/storage';
 import { parseVaultBackupFile } from './utils/backupUtils';
+import { hapticTap, hapticSuccess, hapticWarning } from './utils/haptics';
 import useAutoLock from './hooks/useAutoLock';
 import { useToast } from './contexts/ToastContext';
 import { useConfirm } from './contexts/ConfirmContext';
@@ -292,7 +293,7 @@ export default function App() {
 
   if (!aesKey) {
     return (
-      <div className="min-h-screen bg-surface-900 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-surface-900 splash-bg flex flex-col items-center justify-center">
         <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-4"></div>
         <p className="text-surface-400 text-sm">{t('home.unlocking')}</p>
       </div>
@@ -377,13 +378,13 @@ export default function App() {
             {wallets.length > 0 && (
               <>
                 {/* Export CSV */}
-                <button onClick={() => setShowExportCSV(true)} className="p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="Export CSV">
+                <button onClick={() => { hapticTap(); setShowExportCSV(true); }} className="btn-icon-glow p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="Export CSV">
                   <FileDown size={18} />
                 </button>
                 {/* Duplicate Detector */}
                 <button
-                  onClick={() => setShowDuplicates(true)}
-                  className="p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors relative"
+                  onClick={() => { hapticTap(); setShowDuplicates(true); }}
+                  className="btn-icon-glow p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors relative"
                   title="Duplicate Detector"
                 >
                   <AlertTriangle size={18} />
@@ -395,10 +396,10 @@ export default function App() {
                 </button>
               </>
             )}
-            <button onClick={() => setCurrentView('dashboard')} className="p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="Analytics">
+            <button onClick={() => { hapticTap(); setCurrentView('dashboard'); }} className="btn-icon-glow p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="Analytics">
               <BarChart3 size={18} />
             </button>
-            <button onClick={() => setCurrentView('settings')} className="p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="Settings">
+            <button onClick={() => { hapticTap(); setCurrentView('settings'); }} className="btn-icon-glow p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="Settings">
               <Settings size={20} />
             </button>
           </div>
@@ -425,8 +426,8 @@ export default function App() {
         {wallets.length === 0 ? (
           <div className="space-y-4 mt-10">
             <div
-              onClick={handleFileUpload}
-              className="glass-card border-dashed border-2 border-surface-200/20 hover:border-brand-500/50 cursor-pointer p-8 flex flex-col items-center justify-center transition-all group"
+              onClick={() => { hapticTap(); handleFileUpload(); }}
+              className="btn-glow glass-card border-dashed border-2 border-surface-200/20 hover:border-brand-500/50 cursor-pointer p-8 flex flex-col items-center justify-center transition-all group"
             >
               <div className="w-16 h-16 rounded-full bg-surface-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 {loading ? (
@@ -441,8 +442,8 @@ export default function App() {
               </p>
             </div>
             <button
-              onClick={() => setShowCreateWallet(true)}
-              className="w-full glass-card border-dashed border-2 border-surface-200/20 hover:border-brand-500/50 cursor-pointer p-6 flex items-center justify-center gap-3 transition-all group"
+              onClick={() => { hapticTap(); setShowCreateWallet(true); }}
+              className="btn-glow w-full glass-card border-dashed border-2 border-surface-200/20 hover:border-brand-500/50 cursor-pointer p-6 flex items-center justify-center gap-3 transition-all group"
             >
               <Plus size={24} className="text-brand-400 group-hover:scale-110 transition-transform" />
               <span className="text-white font-medium">{t('home.addWallet')}</span>
@@ -538,10 +539,10 @@ export default function App() {
               className="w-full bg-surface-800 border border-surface-700 rounded-lg px-4 py-3 text-sm text-white mb-4 focus:outline-none focus:border-brand-500 placeholder:text-surface-600"
             />
             <div className="flex gap-3">
-              <button onClick={() => { setShowPasswordPrompt(false); setPendingBackupData(null); setImportPassword(''); }}
-                className="flex-1 bg-surface-800 hover:bg-surface-700 text-surface-300 py-2.5 rounded-lg font-medium transition-colors">{t('common.cancel')}</button>
-              <button onClick={handleImportWithPassword}
-                className="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-lg font-medium transition-colors">{t('restore.button')}</button>
+              <button onClick={() => { hapticTap(); setShowPasswordPrompt(false); setPendingBackupData(null); setImportPassword(''); }}
+                className="btn-glow flex-1 bg-surface-800 hover:bg-surface-700 text-surface-300 py-2.5 rounded-lg font-medium transition-colors">{t('common.cancel')}</button>
+              <button onClick={() => { hapticSuccess(); handleImportWithPassword(); }}
+                className="btn-glow btn-glow-success flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-lg font-medium transition-colors">{t('restore.button')}</button>
             </div>
           </div>
         </div>

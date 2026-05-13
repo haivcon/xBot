@@ -129,3 +129,93 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Button Glow & Press Effects (Dark Theme) ── */
+@keyframes btn-glow-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(14, 165, 233, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+}
+
+.btn-glow {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-glow:active {
+  transform: scale(0.95);
+  animation: btn-glow-pulse 0.4s ease-out;
+}
+
+/* Ripple effect on click */
+.btn-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(14, 165, 233, 0.25) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.btn-glow:active::after {
+  opacity: 1;
+}
+
+/* Danger button glow */
+.btn-glow-danger:active {
+  animation: none;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+/* Success button glow */
+.btn-glow-success:active {
+  animation: none;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+/* Warning button glow */
+.btn-glow-warning:active {
+  animation: none;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+/* Icon buttons (header actions) */
+.btn-icon-glow {
+  transition: all 0.15s ease;
+}
+
+.btn-icon-glow:active {
+  transform: scale(0.88);
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+}
+
+/* ── Light Theme Button Effects ── */
+.theme-light .btn-glow:active {
+  box-shadow: 0 0 12px rgba(2, 132, 199, 0.3);
+}
+
+.theme-light .btn-glow::after {
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(2, 132, 199, 0.15) 0%, transparent 70%);
+}
+
+.theme-light .btn-icon-glow:active {
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.3);
+}
+
+.theme-light .btn-glow-danger:active {
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.3);
+}
+
+.theme-light .btn-glow-success:active {
+  box-shadow: 0 0 12px rgba(5, 150, 105, 0.3);
+}
+
+/* ── Splash Background ── */
+.splash-bg {
+  background-image: url('/splash.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
