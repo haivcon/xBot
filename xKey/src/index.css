@@ -254,3 +254,20 @@ body {
   background-position: center;
   background-repeat: no-repeat;
 }
+
+/* ── Toast Animations ── */
+@keyframes toast-enter-kf {
+  0% { opacity: 0; transform: translateY(16px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toast-exit-kf {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(16px) scale(0.92); }
+}
+.toast-enter {
+  animation: toast-enter-kf 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.toast-exit {
+  animation: toast-exit-kf 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}

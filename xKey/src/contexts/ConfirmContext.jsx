@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useT } from './LanguageContext';
 
 const ConfirmContext = createContext(null);
 
@@ -9,6 +10,7 @@ export function useConfirm() {
 
 export function ConfirmProvider({ children }) {
   const [state, setState] = useState(null); // { message, resolve, danger }
+  const t = useT();
 
   const confirm = useCallback((message, { danger = false } = {}) => {
     return new Promise(resolve => {
@@ -38,13 +40,13 @@ export function ConfirmProvider({ children }) {
                 onClick={() => handleAnswer(false)}
                 className="flex-1 bg-surface-800 hover:bg-surface-700 text-surface-300 font-medium py-2.5 rounded-lg transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => handleAnswer(true)}
                 className={`flex-1 font-medium py-2.5 rounded-lg transition-colors ${state.danger ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-brand-600 hover:bg-brand-500 text-white'}`}
               >
-                Confirm
+                {t('common.confirm')}
               </button>
             </div>
           </div>

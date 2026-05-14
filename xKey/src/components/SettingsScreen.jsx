@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Trash2, ShieldAlert, ShieldCheck, Sun, Moon, Download, Lock, Globe, Check, ChevronDown, Timer, Clipboard, KeyRound, Monitor } from 'lucide-react';
 import { Preferences } from '@capacitor/preferences';
 import { loadWallets } from '../utils/storage';
@@ -47,6 +47,15 @@ export default function SettingsScreen({ aesKey, onBack, onWipe }) {
     const { lang, changeLang } = useLanguage();
     const mp = useMasterPassword();
 
+    // Load current saved values
+    const [currentAutoLock, setCurrentAutoLock] = useState(null);
+    const [currentClipboard, setCurrentClipboard] = useState(null);
+
+    useEffect(() => {
+      Preferences.get({ key: AUTOLOCK_KEY }).then(({ value }) => setCurrentAutoLock(value ? parseInt(value) : 300000)).catch(() => {});
+      Preferences.get({ key: CLIPBOARD_TIMEOUT_KEY }).then(({ value }) => setCurrentClipboard(value !== null ? parseInt(value) : 30000)).catch(() => {});
+    }, []);
+
     const currentLang = LANGUAGES.find(l => l.code === lang);
 
     const handleExportPortable = async () => {
@@ -85,15 +94,23 @@ export default function SettingsScreen({ aesKey, onBack, onWipe }) {
     };
 
     const saveAutoLock = async (ms) => {
+        const label = ms >= 60000 ? `${ms / 60000} min` : `${ms / 1000}s`;
+        const ok = await showConfirm(t('settings.confirmChange', { setting: t('settings.autoLock'), value: label }));
+        if (!ok) return;
         hapticTap();
         await Preferences.set({ key: AUTOLOCK_KEY, value: String(ms) });
+        setCurrentAutoLock(ms);
         showToast(t('settings.autoLockSaved'), 'success');
         setShowAutoLock(false);
     };
 
     const saveClipboard = async (ms) => {
+        const label = ms === 0 ? '∞' : ms >= 60000 ? `${ms / 60000} min` : `${ms / 1000}s`;
+        const ok = await showConfirm(t('settings.confirmChange', { setting: t('settings.clipboardClear'), value: label }));
+        if (!ok) return;
         hapticTap();
         await Preferences.set({ key: CLIPBOARD_TIMEOUT_KEY, value: String(ms) });
+        setCurrentClipboard(ms);
         showToast(t('settings.clipboardSaved'), 'success');
         setShowClipboard(false);
     };
@@ -228,7 +245,14 @@ export default function SettingsScreen({ aesKey, onBack, onWipe }) {
                             <Timer size={16} className="text-surface-400" />
                             <span className="text-sm text-white">{t('settings.autoLock')}</span>
                         </div>
-                        <ChevronDown size={16} className={`text-surface-500 transition-transform ${showAutoLock ? 'rotate-180' : ''}`} />
+                        <div className="flex items-center gap-2">
+                            {currentAutoLock != null && (
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300 font-medium">
+                                {currentAutoLock >= 60000 ? `${currentAutoLock / 60000} min` : `${currentAutoLock / 1000}s`}
+                              </span>
+                            )}
+                            <ChevronDown size={16} className={`text-surface-500 transition-transform ${showAutoLock ? 'rotate-180' : ''}`} />
+                        </div>
                     </button>
                     {showAutoLock && (
                         <div className="px-4 py-3 border-b border-surface-700/30 space-y-2">
@@ -257,7 +281,14 @@ export default function SettingsScreen({ aesKey, onBack, onWipe }) {
                             <Clipboard size={16} className="text-surface-400" />
                             <span className="text-sm text-white">{t('settings.clipboardClear')}</span>
                         </div>
-                        <ChevronDown size={16} className={`text-surface-500 transition-transform ${showClipboard ? 'rotate-180' : ''}`} />
+                        <div className="flex items-center gap-2">
+                            {currentClipboard != null && (
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300 font-medium">
+                                {currentClipboard === 0 ? '∞' : currentClipboard >= 60000 ? `${currentClipboard / 60000} min` : `${currentClipboard / 1000}s`}
+                              </span>
+                            )}
+                            <ChevronDown size={16} className={`text-surface-500 transition-transform ${showClipboard ? 'rotate-180' : ''}`} />
+                        </div>
                     </button>
                     {showClipboard && (
                         <div className="px-4 py-3 border-b border-surface-700/30 space-y-2">

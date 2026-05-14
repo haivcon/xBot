@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Preferences } from '@capacitor/preferences';
+import { App as CapApp } from '@capacitor/app';
 import Papa from 'papaparse';
 import {
-  UploadCloud, ShieldAlert, BarChart3, Settings, FileDown, Plus, AlertTriangle
+  UploadCloud, ShieldAlert, BarChart3, Settings, FileDown, Plus, AlertTriangle, Link2
 } from 'lucide-react';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 
@@ -19,6 +20,7 @@ import CreateWalletModal from './components/CreateWalletModal';
 import DuplicateDetector from './components/DuplicateDetector';
 import OnboardingScreen, { ONBOARDED_KEY } from './components/OnboardingScreen';
 import SkeletonCard from './components/SkeletonCard';
+import ChainBulkModal from './components/ChainBulkModal';
 
 // Utils & Hooks
 import { saveWallets, loadWallets, getEncryptionKey } from './utils/storage';
@@ -50,6 +52,7 @@ export default function App() {
   const [showExportCSV, setShowExportCSV] = useState(false);
   const [showCreateWallet, setShowCreateWallet] = useState(false);
   const [showDuplicates, setShowDuplicates] = useState(false);
+  const [showChainBulk, setShowChainBulk] = useState(false);
 
   // Onboarding
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -96,6 +99,24 @@ export default function App() {
     };
     authenticate();
   }, []);
+
+  // ─── Hardware Back Button ───
+  useEffect(() => {
+    const handler = CapApp.addListener('backButton', () => {
+      // Priority: close modals first
+      if (showChainBulk) { setShowChainBulk(false); return; }
+      if (showCreateWallet) { setShowCreateWallet(false); return; }
+      if (showExportCSV) { setShowExportCSV(false); return; }
+      if (showDuplicates) { setShowDuplicates(false); return; }
+      if (qrModalData.isOpen) { setQrModalData(p => ({ ...p, isOpen: false })); return; }
+      if (showPasswordPrompt) { setShowPasswordPrompt(false); return; }
+      // Then navigate back
+      if (currentView !== 'home') { setCurrentView('home'); return; }
+      // On home with nothing open → minimize
+      CapApp.minimizeApp();
+    });
+    return () => { handler.then(h => h.remove()); };
+  }, [currentView, showCreateWallet, showExportCSV, showDuplicates, showChainBulk, qrModalData.isOpen, showPasswordPrompt]);
 
   // ─── File Upload (CSV / .xkey) ───
   const handleFileUpload = async () => {
@@ -274,6 +295,15 @@ export default function App() {
     hapticTap();
   };
 
+  // Bulk chain label
+  const handleBulkChainUpdate = async (walletIds, newChain) => {
+    const idSet = new Set(walletIds);
+    const updated = wallets.map(w => idSet.has(w._id) ? { ...w, network: newChain } : w);
+    setWallets(updated);
+    await saveWallets(updated, aesKey);
+    showToast(t('chainBulk.updated', { count: walletIds.length, chain: newChain }), 'success');
+  };
+
   // Handle portable backup password submission
   const handleImportWithPassword = async () => {
     if (!pendingBackupData) return;
@@ -434,6 +464,10 @@ export default function App() {
                     </span>
                   )}
                 </button>
+                {/* Bulk Chain Label */}
+                <button onClick={() => { hapticTap(); setShowChainBulk(true); }} className="btn-icon-glow p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="Bulk Chain Label">
+                  <Link2 size={18} />
+                </button>
               </>
             )}
             <button onClick={() => { hapticTap(); setCurrentView('dashboard'); }} className="btn-icon-glow p-2 text-surface-400 hover:text-white bg-surface-800 hover:bg-surface-700 rounded-full transition-colors" title="Analytics">
@@ -565,6 +599,14 @@ export default function App() {
           wallets={wallets}
           onDeleteWallet={handleDeleteWalletDirect}
           onClose={() => setShowDuplicates(false)}
+        />
+      )}
+
+      {showChainBulk && (
+        <ChainBulkModal
+          wallets={wallets}
+          onApply={handleBulkChainUpdate}
+          onClose={() => setShowChainBulk(false)}
         />
       )}
 
