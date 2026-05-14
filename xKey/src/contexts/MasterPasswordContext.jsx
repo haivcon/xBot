@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import CryptoJS from 'crypto-js';
 
@@ -24,12 +24,12 @@ export function MasterPasswordProvider({ children }) {
   const [loaded, setLoaded] = useState(false);
 
   // Load on mount — check if master password exists
-  useState(() => {
+  useEffect(() => {
     Preferences.get({ key: MP_HASH_KEY }).then(({ value }) => {
       setHasMP(!!value);
       setLoaded(true);
     }).catch(() => setLoaded(true));
-  });
+  }, []);
 
   /**
    * Set a new master password

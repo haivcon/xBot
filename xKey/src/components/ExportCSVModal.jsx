@@ -12,6 +12,7 @@ export default function ExportCSVModal({ wallets, onClose }) {
     { key: 'address', label: t('exportCSV.colAddress'), default: true },
     { key: 'balance', label: t('exportCSV.colBalance'), default: true },
     { key: 'groupId', label: t('exportCSV.colFolder'), default: true },
+    { key: 'network', label: t('exportCSV.colNetwork'), default: true },
     { key: 'privateKey', label: t('exportCSV.colPrivateKey'), default: false, sensitive: true },
     { key: 'seedPhrase', label: t('exportCSV.colSeedPhrase'), default: false, sensitive: true },
   ];

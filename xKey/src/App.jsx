@@ -195,7 +195,10 @@ export default function App() {
   const handleDeleteWallet = async (walletToDelete) => {
     const ok = await showConfirm(t('home.deleteWalletConfirm', { name: walletToDelete.name || walletToDelete.address?.substring(0, 10) }));
     if (!ok) return;
-    const updated = wallets.filter(w => !(w.address === walletToDelete.address && w.name === walletToDelete.name && w.groupId === walletToDelete.groupId));
+    const updated = wallets.filter(w => {
+      if (walletToDelete._id && w._id) return w._id !== walletToDelete._id;
+      return !(w.address === walletToDelete.address && w.name === walletToDelete.name && w.groupId === walletToDelete.groupId);
+    });
     setWallets(updated);
     await saveWallets(updated, aesKey);
     showToast(t('home.walletDeleted'), 'info');
@@ -203,7 +206,10 @@ export default function App() {
 
   // Direct delete from DuplicateDetector (already confirmed there)
   const handleDeleteWalletDirect = async (walletToDelete) => {
-    const updated = wallets.filter(w => !(w.address === walletToDelete.address && w.name === walletToDelete.name && w.groupId === walletToDelete.groupId));
+    const updated = wallets.filter(w => {
+      if (walletToDelete._id && w._id) return w._id !== walletToDelete._id;
+      return !(w.address === walletToDelete.address && w.name === walletToDelete.name && w.groupId === walletToDelete.groupId);
+    });
     setWallets(updated);
     await saveWallets(updated, aesKey);
     showToast(t('home.walletDeleted'), 'info');
@@ -229,17 +235,20 @@ export default function App() {
   };
 
   const handleRenameWallet = async (wallet, newName) => {
-    const updated = wallets.map(w => w.address === wallet.address && w.groupId === wallet.groupId ? { ...w, name: newName } : w);
+    const updated = wallets.map(w => {
+      if (wallet._id && w._id) return w._id === wallet._id ? { ...w, name: newName } : w;
+      return (w.address === wallet.address && w.groupId === wallet.groupId) ? { ...w, name: newName } : w;
+    });
     setWallets(updated);
     await saveWallets(updated, aesKey);
   };
 
   // Edit wallet fields (name, address, PK, seed, balance, notes)
   const handleEditWallet = async (wallet, updatedFields) => {
-    const idx = wallets.indexOf(wallet);
-    if (idx === -1) return;
-    const updated = [...wallets];
-    updated[idx] = { ...updated[idx], ...updatedFields };
+    const updated = wallets.map(w => {
+      if (wallet._id && w._id) return w._id === wallet._id ? { ...w, ...updatedFields } : w;
+      return (w === wallet) ? { ...w, ...updatedFields } : w;
+    });
     setWallets(updated);
     await saveWallets(updated, aesKey);
     showToast(t('walletCard.saved'), 'success');
@@ -256,10 +265,10 @@ export default function App() {
 
   // Toggle pin
   const handleTogglePin = async (wallet) => {
-    const idx = wallets.indexOf(wallet);
-    if (idx === -1) return;
-    const updated = [...wallets];
-    updated[idx] = { ...updated[idx], pinned: !updated[idx].pinned };
+    const updated = wallets.map(w => {
+      if (wallet._id && w._id) return w._id === wallet._id ? { ...w, pinned: !w.pinned } : w;
+      return (w === wallet) ? { ...w, pinned: !w.pinned } : w;
+    });
     setWallets(updated);
     await saveWallets(updated, aesKey);
     hapticTap();
@@ -501,7 +510,13 @@ export default function App() {
             />
 
             <div className="space-y-3">
-              {filteredWallets.length === 0 ? (
+              {vaultLoading ? (
+                <>
+                  <SkeletonCard />
+                  <SkeletonCard />
+                  <SkeletonCard />
+                </>
+              ) : filteredWallets.length === 0 ? (
                 <div className="text-center py-10 text-surface-500">
                   {t('home.noWallets')}
                 </div>

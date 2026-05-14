@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Camera, ScanLine } from 'lucide-react';
+import { X, Camera } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useT } from '../contexts/LanguageContext';
 
@@ -8,10 +8,24 @@ export default function QRScannerModal({ onResult, onClose }) {
   const [scanning, setScanning] = useState(false);
   const scannerRef = useRef(null);
   const containerRef = useRef(null);
+  const onResultRef = useRef(onResult);
+  const onCloseRef = useRef(onClose);
   const t = useT();
+  onResultRef.current = onResult;
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     let scanner = null;
+    let stopped = false;
+
+    const cleanup = () => {
+      stopped = true;
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {});
+        try { scannerRef.current.clear(); } catch {}
+        scannerRef.current = null;
+      }
+    };
 
     const startScanner = async () => {
       try {
@@ -23,37 +37,31 @@ export default function QRScannerModal({ onResult, onClose }) {
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
-            // Auto-detect type
+            if (stopped) return;
             const text = decodedText.trim();
             let type = 'unknown';
             if (/^0x[a-fA-F0-9]{40}$/.test(text)) type = 'address';
             else if (/^0x[a-fA-F0-9]{64}$/.test(text) || /^[a-fA-F0-9]{64}$/.test(text)) type = 'privateKey';
             else if (text.split(/\s+/).length >= 12) type = 'seedPhrase';
 
-            onResult({ text, type });
             cleanup();
-            onClose();
+            onResultRef.current({ text, type });
+            onCloseRef.current();
           },
-          () => {} // Ignore scan failures
+          () => {}
         );
       } catch (err) {
-        setError(err.message || 'Camera access denied');
-        setScanning(false);
+        if (!stopped) {
+          setError(err.message || 'Camera access denied');
+          setScanning(false);
+        }
       }
     };
 
     startScanner();
 
-    const cleanup = () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
-        scannerRef.current.clear();
-        scannerRef.current = null;
-      }
-    };
-
     return cleanup;
-  }, [onResult, onClose]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClose = () => {
     if (scannerRef.current) {
