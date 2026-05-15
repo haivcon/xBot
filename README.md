@@ -577,9 +577,9 @@ Built with **React 19 + Vite 6**, featuring glassmorphism design, dark/light mod
 
 ---
 
-### 🧳 XBOT Check (Cold Storage Vault)
-XBOT Check is a standalone secure, offline-first Web3 wallet management application built with React, Vite, and Capacitor. It acts as a highly secure Cold Vault for your crypto assets, featuring biometric authentication, AES-256 encryption, batch sweeping, and native transaction signing.
-👉 **[View the XBOT Check Installation Guide & Features](xbot-check/README.md)**
+### 🔐 xKey — Secure Offline Wallet Vault
+xKey is now a **standalone project** with its own repository, featuring field-level AES-256 encryption, master password protection, multi-chain support, and 15-language localization.
+👉 **[github.com/haivcon/xKey](https://github.com/haivcon/xKey)**
 
 ---
 
@@ -934,9 +934,9 @@ cd .. && pm2 restart xbot
 
 ---
 
-### 🧳 XBOT Check (冷钱包应用)
-XBOT Check 是一款独立的、安全离线优先的 Web3 钱包管理应用，使用 React, Vite 和 Capacitor 构建。它作为高度安全的加密资产冷钱包 (Cold Vault)，具有生物识别认证、AES-256加密、批量归集功能和原生交易签名能力。
-👉 **[查看 XBOT Check 安装指南与功能特性](xbot-check/README.md)**
+### 🔐 xKey — 安全离线钱包保险库
+xKey 现已成为**独立项目**，拥有专属仓库，支持字段级 AES-256 加密、主密码保护、多链支持和 15 种语言本地化。
+👉 **[github.com/haivcon/xKey](https://github.com/haivcon/xKey)**
 
 ---
 ### 🎮 指令参考
@@ -1272,9 +1272,9 @@ cd .. && pm2 restart xbot
 
 ---
 
-### 🧳 XBOT Check (Kho Lưu Trữ Lạnh)
-XBOT Check là một ứng dụng quản lý ví Web3 ngoại tuyến độc lập, bảo mật cao, được xây dựng bằng React, Vite và Capacitor. Ứng dụng hoạt động như một Kho Lưu Trữ Lạnh (Cold Vault) an toàn tuyệt đối cho tài sản tiền điện tử của bạn, nổi bật với xác thực sinh trắc học, mã hóa AES-256, gom số dư hàng loạt (batch sweep) và ký giao dịch ngoại tuyến.
-👉 **[Xem Hướng Dẫn Cài Đặt & Tính Năng của XBOT Check](xbot-check/README.md)**
+### 🔐 xKey — Kho Ví Ngoại Tuyến Bảo Mật
+xKey hiện là **dự án độc lập** với kho lưu trữ riêng, hỗ trợ mã hóa AES-256 cấp trường, bảo vệ mật khẩu chính, đa chuỗi và bản địa hóa 15 ngôn ngữ.
+👉 **[github.com/haivcon/xKey](https://github.com/haivcon/xKey)**
 
 ---
 

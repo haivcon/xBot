@@ -26,11 +26,10 @@ tests
 *.db-wal
 *.db-shm
 
-# ─── Build Output & Apps ───
+# ─── Build Output & Separated Projects ───
 dashboard/dist/
-xbot-check/node_modules/
-xbot-check/dist/
-xbot-check/android/
+xKey/
+xbot-check/
 
 
 # ─── Logs ───
