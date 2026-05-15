@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { CheckCircle2, AlertTriangle, XCircle, Info } from 'lucide-react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
 
@@ -9,64 +9,102 @@ export function useToast() {
 
 let toastId = 0;
 
-const ICONS = {
+const TOAST_ICONS = {
   success: CheckCircle2,
   error: XCircle,
   warning: AlertTriangle,
   info: Info,
 };
 
-const COLORS = {
-  success: { bg: 'bg-emerald-500/15', border: 'border-emerald-500/25', text: 'text-emerald-300', icon: 'text-emerald-400', bar: 'bg-emerald-400' },
-  error: { bg: 'bg-red-500/15', border: 'border-red-500/25', text: 'text-red-300', icon: 'text-red-400', bar: 'bg-red-400' },
-  warning: { bg: 'bg-amber-500/15', border: 'border-amber-500/25', text: 'text-amber-300', icon: 'text-amber-400', bar: 'bg-amber-400' },
-  info: { bg: 'bg-brand-500/15', border: 'border-brand-500/25', text: 'text-brand-300', icon: 'text-brand-400', bar: 'bg-brand-400' },
+const TOAST_STYLES = {
+  success: {
+    bg: 'bg-emerald-950/90',
+    border: 'border-emerald-500/30',
+    icon: 'text-emerald-400',
+    text: 'text-emerald-100',
+    bar: 'bg-emerald-400',
+  },
+  error: {
+    bg: 'bg-red-950/90',
+    border: 'border-red-500/30',
+    icon: 'text-red-400',
+    text: 'text-red-100',
+    bar: 'bg-red-400',
+  },
+  warning: {
+    bg: 'bg-amber-950/90',
+    border: 'border-amber-500/30',
+    icon: 'text-amber-400',
+    text: 'text-amber-100',
+    bar: 'bg-amber-400',
+  },
+  info: {
+    bg: 'bg-sky-950/90',
+    border: 'border-sky-500/30',
+    icon: 'text-sky-400',
+    text: 'text-sky-100',
+    bar: 'bg-sky-400',
+  },
 };
 
 function ToastItem({ toast, onDismiss }) {
-  const [exiting, setExiting] = useState(false);
   const [progress, setProgress] = useState(100);
-  const timerRef = useRef(null);
-  const startRef = useRef(Date.now());
-  const Icon = ICONS[toast.type] || ICONS.info;
-  const color = COLORS[toast.type] || COLORS.info;
+  const [exiting, setExiting] = useState(false);
+  const startTime = useRef(Date.now());
 
   useEffect(() => {
-    const duration = toast.duration || 3000;
-    const interval = 30;
-    timerRef.current = setInterval(() => {
-      const elapsed = Date.now() - startRef.current;
+    const duration = toast.duration;
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime.current;
       const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
       setProgress(remaining);
-      if (remaining <= 0) {
-        clearInterval(timerRef.current);
-        setExiting(true);
-        setTimeout(() => onDismiss(toast.id), 300);
-      }
-    }, interval);
-    return () => clearInterval(timerRef.current);
-  }, [toast.duration, toast.id, onDismiss]);
+      if (remaining <= 0) clearInterval(interval);
+    }, 50);
+    return () => clearInterval(interval);
+  }, [toast.duration]);
 
-  const handleClick = () => {
-    clearInterval(timerRef.current);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setExiting(true);
+      setTimeout(() => onDismiss(toast.id), 250);
+    }, toast.duration);
+    return () => clearTimeout(timer);
+  }, [toast.id, toast.duration, onDismiss]);
+
+  const handleDismiss = () => {
     setExiting(true);
-    setTimeout(() => onDismiss(toast.id), 300);
+    setTimeout(() => onDismiss(toast.id), 250);
   };
+
+  const style = TOAST_STYLES[toast.type] || TOAST_STYLES.info;
+  const Icon = TOAST_ICONS[toast.type] || Info;
 
   return (
     <div
-      onClick={handleClick}
-      className={`pointer-events-auto flex items-start gap-3 px-4 py-3.5 rounded-2xl shadow-2xl backdrop-blur-xl border cursor-pointer overflow-hidden relative
-        ${color.bg} ${color.border} ${color.text}
-        ${exiting ? 'toast-exit' : 'toast-enter'}`}
+      className={`relative overflow-hidden rounded-xl border shadow-2xl backdrop-blur-xl transition-all duration-250
+        ${style.bg} ${style.border}
+        ${exiting ? 'animate-toast-exit' : 'animate-toast-enter'}`}
+      style={{ maxWidth: '400px', width: '100%' }}
     >
-      <Icon size={18} className={`${color.icon} flex-shrink-0 mt-0.5`} />
-      <span className="text-sm font-medium leading-snug flex-1">{toast.message}</span>
+      <div className="flex items-start gap-3 px-4 py-3.5">
+        <div className="flex-shrink-0 mt-0.5">
+          <Icon size={18} className={style.icon} />
+        </div>
+        <p className={`flex-1 text-sm font-medium leading-snug ${style.text}`}>
+          {toast.message}
+        </p>
+        <button
+          onClick={handleDismiss}
+          className="flex-shrink-0 mt-0.5 p-0.5 rounded-full hover:bg-white/10 transition-colors"
+        >
+          <X size={14} className="text-white/40" />
+        </button>
+      </div>
       {/* Progress bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/5">
+      <div className="h-[2px] w-full bg-white/5">
         <div
-          className={`h-full ${color.bar} opacity-60 transition-none rounded-full`}
-          style={{ width: `${progress}%` }}
+          className={`h-full ${style.bar} transition-none`}
+          style={{ width: `${progress}%`, opacity: 0.6 }}
         />
       </div>
     </div>
@@ -78,7 +116,11 @@ export function ToastProvider({ children }) {
 
   const showToast = useCallback((message, type = 'info', duration = 3000) => {
     const id = ++toastId;
-    setToasts(prev => [...prev, { id, message, type, duration }]);
+    setToasts(prev => {
+      // Keep max 3 toasts visible
+      const limited = prev.length >= 3 ? prev.slice(1) : prev;
+      return [...limited, { id, message, type, duration }];
+    });
   }, []);
 
   const dismiss = useCallback((id) => {
@@ -88,10 +130,13 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {/* Toast Container — bottom center */}
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[200] flex flex-col-reverse gap-2 w-[92%] max-w-sm pointer-events-none">
+      {/* Toast Container — top-center, safe area aware */}
+      <div className="fixed top-0 left-0 right-0 z-[200] flex flex-col items-center gap-2 pt-[env(safe-area-inset-top,12px)] px-4 pointer-events-none"
+           style={{ paddingTop: 'max(env(safe-area-inset-top, 12px), 12px)' }}>
         {toasts.map(t => (
-          <ToastItem key={t.id} toast={t} onDismiss={dismiss} />
+          <div key={t.id} className="pointer-events-auto w-full flex justify-center">
+            <ToastItem toast={t} onDismiss={dismiss} />
+          </div>
         ))}
       </div>
     </ToastContext.Provider>

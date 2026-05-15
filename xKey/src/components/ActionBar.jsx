@@ -17,6 +17,15 @@ export default function ActionBar({
     { key: 'hasSeed', label: t('actionBar.hasSeed') },
     { key: 'hasBalance', label: t('actionBar.hasBalance') },
     { key: 'empty', label: t('actionBar.empty') },
+    // Network filters
+    { key: 'net:ETH', label: 'ETH', group: 'chain' },
+    { key: 'net:BSC', label: 'BSC', group: 'chain' },
+    { key: 'net:Polygon', label: 'MATIC', group: 'chain' },
+    { key: 'net:Solana', label: 'SOL', group: 'chain' },
+    { key: 'net:Arbitrum', label: 'ARB', group: 'chain' },
+    { key: 'net:Optimism', label: 'OP', group: 'chain' },
+    { key: 'net:Tron', label: 'TRX', group: 'chain' },
+    { key: 'net:Base', label: 'BASE', group: 'chain' },
   ];
 
   const SORT_OPTIONS = [
@@ -52,13 +61,26 @@ export default function ActionBar({
       </div>
 
       {showFilters && (
-        <div className="flex flex-wrap gap-2 mb-4 bg-surface-800/50 rounded-lg p-3 border border-surface-700">
-          {FILTER_OPTIONS.map(opt => (
-            <button key={opt.key} onClick={() => { onFilterChange(opt.key); setShowFilters(false); }}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${activeFilter === opt.key ? 'bg-cyan-500 text-white' : 'bg-surface-700 text-surface-300 hover:bg-surface-600'}`}>
-              {opt.label}
-            </button>
-          ))}
+        <div className="mb-4 bg-surface-800/50 rounded-lg p-3 border border-surface-700">
+          <div className="flex flex-wrap gap-2 mb-2">
+            {FILTER_OPTIONS.filter(o => !o.group).map(opt => (
+              <button key={opt.key} onClick={() => { onFilterChange(opt.key); setShowFilters(false); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${activeFilter === opt.key ? 'bg-cyan-500 text-white' : 'bg-surface-700 text-surface-300 hover:bg-surface-600'}`}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="border-t border-surface-700 pt-2 mt-1">
+            <span className="text-[10px] text-surface-500 uppercase tracking-wider mr-2">{t('actionBar.byChain')}</span>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {FILTER_OPTIONS.filter(o => o.group === 'chain').map(opt => (
+                <button key={opt.key} onClick={() => { onFilterChange(opt.key); setShowFilters(false); }}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors ${activeFilter === opt.key ? 'bg-brand-500 text-white' : 'bg-surface-700 text-surface-400 hover:bg-surface-600'}`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

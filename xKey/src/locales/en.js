@@ -86,7 +86,6 @@ export default {
     wipeAll: "Wipe All Vault Data",
     wipeDesc: "This action deletes the AES Encryption Key and all encrypted wallets. You cannot recover them.",
     wipeConfirm: "WARNING: This will delete all encrypted wallets from this device. You will lose access to this vault. Are you sure?",
-    confirmChange: "Change {setting} to {value}?",
   },
 
   // ─── Create Wallet ───
@@ -150,6 +149,7 @@ export default {
     clipboardCleared: "Clipboard cleared",
     masterPasswordRequired: "Enter master password to view",
     masterPasswordWrong: "Wrong master password",
+    changeNetwork: "Tap to change network",
   },
 
   // ─── Action Bar ───
@@ -170,6 +170,7 @@ export default {
     addressAsc: "Address A → Z",
     allNetworks: "All Networks",
     pinned: "Pinned",
+    byChain: "By Chain",
   },
 
   // ─── Duplicate Detector ───
@@ -243,22 +244,5 @@ export default {
   qrScanner: {
     title: "Scan QR Code",
     hint: "Point camera at a QR code containing an address, private key, or seed phrase",
-  },
-
-  // ─── Chain Bulk Label ───
-  chainBulk: {
-    title: "Chain Labels",
-    manualMode: "Manual Select",
-    autoMode: "Auto-Detect",
-    targetChain: "Target Chain",
-    filterBy: "Filter",
-    allWallets: "All Wallets",
-    selectAll: "Select All",
-    deselectAll: "Deselect All",
-    apply: "Apply {chain} to {count} wallets",
-    updated: "{count} wallets updated to {chain}",
-    autoDesc: "Auto-detect chain based on address format. Non-EVM chains (Tron, Solana) will be tagged automatically.",
-    evmNote: "manual selection needed",
-    runAutoDetect: "Run Auto-Detect",
   },
 };

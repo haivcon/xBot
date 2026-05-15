@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Wallet, Check, Copy, Eye, EyeOff, ChevronDown, ChevronUp, QrCode, Pencil, Trash2, Save, X, Settings2, Pin, PinOff } from 'lucide-react';
+import { Wallet, Check, Copy, Eye, EyeOff, ChevronDown, ChevronUp, QrCode, Pencil, Trash2, Save, X, Settings2, Pin, PinOff, Link } from 'lucide-react';
 import { useT } from '../contexts/LanguageContext';
 import { hapticTap, hapticSuccess, hapticWarning } from '../utils/haptics';
 import { secureCopy } from '../utils/clipboard';
 
 const AUTO_HIDE_MS = 30000;
-const NETWORKS = Object.keys({
-  ETH: 1, BSC: 1, Polygon: 1, Arbitrum: 1, Optimism: 1, Solana: 1, Tron: 1, Base: 1,
-});
 
 const NETWORK_COLORS = {
   ETH: { bg: 'bg-blue-500/15', text: 'text-blue-400', label: 'ETH' },
@@ -20,6 +17,10 @@ const NETWORK_COLORS = {
   Base: { bg: 'bg-blue-600/15', text: 'text-blue-300', label: 'BASE' },
 };
 
+const NETWORK_KEYS = Object.keys(NETWORK_COLORS);
+
+export { NETWORK_COLORS, NETWORK_KEYS };
+
 export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdit, onPin }) {
   const [expanded, setExpanded] = useState(false);
   const [showPk, setShowPk] = useState(false);
@@ -29,7 +30,6 @@ export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdi
   const [editName, setEditName] = useState(wallet.name || '');
   const [editMode, setEditMode] = useState(false);
   const [editFields, setEditFields] = useState({});
-  const [showChainPicker, setShowChainPicker] = useState(false);
   const t = useT();
 
   useEffect(() => { if (!showPk) return; const tm = setTimeout(() => setShowPk(false), AUTO_HIDE_MS); return () => clearTimeout(tm); }, [showPk]);
@@ -46,6 +46,7 @@ export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdi
       seedPhrase: wallet.seedPhrase || '',
       balance: wallet.balance || '',
       notes: wallet.notes || '',
+      network: wallet.network || 'ETH',
     });
     setEditMode(true);
   };
@@ -86,12 +87,19 @@ export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdi
                 <h3 className="text-white font-medium truncate">{wallet.name || t('walletCard.unnamed')}</h3>
                 {wallet.pinned && <Pin size={12} className="text-amber-400 flex-shrink-0" />}
                 {wallet.network && NETWORK_COLORS[wallet.network] && (
-                  <span
-                    onClick={(e) => { e.stopPropagation(); hapticTap(); setShowChainPicker(!showChainPicker); }}
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 cursor-pointer hover:ring-1 hover:ring-white/20 transition-all ${NETWORK_COLORS[wallet.network].bg} ${NETWORK_COLORS[wallet.network].text}`}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      hapticTap();
+                      const idx = NETWORK_KEYS.indexOf(wallet.network);
+                      const next = NETWORK_KEYS[(idx + 1) % NETWORK_KEYS.length];
+                      if (onEdit) onEdit({ network: next });
+                    }}
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 transition-all hover:scale-110 ${NETWORK_COLORS[wallet.network].bg} ${NETWORK_COLORS[wallet.network].text}`}
+                    title={t('walletCard.changeNetwork')}
                   >
                     {NETWORK_COLORS[wallet.network].label}
-                  </span>
+                  </button>
                 )}
               </div>
             )}
@@ -107,24 +115,6 @@ export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdi
           {expanded ? <ChevronUp size={20} className="text-surface-500" /> : <ChevronDown size={20} className="text-surface-500" />}
         </div>
       </div>
-
-      {/* Chain Picker Dropdown */}
-      {showChainPicker && (
-        <div className="px-4 py-2.5 bg-surface-800/80 border-b border-surface-700/50 flex flex-wrap gap-1.5">
-          {NETWORKS.map(n => {
-            const nc = NETWORK_COLORS[n];
-            if (!nc) return null;
-            const active = wallet.network === n;
-            return (
-              <button key={n} onClick={() => { onEdit({ network: n }); setShowChainPicker(false); hapticTap(); }}
-                className={`text-[11px] px-2.5 py-1 rounded-full font-medium transition-all
-                  ${active ? `${nc.bg} ${nc.text} ring-1 ring-current` : 'bg-surface-700/60 text-surface-400 hover:text-white hover:bg-surface-700'}`}>
-                {nc.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {expanded && (
         <div className="p-4 border-t border-surface-700 bg-surface-900/50 space-y-4">
@@ -142,6 +132,25 @@ export default function WalletCard({ wallet, onShowQR, onDelete, onRename, onEdi
               {editInput('seedPhrase', t('walletCard.seedPhrase'), 'text', true)}
               {editInput('balance', t('createWallet.balance'), 'number')}
               {editInput('notes', t('walletCard.notes'), 'text', true)}
+              {/* Network Selector */}
+              <div>
+                <label className="block text-xs text-surface-400 uppercase tracking-wider mb-1">{t('walletCard.network')}</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {NETWORK_KEYS.map(net => {
+                    const nc = NETWORK_COLORS[net];
+                    const active = editFields.network === net;
+                    return (
+                      <button key={net} type="button"
+                        onClick={() => setEditFields(p => ({ ...p, network: net }))}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all border
+                          ${active ? `${nc.bg} ${nc.text} border-current scale-105` : 'bg-surface-800 text-surface-500 border-surface-700 hover:border-surface-500'}`}
+                      >
+                        {nc.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="flex gap-2 pt-1">
                 <button onClick={cancelEdit}
                   className="btn-glow flex-1 flex items-center justify-center gap-1.5 bg-surface-800 hover:bg-surface-700 text-surface-300 py-2.5 rounded-lg text-sm transition-colors">
