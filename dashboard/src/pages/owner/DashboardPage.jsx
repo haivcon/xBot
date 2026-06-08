@@ -6,6 +6,7 @@ import useWsStore from '@/stores/wsStore';
 import useThemeStore from '@/stores/themeStore';
 import useAuthStore from '@/stores/authStore';
 import { SkeletonStatCards, SkeletonCard } from '@/components/Skeleton';
+import DashboardOpsPanels from './components/DashboardOpsPanels';
 
 const AnalyticsSection = lazy(() => import('./AnalyticsPage'));
 import {
@@ -262,6 +263,7 @@ export default function DashboardPage() {
     const [widgetSettingsOpen, setWidgetSettingsOpen] = useState(false);
     const wsNotifications = useWsStore((s) => s.notifications);
     const wsLastEvent = useWsStore((s) => s.lastEvent);
+    const wsConnected = useWsStore((s) => s.connected);
 
     // #7: Last updated timestamp
     const [lastUpdated, setLastUpdated] = useState(null);
@@ -589,6 +591,15 @@ export default function DashboardPage() {
                     </button>
                 </div>
             </div>
+
+            <DashboardOpsPanels
+                ownerMode={ownerMode}
+                overview={overview}
+                health={health}
+                liveStats={liveStats}
+                wsConnected={wsConnected}
+                onRefresh={fetchAll}
+            />
 
             {/* ── Live Stats Widget ── */}
             {isVisible('live') && (

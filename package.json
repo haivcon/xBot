@@ -1,11 +1,22 @@
 {
   "name": "banmao-bot-server",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "description": "Xlayer - BOT for the OKX Xlayer community",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "test": "jest --verbose"
+  },
+  "jest": {
+    "testMatch": [
+      "**/__tests__/**/*.test.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/api_docs/",
+      "/openclaw-main/",
+      "/dashboard/node_modules/"
+    ]
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

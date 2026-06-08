@@ -64,3 +64,8 @@ cleanup_*.js
 
 # ─── Gemini / AI working dirs ───
 .gemini/
+.cursor/
+
+# ─── Temp & Coverage ───
+coverage/
+*.swp

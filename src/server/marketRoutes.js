@@ -12,6 +12,20 @@ const onchainos = require('../services/onchainos');
 function createMarketRoutes() {
     const router = Router();
 
+    async function requirePinIfSet(userId, req) {
+        const { dbGet } = require('../../db/core');
+        const { _verifyPin } = require('../features/ai/onchain/helpers');
+
+        let user = null;
+        try { user = await dbGet('SELECT pinCode FROM users WHERE chatId = ?', [userId]); } catch {}
+        if (!user?.pinCode) return null;
+
+        const pin = req.body.pin || req.headers['x-pin'];
+        if (!pin) return { status: 403, error: 'PIN required', needPin: true };
+        if (!_verifyPin(pin, user.pinCode, userId)) return { status: 403, error: 'Invalid PIN', needPin: true };
+        return null;
+    }
+
     // ════════════════════════════════════════
     // Market Data Endpoints
     // ════════════════════════════════════════
@@ -239,6 +253,7 @@ function createMarketRoutes() {
             
             // Generate seed phrase based on requested length (default 12)
             const seedType = parseInt(req.body.seedType) === 24 ? 24 : 12;
+            const chainIndex = String(req.body.chainIndex || '196');
             const entropyBytes = seedType === 24 ? 32 : 16;
             const mnemonic = ethers.Mnemonic.fromEntropy(crypto.randomBytes(entropyBytes));
             const newWallet = ethers.HDNodeWallet.fromMnemonic(mnemonic);
@@ -256,7 +271,7 @@ function createMarketRoutes() {
 
             await dbRun(
                 'INSERT INTO user_trading_wallets (userId, walletName, address, encryptedKey, chainIndex, isDefault, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [userId, walletName, newWallet.address, encryptedKey, '196', isDefault, Math.floor(Date.now() / 1000)]
+                [userId, walletName, newWallet.address, encryptedKey, chainIndex, isDefault, Math.floor(Date.now() / 1000)]
             );
 
             // Sync: register as watch wallet on bot side
@@ -264,7 +279,7 @@ function createMarketRoutes() {
 
             res.json({
                 success: true,
-                wallet: { address: newWallet.address, name: walletName, isDefault: !!isDefault },
+                wallet: { address: newWallet.address, name: walletName, chainIndex, isDefault: !!isDefault },
                 privateKey: newWallet.privateKey,
                 seedPhrase: mnemonic.phrase,
                 seedType
@@ -362,6 +377,9 @@ function createMarketRoutes() {
         try {
             const { dbGet, dbRun } = require('../../db/core');
             const { removeWalletFromUser } = require('../../db/wallets');
+            const pinError = await requirePinIfSet(userId, req);
+            if (pinError) return res.status(pinError.status).json({ error: pinError.error, needPin: pinError.needPin });
+
             const tw = await dbGet('SELECT id, address FROM user_trading_wallets WHERE id = ? AND userId = ?', [req.params.id, userId]);
             if (!tw) return res.status(404).json({ error: 'Wallet not found' });
             await dbRun('DELETE FROM user_trading_wallets WHERE id = ? AND userId = ?', [req.params.id, userId]);
@@ -1203,6 +1221,9 @@ function createMarketRoutes() {
                 return res.status(400).json({ error: 'walletId, fromTokenAddress, toTokenAddress, amount required' });
             }
 
+            const pinError = await requirePinIfSet(userId, req);
+            if (pinError) return res.status(pinError.status).json({ error: pinError.error, needPin: pinError.needPin });
+
             const ethers = require('ethers');
             const cryptoNode = require('crypto');
             const { dbGet, dbRun } = require('../../db/core');
@@ -1308,6 +1329,9 @@ function createMarketRoutes() {
                 return res.status(400).json({ error: 'swaps[], fromTokenAddress, toTokenAddress required' });
             }
 
+            const pinError = await requirePinIfSet(userId, req);
+            if (pinError) return res.status(pinError.status).json({ error: pinError.error, needPin: pinError.needPin });
+
             const ethers = require('ethers');
             const cryptoNode = require('crypto');
             const { dbGet, dbRun } = require('../../db/core');
@@ -1400,6 +1424,9 @@ function createMarketRoutes() {
             const { walletId, chainIndex = '196', toAddress, tokenAddress, amount } = req.body;
             if (!walletId || !toAddress || !amount) return res.status(400).json({ error: 'walletId, toAddress, amount required' });
 
+            const pinError = await requirePinIfSet(userId, req);
+            if (pinError) return res.status(pinError.status).json({ error: pinError.error, needPin: pinError.needPin });
+
             const ethers = require('ethers');
             const cryptoNode = require('crypto');
             const { dbGet, dbRun } = require('../../db/core');
@@ -1463,6 +1490,9 @@ function createMarketRoutes() {
         try {
             const { transfers, chainIndex = '196', tokenAddress } = req.body;
             if (!Array.isArray(transfers) || transfers.length === 0) return res.status(400).json({ error: 'transfers[] required' });
+
+            const pinError = await requirePinIfSet(userId, req);
+            if (pinError) return res.status(pinError.status).json({ error: pinError.error, needPin: pinError.needPin });
 
             const ethers = require('ethers');
             const cryptoNode = require('crypto');

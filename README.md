@@ -31,7 +31,18 @@
 - [Roadmap](#️-project-roadmap)
 - [Contributing](#-contributing)
 
-### 🚀 What's New in v1.3.6 (Vault Operations & API Optimization)
+### 🚀 What's New in v1.3.7 (Dashboard Security & Analytics Upgrade)
+
+#### Web Dashboard Security & Resiliency
+- **Transaction PIN Security**: Upgraded the web dashboard's API endpoints to strictly require the user's secure Telegram PIN for sensitive operations including single/batch swaps, token transfers, and wallet deletions.
+- **Enhanced Owner Analytics**: Overhauled the owner analytics endpoint (`/owner/analytics`) to include an `hourlyActivity` matrix mapping group engagement over a 24/7 weekly heatmap. Resolved variable collisions in daily user growth tracking.
+- **Robust API Client Engine**: Upgraded the frontend React `ApiClient` with built-in exponential backoff retries, intelligent TTL response caching, and request deduplication.
+- **Cross-Chain Wallet Generation**: Added `chainIndex` payload support allowing users to explicitly select networks (e.g., Ethereum, BNB Chain, Arbitrum) when generating new wallets from the web dashboard.
+
+<details>
+<summary><b>View previous updates (v1.3.6 & older)</b></summary>
+
+### v1.3.6 (Vault Operations & API Optimization)
 
 #### XBOT Check v1.3.0 — Full Vault Management Suite
 - **Batch Sweep Engine**: Select multiple wallets and sweep their entire native token balance (ETH/OKB/BNB) to a single destination address in one batch operation via ethers.js v6. Supports X Layer, Ethereum, BSC, and Arbitrum networks.
@@ -42,9 +53,6 @@
 
 #### Bot Core — API Performance Optimization
 - **Reference Price Caching**: Added a 60-second TTL cache for OKB/ETH/BTC reference price lookups in `fetchReferenceTokenPriceUsd`. Reduces redundant API calls by ~60% per price alert cycle (e.g., 3 tracked tokens: 15 calls → 6 calls), significantly lowering OKX rate limit pressure.
-
-<details>
-<summary><b>View previous updates (v1.3.5 & older)</b></summary>
 
 ### v1.3.5 (XBOT Vault Mega Upgrade)
 - **Live On-Chain Balance Sync**: Integrated a secure OKX API engine (`okxApi.js`) natively implementing HMAC-SHA256 signatures. The vault now queries OKX OnchainOS directly to fetch and update real-time native token balances across multiple chains, perfectly respecting OKX API rate limits.

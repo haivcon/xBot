@@ -215,7 +215,7 @@ function CreateWalletModal({ currentCount, limit, onClose, onCreated }) {
         let errMessage = null;
         try {
             for (let i = 0; i < count; i++) {
-                const data = await api.createWallet(undefined, seedType);
+                const data = await api.createWallet(undefined, seedType, chainIndex);
                 if (data.error) throw new Error(data.error);
                 newResults.push(data);
             }

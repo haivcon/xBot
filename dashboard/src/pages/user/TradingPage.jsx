@@ -38,6 +38,11 @@ const EXPLORERS = {
     '8453': 'https://basescan.org',
 };
 const getExplorerTxUrl = (chainIndex, txHash) => `${EXPLORERS[chainIndex] || EXPLORERS['196']}/tx/${txHash}`;
+const requestActionPin = (t, hasPinCode) => {
+    if (!hasPinCode) return '';
+    const pin = window.prompt(t('dashboard.walletPage.currentPin', 'Current PIN'));
+    return pin ? pin.trim() : null;
+};
 
 /* #5: Skeleton shimmer loader */
 function Skeleton({ className = '', count = 1 }) {
@@ -644,7 +649,7 @@ function WalletDropdown({ wallets = [], value, onChange, accentColor = 'violet',
 /* ═══════════════════════════════════════════
    Swap Quote Widget — Premium v3 (All features)
    ═══════════════════════════════════════════ */
-function SwapQuoteWidget({ chainIndex, onTokenSelect, wallets = [], selectedWallet = null, onSwapToken }) {
+function SwapQuoteWidget({ chainIndex, onTokenSelect, wallets = [], selectedWallet = null, onSwapToken, hasPinCode = false }) {
     const { t } = useTranslation();
     const [searchParams] = useState(() => new URLSearchParams(window.location.search));
     const knownTokens = KNOWN_TOKENS[chainIndex] || KNOWN_TOKENS['196'];
@@ -711,6 +716,8 @@ function SwapQuoteWidget({ chainIndex, onTokenSelect, wallets = [], selectedWall
     };
     const handleBatchSwap = async () => {
         if (batchSelectedCount === 0) return;
+        const pin = requestActionPin(t, hasPinCode);
+        if (pin === null) return;
         setBatchExecuting(true); setBatchResults([]); setBatchProgress({ done: 0, total: batchSelectedCount });
         const selectedList = wallets.filter(w => batchSelectedWallets[w.id]);
         const results = [];
@@ -722,7 +729,8 @@ function SwapQuoteWidget({ chainIndex, onTokenSelect, wallets = [], selectedWall
                     walletId: w.id, chainIndex,
                     fromTokenAddress: tokens[fromSymbol].addr,
                     toTokenAddress: tokens[toSymbol].addr,
-                    amount: amt, slippage
+                    amount: amt, slippage,
+                    pin
                 });
                 results.push({ walletId: w.id, walletName: w.walletName || `Wallet ${w.id}`, txHash: res.txHash, amount: amt });
             } catch (err) {
@@ -736,8 +744,10 @@ function SwapQuoteWidget({ chainIndex, onTokenSelect, wallets = [], selectedWall
         // Toast summary
         const ok = results.filter(r => r.txHash).length;
         const fail = results.length - ok;
-        if (showToast) showToast(ok > 0 && fail === 0 ? 'success' : ok > 0 ? 'warning' : 'error',
-            `Batch Swap: ${ok}/${results.length} ${t('dashboard.tradingUx.success', 'success')}${fail > 0 ? `, ${fail} ${t('dashboard.tradingUx.failed', 'failed')}` : ''}`);
+        if (showToast) showToast(
+            `Batch Swap: ${ok}/${results.length} ${t('dashboard.tradingUx.success', 'success')}${fail > 0 ? `, ${fail} ${t('dashboard.tradingUx.failed', 'failed')}` : ''}`,
+            ok > 0
+        );
     };
 
     // Get quote for batch swap (uses the batch amount for a single representative quote)
@@ -1322,6 +1332,7 @@ function SwapQuoteWidget({ chainIndex, onTokenSelect, wallets = [], selectedWall
                             fromSymbol={fromSymbol}
                             toSymbol={routerResult?.toTokenSymbol || toSymbol}
                             expectedOutput={toAmount}
+                            hasPinCode={hasPinCode}
                         />
                     </div>
                 )}
@@ -2527,7 +2538,7 @@ function DcaWidget({ chainIndex, wallets: sharedWallets = [] }) {
 /* ═══════════════════════════════════════════
    Transfer Widget — Single & Batch
    ═══════════════════════════════════════════ */
-function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showToast = null }) {
+function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showToast = null, hasPinCode = false }) {
     const { t } = useTranslation();
     const [tab, setTab] = useState('single');
     const knownTokens = KNOWN_TOKENS[chainIndex] || KNOWN_TOKENS['196'];
@@ -2624,13 +2635,16 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
 
     const handleSingleTransfer = async () => {
         if (!sWalletId || !sTo || !sAmount || !isValidAddress(sTo)) return;
+        const pin = requestActionPin(t, hasPinCode);
+        if (pin === null) return;
         setSExecuting(true); setSResult(null);
         try {
             const tokenInfo = tokens[sToken];
             const isNative = tokenInfo?.addr?.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
             const res = await api.executeTransfer({
                 walletId: sWalletId, chainIndex, toAddress: sTo,
-                tokenAddress: isNative ? undefined : tokenInfo?.addr, amount: sAmount
+                tokenAddress: isNative ? undefined : tokenInfo?.addr, amount: sAmount,
+                pin
             });
             setSResult({ success: true, txHash: res.txHash });
         } catch (err) { setSResult({ success: false, error: err.message }); }
@@ -2656,6 +2670,8 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
         if (!sWalletId) return;
         const validRows = bRows.filter(r => r.toAddress && (bSameAmount ? bGlobalAmount : r.amount));
         if (validRows.length === 0) return;
+        const pin = requestActionPin(t, hasPinCode);
+        if (pin === null) return;
         setBExecuting(true); setBResults([]); setBProgress({ done: 0, total: validRows.length });
         const tokenInfo = tokens[bToken];
         const isNative = tokenInfo?.addr?.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
@@ -2666,7 +2682,8 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
             try {
                 const res = await api.executeTransfer({
                     walletId: sWalletId, chainIndex, toAddress: row.toAddress,
-                    tokenAddress: isNative ? undefined : tokenInfo?.addr, amount: amt
+                    tokenAddress: isNative ? undefined : tokenInfo?.addr, amount: amt,
+                    pin
                 });
                 const knownRecW = wallets.find(w => w.address.toLowerCase() === row.toAddress.toLowerCase());
                 results.push({ txHash: res.txHash, toAddress: row.toAddress, walletName: knownRecW?.walletName || '', amount: amt });
@@ -2682,13 +2699,17 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
         // Toast summary
         const ok = results.filter(r => r.txHash).length;
         const fail = results.length - ok;
-        if (showToast) showToast(ok > 0 && fail === 0 ? 'success' : ok > 0 ? 'warning' : 'error',
-            `Batch Transfer: ${ok}/${results.length} ${t('dashboard.tradingUx.success', 'success')}${fail > 0 ? `, ${fail} ${t('dashboard.tradingUx.failed', 'failed')}` : ''}`);
+        if (showToast) showToast(
+            `Batch Transfer: ${ok}/${results.length} ${t('dashboard.tradingUx.success', 'success')}${fail > 0 ? `, ${fail} ${t('dashboard.tradingUx.failed', 'failed')}` : ''}`,
+            ok > 0
+        );
     };
 
     const retryTransfer = async (index) => {
         const targetRes = bResults[index];
         if (!targetRes || targetRes.txHash) return;
+        const pin = requestActionPin(t, hasPinCode);
+        if (pin === null) return;
         
         setBResults(prev => prev.map((r, i) => i === index ? { ...r, retrying: true } : r));
         
@@ -2698,15 +2719,16 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
         try {
             const res = await api.executeTransfer({
                 walletId: sWalletId, chainIndex, toAddress: targetRes.toAddress,
-                tokenAddress: isNative ? undefined : tokenInfo?.addr, amount: targetRes.amount
+                tokenAddress: isNative ? undefined : tokenInfo?.addr, amount: targetRes.amount,
+                pin
             });
             const knownRecW = wallets.find(w => w.address.toLowerCase() === targetRes.toAddress.toLowerCase());
             setBResults(prev => prev.map((r, i) => i === index ? { ...r, txHash: res.txHash, error: undefined, retrying: false, walletName: knownRecW?.walletName || '' } : r));
-            if (showToast) showToast('success', t('dashboard.trading.retrySuccess', 'Retry successful!'));
+            if (showToast) showToast(t('dashboard.trading.retrySuccess', 'Retry successful!'), true);
         } catch (err) {
             const knownRecW = wallets.find(w => w.address.toLowerCase() === targetRes.toAddress.toLowerCase());
             setBResults(prev => prev.map((r, i) => i === index ? { ...r, error: err.message, retrying: false, walletName: knownRecW?.walletName || '' } : r));
-            if (showToast) showToast('error', t('dashboard.trading.retryFailed', 'Retry failed: ') + err.message);
+            if (showToast) showToast(t('dashboard.trading.retryFailed', 'Retry failed: ') + err.message, false);
         }
     };
 
@@ -3147,7 +3169,7 @@ function TransferWidget({ chainIndex, wallets = [], selectedWallet = null, showT
 /* ═══════════════════════════════════════════
    Execute Swap Button
    ═══════════════════════════════════════════ */
-function ExecuteSwapButton({ chainIndex, fromTokenAddress, toTokenAddress, amount, slippage, wallets: sharedWallets = [], selectedWallet: sharedSelectedWallet = null, showToast, fromSymbol = '', toSymbol = '', expectedOutput = null }) {
+function ExecuteSwapButton({ chainIndex, fromTokenAddress, toTokenAddress, amount, slippage, wallets: sharedWallets = [], selectedWallet: sharedSelectedWallet = null, showToast, fromSymbol = '', toSymbol = '', expectedOutput = null, hasPinCode = false }) {
     const { t } = useTranslation();
     const [executing, setExecuting] = useState(false);
     const [result, setResult] = useState(null);
@@ -3156,11 +3178,13 @@ function ExecuteSwapButton({ chainIndex, fromTokenAddress, toTokenAddress, amoun
 
     const handleExecute = async () => {
         if (!selectedWallet) return;
+        const pin = requestActionPin(t, hasPinCode);
+        if (pin === null) return;
         setExecuting(true);
         setResult(null);
         try {
             const res = await api.executeSwap({
-                walletId: selectedWallet.id, chainIndex, fromTokenAddress, toTokenAddress, amount, slippage
+                walletId: selectedWallet.id, chainIndex, fromTokenAddress, toTokenAddress, amount, slippage, pin
             });
             setResult({ success: true, txHash: res.txHash });
             if (showToast) showToast(t('dashboard.tradingUx.toastSwapOk', 'Swap Successful!') + ` ${amount} ${fromSymbol} → ${toSymbol}`, true, res.txHash, getExplorerTxUrl(chainIndex, res.txHash));
@@ -3613,6 +3637,7 @@ export default function TradingPage() {
     const [selectedToken, setSelectedToken] = useState({ sym: null, addr: null });
     const [wallets, setWallets] = useState([]);
     const [selectedWallet, setSelectedWallet] = useState(null);
+    const [hasPinCode, setHasPinCode] = useState(false);
     const [activeTab, setActiveTab] = useState(() => {
         try { return localStorage.getItem('trading_tab') || 'trade'; }
         catch { return 'trade'; }
@@ -3630,6 +3655,7 @@ export default function TradingPage() {
         api.getWallets().then(res => {
             const wl = res.wallets || [];
             setWallets(wl);
+            setHasPinCode(!!res.hasPinCode);
             const def = wl.find(w => w.isDefault) || wl[0];
             if (def) setSelectedWallet(def);
         }).catch(() => {});
@@ -3696,8 +3722,8 @@ export default function TradingPage() {
 
                     {/* Swap + Transfer */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <SwapQuoteWidget chainIndex={chainIndex} onTokenSelect={handleTokenSelect} wallets={wallets} selectedWallet={selectedWallet} onSwapToken={showToast} />
-                        <TransferWidget chainIndex={chainIndex} wallets={wallets} selectedWallet={selectedWallet} showToast={showToast} />
+                        <SwapQuoteWidget chainIndex={chainIndex} onTokenSelect={handleTokenSelect} wallets={wallets} selectedWallet={selectedWallet} onSwapToken={showToast} hasPinCode={hasPinCode} />
+                        <TransferWidget chainIndex={chainIndex} wallets={wallets} selectedWallet={selectedWallet} showToast={showToast} hasPinCode={hasPinCode} />
                     </div>
 
                     {/* DCA */}

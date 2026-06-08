@@ -8,38 +8,14 @@ const crypto = require('crypto');
 const { Router } = require('express');
 const db = require('../../db.js');
 const logger = require('../core/logger');
+const { createJWT, decodeAndVerifyJWT, verifyJWT } = require('./dashboardAuth');
 const log = logger.child('Dashboard');
 
-const JWT_SECRET = process.env.DASHBOARD_JWT_SECRET || process.env.TELEGRAM_TOKEN || 'xbot-dashboard-fallback-secret';
 const BOT_TOKEN = process.env.TELEGRAM_TOKEN;
 const OWNER_IDS = [
     ...(process.env.OWNER_IDS || '').split(',').map(s => s.trim()).filter(Boolean),
     ...(process.env.BOT_OWNER_ID || '').split(',').map(s => s.trim()).filter(Boolean),
 ];
-
-// ============================
-// Simple JWT implementation
-// ============================
-function createJWT(payload, expiresInSec = 86400 * 7) {
-    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-    const now = Math.floor(Date.now() / 1000);
-    const body = Buffer.from(JSON.stringify({ ...payload, iat: now, exp: now + expiresInSec })).toString('base64url');
-    const signature = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
-    return `${header}.${body}.${signature}`;
-}
-
-function verifyJWT(token) {
-    try {
-        const [header, body, signature] = token.split('.');
-        const expected = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
-        if (signature !== expected) return null;
-        const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
-        if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
-        return payload;
-    } catch {
-        return null;
-    }
-}
 
 // ============================
 // Telegram Login Verification
@@ -475,25 +451,9 @@ function createDashboardRoutes() {
             if (!authHeader?.startsWith('Bearer ')) {
                 return res.status(401).json({ error: 'No token' });
             }
-            // Decode without strict expiry check (allow slightly expired tokens for refresh)
             const token = authHeader.slice(7);
-            let payload;
-            try {
-                const [, body] = token.split('.');
-                payload = JSON.parse(Buffer.from(body, 'base64url').toString());
-            } catch {
-                return res.status(401).json({ error: 'Invalid token' });
-            }
-            // Verify signature
-            const [header, body, signature] = token.split('.');
-            const expected = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
-            if (signature !== expected) return res.status(401).json({ error: 'Invalid signature' });
-
-            // Allow refresh within 24h of expiry
-            const now = Math.floor(Date.now() / 1000);
-            if (payload.exp && now - payload.exp > 86400) {
-                return res.status(401).json({ error: 'Token expired beyond refresh window' });
-            }
+            const payload = decodeAndVerifyJWT(token, { allowExpiredWithinSec: 86400 });
+            if (!payload) return res.status(401).json({ error: 'Invalid or expired token' });
 
             const role = await getUserRole(payload.userId, payload.username);
             const newToken = createJWT({
@@ -546,23 +506,6 @@ function createDashboardRoutes() {
             });
         } catch (err) {
             res.status(500).json({ error: err.message });
-        }
-    });
-
-    // --- JWT Refresh (protected, returns a fresh token) ---
-    router.post('/auth/refresh', authMiddleware, async (req, res) => {
-        try {
-            const user = req.dashboardUser;
-            const role = await getUserRole(user.userId, user.username);
-            const token = createJWT({
-                userId: user.userId,
-                username: user.username,
-                firstName: user.firstName,
-                role,
-            });
-            res.json({ token, role });
-        } catch (err) {
-            res.status(500).json({ error: 'Failed to refresh token' });
         }
     });
 
@@ -979,38 +922,88 @@ function createDashboardRoutes() {
             const period = req.query.period || '7d';
             const days = period === '30d' ? 30 : 7;
             const since = Date.now() - days * 86400000;
+            const sinceDay = new Date(since).toISOString().split('T')[0];
+            const sinceTs = Math.floor(since / 1000);
 
-            // Aggregate stats from command_usage_logs
-            const commandStats = await db.getCommandUsageStats?.(since) || {};
-            const userStats = await db.getGlobalUserStats?.() || {};
+            const userStats = await db.dbGet(
+                `SELECT
+                    COALESCE(SUM(aiChats), 0) AS totalAiChats,
+                    COALESCE(SUM(gamesPlayed), 0) AS totalGamesPlayed,
+                    COALESCE(SUM(checkinCount), 0) AS totalCheckins
+                 FROM user_stats`
+            ).catch(() => ({})) || {};
+            const dailyRows = await db.dbAll(
+                `SELECT usageDate AS date, SUM(count) AS commands
+                 FROM command_usage_logs
+                 WHERE usageDate >= ? AND userId NOT LIKE 'device:%'
+                 GROUP BY usageDate
+                 ORDER BY usageDate ASC`,
+                [sinceDay]
+            ).catch(() => []) || [];
+            const topCommands = await db.dbAll(
+                `SELECT command, SUM(count) AS count
+                 FROM command_usage_logs
+                 WHERE usageDate >= ? AND userId NOT LIKE 'device:%'
+                 GROUP BY command
+                 HAVING count > 0
+                 ORDER BY count DESC
+                 LIMIT 10`,
+                [sinceDay]
+            ).catch(() => []) || [];
+
+            const dailyMap = {};
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date(Date.now() - i * 86400000).toISOString().split('T')[0];
+                dailyMap[d] = 0;
+            }
+            for (const row of dailyRows) {
+                if (row.date in dailyMap) dailyMap[row.date] = Number(row.commands) || 0;
+            }
+            const dailyUsage = Object.entries(dailyMap).map(([date, commands]) => ({ date, commands }));
 
             // Build user growth data (daily new users)
             let userGrowth = [];
             try {
-                const sinceTs = Math.floor(since / 1000);
                 const userList = await db.listUsersDetailed?.() || [];
-                const dailyMap = {};
+                const userDailyMap = {};
                 for (let i = 0; i < days; i++) {
                     const d = new Date(Date.now() - i * 86400000);
-                    dailyMap[d.toISOString().split('T')[0]] = 0;
+                    userDailyMap[d.toISOString().split('T')[0]] = 0;
                 }
                 for (const u of userList) {
                     if (u.firstSeen && u.firstSeen > sinceTs) {
                         const date = new Date(u.firstSeen * 1000).toISOString().split('T')[0];
-                        if (dailyMap[date] !== undefined) dailyMap[date]++;
+                        if (userDailyMap[date] !== undefined) userDailyMap[date]++;
                     }
                 }
-                userGrowth = Object.entries(dailyMap).sort().map(([date, newUsers]) => ({ date, newUsers }));
+                userGrowth = Object.entries(userDailyMap).sort().map(([date, newUsers]) => ({ date, newUsers }));
             } catch { /* ignore */ }
 
+            const hourlyActivity = Array.from({ length: 24 }, (_, hour) => ({ hour, days: Array(7).fill(0) }));
+            try {
+                const activityRows = await db.dbAll(
+                    `SELECT createdAt FROM group_activity_log WHERE createdAt >= ? ORDER BY createdAt ASC`,
+                    [sinceTs]
+                ) || [];
+                for (const row of activityRows) {
+                    const ts = Number(row.createdAt);
+                    if (!ts) continue;
+                    const d = new Date(ts * 1000);
+                    const hour = d.getHours();
+                    const dayIndex = (d.getDay() + 6) % 7;
+                    hourlyActivity[hour].days[dayIndex] += 1;
+                }
+            } catch { /* table may not exist */ }
+
             res.json({
-                totalCommands: commandStats.total || 0,
+                totalCommands: dailyUsage.reduce((sum, row) => sum + row.commands, 0),
                 aiChats: userStats.totalAiChats || 0,
                 gamesPlayed: userStats.totalGamesPlayed || 0,
                 checkins: userStats.totalCheckins || 0,
-                dailyUsage: commandStats.daily || [],
-                topCommands: commandStats.topCommands || [],
+                dailyUsage,
+                topCommands,
                 userGrowth,
+                hourlyActivity,
             });
         } catch (err) {
             res.status(500).json({ error: err.message });

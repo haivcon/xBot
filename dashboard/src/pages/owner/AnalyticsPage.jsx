@@ -27,15 +27,13 @@ export default function AnalyticsPage() {
 
     useEffect(() => { fetchAnalytics(); }, [period]);
 
-    // Pre-compute heatmap data to avoid flicker from Math.random on every render
     const heatmapData = useMemo(() => {
         return Array.from({ length: 24 }).map((_, hour) => {
             const hourData = (data?.hourlyActivity || []).find(h => h.hour === hour);
-            return Array.from({ length: 7 }).map((_, day) =>
-                hourData?.days?.[day] ?? Math.floor(Math.random() * 10 * Math.max(0.2, 1 - Math.abs(hour - 14) / 12))
-            );
+            return Array.from({ length: 7 }).map((_, day) => hourData?.days?.[day] ?? 0);
         });
     }, [data]);
+    const hasHeatmapData = heatmapData.some(row => row.some(val => val > 0));
 
     useEffect(() => {
         (async () => {
@@ -208,7 +206,7 @@ export default function AnalyticsPage() {
                                 <div key={d} className="flex-1 text-center text-[9px] text-surface-200/30 font-medium">{d}</div>
                             ))}
                         </div>
-                        {/* Heatmap grid — 24 hours x 7 days */}
+                        {/* Heatmap grid */}
                         {heatmapData.map((row, hour) => (
                             <div key={hour} className="flex items-center gap-0.5 mb-0.5">
                                 <span className="w-10 text-[9px] text-surface-200/25 text-right pr-2">
@@ -231,6 +229,11 @@ export default function AnalyticsPage() {
                                 })}
                             </div>
                         ))}
+                        {!hasHeatmapData && (
+                            <div className="mt-3 py-4 text-center text-xs text-surface-200/35 border border-white/5 rounded-lg">
+                                {t('dashboard.common.noData') || 'No data'}
+                            </div>
+                        )}
                         {/* Legend */}
                         <div className="flex items-center justify-end gap-2 mt-3">
                             <span className="text-[9px] text-surface-200/25">Less</span>

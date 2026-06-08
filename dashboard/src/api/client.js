@@ -2,25 +2,58 @@ import useAuthStore from '@/stores/authStore';
 import config from '@/config';
 
 const API_BASE = config.apiBase;
+const responseCache = new Map();
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 class ApiClient {
     async request(path, options = {}) {
+        const {
+            cacheTtl = 0,
+            retries = 0,
+            retryDelay = 500,
+            ...fetchOptions
+        } = options;
+        const method = fetchOptions.method || 'GET';
+        const authState = useAuthStore.getState();
+        const authScope = authState.token ? `${authState.user?.id || 'user'}:${authState.token.slice(-12)}` : 'anon';
+        const cacheKey = `${authScope}:${method}:${path}:${fetchOptions.body || ''}`;
+        if (cacheTtl > 0) {
+            const cached = responseCache.get(cacheKey);
+            if (cached && Date.now() < cached.expiresAt) return cached.data;
+        }
+
         const headers = {
             'Content-Type': 'application/json',
             ...useAuthStore.getState().getHeaders(),
-            ...options.headers,
+            ...fetchOptions.headers,
         };
 
-        const timeout = options.timeout || 30000;
+        const timeout = fetchOptions.timeout || 30000;
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeout);
 
         try {
-            const res = await fetch(`${API_BASE}${path}`, {
-                ...options,
-                headers,
-                signal: controller.signal,
-            });
+            let res;
+            let lastError;
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    res = await fetch(`${API_BASE}${path}`, {
+                        ...fetchOptions,
+                        headers,
+                        signal: controller.signal,
+                    });
+                    if (res.status < 500 || attempt === retries) break;
+                    await sleep(retryDelay * (attempt + 1));
+                } catch (err) {
+                    lastError = err;
+                    if (attempt === retries) throw err;
+                    await sleep(retryDelay * (attempt + 1));
+                }
+            }
+            if (!res && lastError) throw lastError;
 
             if (res.status === 401) {
                 useAuthStore.getState().logout();
@@ -30,10 +63,19 @@ class ApiClient {
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Network error' }));
-                throw new Error(err.error || `HTTP ${res.status}`);
+                const requestError = new Error(err.error || `HTTP ${res.status}`);
+                Object.assign(requestError, err, { status: res.status });
+                throw requestError;
             }
 
-            return res.json();
+            const data = await res.json();
+            if (method !== 'GET') {
+                responseCache.clear();
+            }
+            if (cacheTtl > 0) {
+                responseCache.set(cacheKey, { data, expiresAt: Date.now() + cacheTtl });
+            }
+            return data;
         } catch (err) {
             if (err.name === 'AbortError') {
                 throw new Error('Request timeout');
@@ -62,7 +104,7 @@ class ApiClient {
 
     // === Owner APIs ===
     getHealth() {
-        return this.get('/health');
+        return this.request('/health', { cacheTtl: 5000, retries: 1 });
     }
 
     getUsers(params = {}) {
@@ -116,7 +158,7 @@ class ApiClient {
     }
 
     getAnalytics(period = '7d') {
-        return this.get(`/owner/analytics?period=${period}`);
+        return this.request(`/owner/analytics?period=${period}`, { cacheTtl: 10000, retries: 1 });
     }
 
     getChatStats() {
@@ -169,11 +211,11 @@ class ApiClient {
 
     // === New Owner APIs ===
     getOverview() {
-        return this.get('/owner/overview');
+        return this.request('/owner/overview', { cacheTtl: 5000, retries: 1 });
     }
 
     getUserOverview() {
-        return this.get('/user/overview');
+        return this.request('/user/overview', { cacheTtl: 5000, retries: 1 });
     }
 
     getRuntimeConfig() {
@@ -349,10 +391,10 @@ class ApiClient {
 
     // === Wallet APIs ===
     getWallets() { return this.get('/market/wallets'); }
-    createWallet(name, seedType = 12) { return this.post('/market/wallets/create', { name, seedType }); }
+    createWallet(name, seedType = 12, chainIndex = '196') { return this.post('/market/wallets/create', { name, seedType, chainIndex }); }
     importWallet(keys) { return this.post('/market/wallets/import', { keys }); }
     getWalletBalance(id, chainIndex) { return this.get(`/market/wallets/${id}/balance${chainIndex ? '?chainIndex=' + chainIndex : ''}`); }
-    deleteWallet(id) { return this.delete(`/market/wallets/${id}`); }
+    deleteWallet(id, pin) { return this.delete(`/market/wallets/${id}`, pin ? { pin } : undefined); }
     setDefaultWallet(id) { return this.post(`/market/wallets/${id}/set-default`); }
     renameWallet(id, name) { return this.put(`/market/wallets/${id}/rename`, { name }); }
     exportWalletKey(id, pin) { return this.post(`/market/wallets/${id}/export-key`, { pin }); }
