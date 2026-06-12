@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowRight, Shield, Cpu, Globe, Smartphone, Lock, Layers, Wallet, BarChart3, Bot, Key, ChevronDown } from 'lucide-react';
 
 const GithubIcon = ({ size = 16, className = '' }) => (
@@ -211,6 +211,15 @@ const TEXTS = {
 export default function App() {
     const [lang, setLang] = useState('vi');
     const [langOpen, setLangOpen] = useState(false);
+    
+    // Auto-redirect to xBot dashboard if opened within Telegram Mini App
+    useEffect(() => {
+        const hash = window.location.hash || '';
+        if (hash.includes('tgWebAppData')) {
+            window.location.replace('/xBot/' + hash);
+        }
+    }, []);
+
     const t = TEXTS[lang] || TEXTS.vi;
     const currentLang = LANGUAGES.find(l => l.code === lang);
 

@@ -20,7 +20,7 @@ function createStartHandlers({
         // Add dashboard web button if PUBLIC_BASE_URL is set and is HTTPS
         const baseUrl = (process.env.PUBLIC_BASE_URL || '').replace(/\/+$/, '');
         if (baseUrl && baseUrl.startsWith('https://')) {
-            keyboard.push([{ text: t(lang, 'dashboard_btn_home'), url: baseUrl + '/' }]);
+            keyboard.push([{ text: t(lang, 'dashboard_btn_home'), url: baseUrl + '/xBot/' }]);
         }
 
         return { inline_keyboard: keyboard };

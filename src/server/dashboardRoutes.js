@@ -294,7 +294,7 @@ function createDashboardRoutes() {
                 }
             })};
                     localStorage.setItem('xbot_dashboard_auth', JSON.stringify(authData));
-                    window.location.href = '/';
+                    window.location.href = '/xBot/';
                 </script>
                 </body></html>
             `);

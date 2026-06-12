@@ -946,7 +946,7 @@ function registerCoreCommands(deps = {}) {
 
             const baseUrl = (process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.API_PORT || 3000}`).replace(/\/+$/, '');
             const loginUrl = `${baseUrl}/api/dashboard/auth/auto-login?token=${token}`;
-            const dashboardHome = `${baseUrl}/`;
+            const dashboardHome = `${baseUrl}/xBot/`;
             const isHttps = loginUrl.startsWith('https://');
 
             if (isHttps) {
