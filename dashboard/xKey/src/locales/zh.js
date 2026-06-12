@@ -1,5 +1,8 @@
 ﻿export default {
-  common: { cancel: "取消", save: "保存", delete: "删除", close: "关闭", confirm: "确认", copied: "已复制！", copyData: "复制数据", copiedClipboard: "已复制到剪贴板",
+  common: {
+    bannerTitle: "网页演示",
+    bannerDesc: "这是一个网页预览版。为了最高安全性和最佳体验，请下载安卓应用。",
+    bannerBtn: "从 GitHub 下载 →", cancel: "取消", save: "保存", delete: "删除", close: "关闭", confirm: "确认", copied: "已复制！", copyData: "复制数据", copiedClipboard: "已复制到剪贴板",
     errorReadingFile: "读取文件时出错",
     csvParseError: "CSV 解析错误",
     updatedNetwork: "网络已更新",},

@@ -1,5 +1,8 @@
 ﻿export default {
-  common: { cancel: "キャンセル", save: "保存", delete: "削除", close: "閉じる", confirm: "確認", copied: "コピーしました！", copyData: "データをコピー", copiedClipboard: "クリップボードにコピーしました",
+  common: {
+    bannerTitle: "ウェブデモ",
+    bannerDesc: "これはウェブプレビューです。最高のセキュリティのためにAndroidアプリをダウンロードしてください。",
+    bannerBtn: "GitHubからダウンロード →", cancel: "キャンセル", save: "保存", delete: "削除", close: "閉じる", confirm: "確認", copied: "コピーしました！", copyData: "データをコピー", copiedClipboard: "クリップボードにコピーしました",
     errorReadingFile: "ファイルの読み取りエラー",
     csvParseError: "CSV解析エラー",
     updatedNetwork: "ネットワークが更新されました",},

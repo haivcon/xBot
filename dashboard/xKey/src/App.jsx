@@ -306,7 +306,13 @@ export default function App() {
           )}
         </header>
 
-        <main className="p-4 max-w-2xl mx-auto pb-20">
+        <div className="fixed bottom-0 left-0 right-0 z-[9998] p-3 bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 border-t border-indigo-500/20 backdrop-blur-md flex flex-wrap items-center justify-center gap-2 text-[13px] font-sans text-slate-400 text-center">
+          <span className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-md font-semibold text-[11px] whitespace-nowrap">{t('common.bannerTitle') || 'WEB DEMO'}</span>
+          <span>{t('common.bannerDesc') || 'This is an experimental web preview.'}</span>
+          <a href="https://github.com/haivcon/xKey/releases/latest" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline font-medium whitespace-nowrap">{t('common.bannerBtn') || 'Download from GitHub →'}</a>
+        </div>
+
+        <main className="p-4 max-w-2xl mx-auto pb-24">
 
           {wallets.length === 0 ? (
             <div className="space-y-4 mt-10">

@@ -1,5 +1,8 @@
 ﻿export default {
-  common: { cancel: "취소", save: "저장", delete: "삭제", close: "닫기", confirm: "확인", copied: "복사됨!", copyData: "데이터 복사", copiedClipboard: "클립보드에 복사됨",
+  common: {
+    bannerTitle: "웹 데모",
+    bannerDesc: "이것은 웹 미리보기입니다. 최대의 보안을 위해 안드로이드 앱을 다운로드하세요.",
+    bannerBtn: "GitHub에서 다운로드 →", cancel: "취소", save: "저장", delete: "삭제", close: "닫기", confirm: "확인", copied: "복사됨!", copyData: "데이터 복사", copiedClipboard: "클립보드에 복사됨",
     errorReadingFile: "파일을 읽는 중 오류",
     csvParseError: "CSV 구문 분석 오류",
     updatedNetwork: "네트워크가 업데이트되었습니다",},

@@ -1,5 +1,8 @@
 ﻿export default {
-  common: { cancel: "Отмена", save: "Сохранить", delete: "Удалить", close: "Закрыть", confirm: "Подтвердить", copied: "Скопировано!", copyData: "Копировать данные", copiedClipboard: "Скопировано в буфер обмена",
+  common: {
+    bannerTitle: "ВЕБ-ДЕМО",
+    bannerDesc: "Это веб-версия. Для максимальной безопасности загрузите приложение для Android.",
+    bannerBtn: "Скачать с GitHub →", cancel: "Отмена", save: "Сохранить", delete: "Удалить", close: "Закрыть", confirm: "Подтвердить", copied: "Скопировано!", copyData: "Копировать данные", copiedClipboard: "Скопировано в буфер обмена",
     errorReadingFile: "Ошибка чтения файла",
     csvParseError: "Ошибка разбора CSV",
     updatedNetwork: "Сеть обновлена",},

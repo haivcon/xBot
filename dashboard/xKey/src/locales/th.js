@@ -1,5 +1,8 @@
 ﻿export default {
-  common: { cancel: "ยกเลิก", save: "บันทึก", delete: "ลบ", close: "ปิด", confirm: "ยืนยัน", copied: "คัดลอกแล้ว!", copyData: "คัดลอกข้อมูล", copiedClipboard: "คัดลอกไปยังคลิปบอร์ดแล้ว",
+  common: {
+    bannerTitle: "เว็บเดโม",
+    bannerDesc: "นี่คือพรีวิวบนเว็บ เพื่อความปลอดภัยสูงสุด โปรดดาวน์โหลดแอป Android",
+    bannerBtn: "ดาวน์โหลดจาก GitHub →", cancel: "ยกเลิก", save: "บันทึก", delete: "ลบ", close: "ปิด", confirm: "ยืนยัน", copied: "คัดลอกแล้ว!", copyData: "คัดลอกข้อมูล", copiedClipboard: "คัดลอกไปยังคลิปบอร์ดแล้ว",
     errorReadingFile: "ข้อผิดพลาดในการอ่านไฟล์",
     csvParseError: "ข้อผิดพลาดในการวิเคราะห์ CSV",
     updatedNetwork: "เครือข่ายได้รับการอัปเดต",},

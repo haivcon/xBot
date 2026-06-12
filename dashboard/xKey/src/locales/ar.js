@@ -1,5 +1,8 @@
 ﻿export default {
-  common: { cancel: "إلغاء", save: "حفظ", delete: "حذف", close: "إغلاق", confirm: "تأكيد", copied: "تم النسخ!", copyData: "نسخ البيانات", copiedClipboard: "تم النسخ إلى الحافظة",
+  common: {
+    bannerTitle: "نسخة ويب تجريبية",
+    bannerDesc: "هذه نسخة تجريبية. يرجى تحميل التطبيق لنظام Android للحصول على أفضل تجربة وأمان.",
+    bannerBtn: "تحميل من GitHub →", cancel: "إلغاء", save: "حفظ", delete: "حذف", close: "إغلاق", confirm: "تأكيد", copied: "تم النسخ!", copyData: "نسخ البيانات", copiedClipboard: "تم النسخ إلى الحافظة",
     errorReadingFile: "خطأ في قراءة الملف",
     csvParseError: "خطأ في تحليل ملف CSV",
     updatedNetwork: "تم تحديث الشبكة",},

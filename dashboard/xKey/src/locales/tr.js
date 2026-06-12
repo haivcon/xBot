@@ -1,5 +1,8 @@
 ﻿export default {
-  common: { cancel: "İptal", save: "Kaydet", delete: "Sil", close: "Kapat", confirm: "Onayla", copied: "Kopyalandı!", copyData: "Veriyi Kopyala", copiedClipboard: "Panoya kopyalandı",
+  common: {
+    bannerTitle: "WEB DEMOSU",
+    bannerDesc: "Bu bir web önizlemesidir. Maksimum güvenlik için Android uygulamasını indirin.",
+    bannerBtn: "GitHub'dan İndir →", cancel: "İptal", save: "Kaydet", delete: "Sil", close: "Kapat", confirm: "Onayla", copied: "Kopyalandı!", copyData: "Veriyi Kopyala", copiedClipboard: "Panoya kopyalandı",
     errorReadingFile: "Dosya okunurken hata",
     csvParseError: "CSV ayrıştırma hatası",
     updatedNetwork: "Ağ güncellendi",},

@@ -1,5 +1,8 @@
 export default {
-  common: { cancel: "Hủy", save: "Lưu", delete: "Xóa", close: "Đóng", confirm: "Xác nhận", copied: "Đã sao chép!", copyData: "Sao chép dữ liệu", copiedClipboard: "Đã sao chép vào clipboard",
+  common: {
+    bannerTitle: "BẢN WEB DEMO",
+    bannerDesc: "Đây chỉ là bản xem trước trên web. Để bảo mật và trải nghiệm tốt nhất, vui lòng tải app Android.",
+    bannerBtn: "Tải bản Android trên GitHub →", cancel: "Hủy", save: "Lưu", delete: "Xóa", close: "Đóng", confirm: "Xác nhận", copied: "Đã sao chép!", copyData: "Sao chép dữ liệu", copiedClipboard: "Đã sao chép vào clipboard",
     errorReadingFile: "Lỗi đọc tệp",
     csvParseError: "Lỗi phân tích cú pháp CSV",
     updatedNetwork: "Đã cập nhật mạng",},

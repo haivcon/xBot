@@ -1,5 +1,8 @@
 ﻿export default {
-  common: { cancel: "Cancelar", save: "Guardar", delete: "Eliminar", close: "Cerrar", confirm: "Confirmar", copied: "¡Copiado!", copyData: "Copiar datos", copiedClipboard: "Copiado al portapapeles",
+  common: {
+    bannerTitle: "DEMO WEB",
+    bannerDesc: "Esta es una vista previa. Para máxima seguridad y mejor experiencia, descargue la aplicación de Android.",
+    bannerBtn: "Descargar desde GitHub →", cancel: "Cancelar", save: "Guardar", delete: "Eliminar", close: "Cerrar", confirm: "Confirmar", copied: "¡Copiado!", copyData: "Copiar datos", copiedClipboard: "Copiado al portapapeles",
     errorReadingFile: "Error al leer el archivo",
     csvParseError: "Error de análisis de CSV",
     updatedNetwork: "Red actualizada",},

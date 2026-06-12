@@ -1,5 +1,8 @@
 ﻿export default {
-  common: { cancel: "Batal", save: "Simpan", delete: "Hapus", close: "Tutup", confirm: "Konfirmasi", copied: "Disalin!", copyData: "Salin Data", copiedClipboard: "Disalin ke clipboard",
+  common: {
+    bannerTitle: "DEMO WEB",
+    bannerDesc: "Ini adalah pratinjau web. Untuk keamanan maksimal, unduh aplikasi Android.",
+    bannerBtn: "Unduh dari GitHub →", cancel: "Batal", save: "Simpan", delete: "Hapus", close: "Tutup", confirm: "Konfirmasi", copied: "Disalin!", copyData: "Salin Data", copiedClipboard: "Disalin ke clipboard",
     errorReadingFile: "Kesalahan membaca file",
     csvParseError: "Kesalahan parse CSV",
     updatedNetwork: "Jaringan diperbarui",},

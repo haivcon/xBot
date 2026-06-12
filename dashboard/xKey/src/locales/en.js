@@ -1,6 +1,9 @@
 export default {
   // ─── Common ───
   common: {
+    bannerTitle: "WEB DEMO",
+    bannerDesc: "This is a web preview. For maximum security and best experience, download the Android app.",
+    bannerBtn: "Download from GitHub →",
     cancel: "Cancel",
     save: "Save",
     delete: "Delete",

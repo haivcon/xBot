@@ -1,5 +1,8 @@
 ﻿export default {
-  common: { cancel: "रद्द करें", save: "सहेजें", delete: "हटाएं", close: "बंद करें", confirm: "पुष्टि करें", copied: "कॉपी किया!", copyData: "डेटा कॉपी करें", copiedClipboard: "क्लिपबोर्ड पर कॉपी किया",
+  common: {
+    bannerTitle: "वेब डेमो",
+    bannerDesc: "यह एक वेब पूर्वावलोकन है। अधिकतम सुरक्षा के लिए Android ऐप डाउनलोड करें।",
+    bannerBtn: "GitHub से डाउनलोड करें →", cancel: "रद्द करें", save: "सहेजें", delete: "हटाएं", close: "बंद करें", confirm: "पुष्टि करें", copied: "कॉपी किया!", copyData: "डेटा कॉपी करें", copiedClipboard: "क्लिपबोर्ड पर कॉपी किया",
     errorReadingFile: "फ़ाइल पढ़ने में त्रुटि",
     csvParseError: "CSV पार्स त्रुटि",
     updatedNetwork: "नेटवर्क अपडेट किया गया",},
