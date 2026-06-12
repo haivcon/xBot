@@ -225,6 +225,9 @@ export default function App() {
 
     return (
         <div className="hero-gradient min-h-screen relative">
+            {/* Background grid */}
+            <div className="absolute inset-0 z-0 opacity-[0.02] pointer-events-none mix-blend-overlay" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+            
             {/* Background glow orbs */}
             <div className="glow-orb-1" style={{ top: '-10%', right: '-5%' }} />
             <div className="glow-orb-2" style={{ bottom: '10%', left: '-8%' }} />
@@ -265,8 +268,8 @@ export default function App() {
                     </div>
 
                     <h1 className="text-5xl sm:text-7xl font-black tracking-tight mb-4">
-                        <span className="bg-gradient-to-r from-white via-blue-200 to-blue-400 bg-clip-text text-transparent">
-                            xlayer
+                        <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-[length:200%_auto] animate-[gradient-shift_5s_ease-in-out_infinite] bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                            xLayer
                         </span>
                         <span className="text-blue-400">.my</span>
                     </h1>
@@ -358,14 +361,24 @@ export default function App() {
 
             {/* ── Footer ── */}
             <footer className="relative z-10 text-center pb-10 px-6 animate-fade-up delay-500">
-                <div className="border-t border-white/[0.05] pt-8 max-w-5xl mx-auto">
+                <div className="border-t border-white/[0.05] pt-8 max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex flex-wrap justify-center items-center gap-6">
+                        <a href="https://x.com/XlayerAi_bot" target="_blank" rel="noopener noreferrer" className="text-surface-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium">
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                            @XlayerAi_bot
+                        </a>
+                        <a href="https://x.com/haivcon" target="_blank" rel="noopener noreferrer" className="text-surface-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium">
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                            Dev: @haivcon
+                        </a>
+                    </div>
                     <p className="text-surface-500 text-sm">
                         {t.footer}{' '}
                         <a href="https://t.me/haivcon" target="_blank" rel="noopener noreferrer" className="text-surface-400 hover:text-white transition-colors">
                             ＤＯＲＥＭＯＮ
                         </a>
                         {' '}•{' '}
-                        <span className="text-surface-400">xlayer.my</span>
+                        <span className="text-surface-400">xLayer.my</span>
                     </p>
                 </div>
             </footer>
