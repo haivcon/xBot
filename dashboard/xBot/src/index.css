@@ -1,6 +1,34 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  --color-brand-950: #172554;
+
+  --color-surface-50: #f8fafc;
+  --color-surface-100: #f1f5f9;
+  --color-surface-200: #e2e8f0;
+  --color-surface-700: #1e293b;
+  --color-surface-800: #0f172a;
+  --color-surface-850: #0c1322;
+  --color-surface-900: #020617;
+
+  --animate-fade-in: fadeIn 0.3s ease-out;
+  --animate-slide-in: slideIn 0.3s ease-out;
+  --animate-pulse-soft: pulseSoft 2s ease-in-out infinite;
+}
 
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -57,12 +85,6 @@
     @apply bg-surface-50 text-surface-900;
   }
 
-  /*
-   * Light mode text color fix (#4)
-   * In dark mode: text-surface-100 = light gray (visible on dark bg)
-   * In light mode: same class = invisible on light bg
-   * Fix: Remap text colors globally in light mode
-   */
   :root:not(.dark) .text-surface-100 { color: #0f172a !important; }
   :root:not(.dark) .text-surface-200 { color: #334155 !important; }
   :root:not(.dark) .text-surface-200\/50,
@@ -73,12 +95,11 @@
   :root:not(.dark) .text-surface-200\/40 { color: rgba(51, 65, 85, 0.5) !important; }
   :root:not(.dark) .text-surface-200\/30 { color: rgba(51, 65, 85, 0.4) !important; }
   :root:not(.dark) .text-surface-200\/35 { color: rgba(51, 65, 85, 0.45) !important; }
-  /* Additional text-surface-200 variants for full coverage */
   :root:not(.dark) .text-surface-200\/10 { color: rgba(51, 65, 85, 0.2) !important; }
   :root:not(.dark) .text-surface-200\/15 { color: rgba(51, 65, 85, 0.25) !important; }
   :root:not(.dark) .text-surface-200\/20 { color: rgba(51, 65, 85, 0.3) !important; }
   :root:not(.dark) .text-surface-200\/45 { color: rgba(51, 65, 85, 0.55) !important; }
-  
+
   /* Light mode background overrides */
   :root:not(.dark) .bg-surface-900 { background-color: #f8fafc !important; }
   :root:not(.dark) .bg-surface-800 { background-color: #f1f5f9 !important; }
@@ -87,7 +108,6 @@
   :root:not(.dark) .bg-surface-800\/50 { background-color: rgba(241, 245, 249, 0.8) !important; }
   :root:not(.dark) .bg-surface-700 { background-color: #e2e8f0 !important; }
   :root:not(.dark) .bg-surface-700\/80 { background-color: rgba(226, 232, 240, 0.9) !important; }
-  /* Additional bg-surface variants for full coverage */
   :root:not(.dark) .bg-surface-200\/20 { background-color: rgba(203, 213, 225, 0.3) !important; }
   :root:not(.dark) .bg-surface-200\/30 { background-color: rgba(203, 213, 225, 0.4) !important; }
   :root:not(.dark) .bg-surface-700\/20 { background-color: rgba(226, 232, 240, 0.4) !important; }
@@ -100,24 +120,20 @@
   :root:not(.dark) .bg-surface-900\/40 { background-color: rgba(248, 250, 252, 0.6) !important; }
   :root:not(.dark) .bg-surface-900\/60 { background-color: rgba(248, 250, 252, 0.8) !important; }
   :root:not(.dark) .bg-surface-900\/95 { background-color: rgba(248, 250, 252, 0.98) !important; }
-  
+
   /* Light mode border overrides */
   :root:not(.dark) .border-white\/5 { border-color: rgba(15, 23, 42, 0.1) !important; }
   :root:not(.dark) .border-white\/10 { border-color: rgba(15, 23, 42, 0.15) !important; }
   :root:not(.dark) .border-white\/20 { border-color: rgba(15, 23, 42, 0.2) !important; }
 
-  /* Light mode — divide (list separators) */
   :root:not(.dark) .divide-white\/3 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(15, 23, 42, 0.06) !important; }
   :root:not(.dark) .divide-white\/5 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(15, 23, 42, 0.08) !important; }
 
-  /* Light mode — ring (focus indicators) */
   :root:not(.dark) .ring-white\/10 { --tw-ring-color: rgba(15, 23, 42, 0.1) !important; }
   :root:not(.dark) .ring-white\/20 { --tw-ring-color: rgba(15, 23, 42, 0.15) !important; }
 
-  /* Light mode — ChatPage specific overrides */
   :root:not(.dark) .text-surface-200\/90 { color: rgba(51, 65, 85, 0.95) !important; }
   :root:not(.dark) .text-surface-200\/25 { color: rgba(51, 65, 85, 0.35) !important; }
-  :root:not(.dark) .text-surface-100 { color: #0f172a !important; }
   :root:not(.dark) .bg-surface-900\/50 { background-color: rgba(248, 250, 252, 0.8) !important; }
   :root:not(.dark) .bg-surface-900\/80 { background-color: rgba(248, 250, 252, 0.95) !important; }
   :root:not(.dark) .bg-surface-800\/20 { background-color: rgba(241, 245, 249, 0.5) !important; }
@@ -127,28 +143,23 @@
   :root:not(.dark) [class*="hover\:bg-white\/3"]:hover { background-color: rgba(15, 23, 42, 0.03) !important; }
   :root:not(.dark) [class*="hover\:bg-white\/10"]:hover { background-color: rgba(15, 23, 42, 0.06) !important; }
 
-  /* Light mode — hover:text-surface → visible on light bg */
   :root:not(.dark) [class*="hover\:text-surface-100"]:hover { color: #0f172a !important; }
   :root:not(.dark) [class*="hover\:text-surface-200"]:hover { color: #334155 !important; }
 
-  /* Light mode — hover:bg-surface → light slate hover backgrounds */
   :root:not(.dark) [class*="hover\:bg-surface-600"]:hover { background-color: #cbd5e1 !important; }
   :root:not(.dark) [class*="hover\:bg-surface-700"]:hover { background-color: #e2e8f0 !important; }
   :root:not(.dark) [class*="hover\:bg-surface-800"]:hover { background-color: #f1f5f9 !important; }
 
-  /* Light mode — gradient from/to surface → light equivalents */
   :root:not(.dark) .from-surface-800 { --tw-gradient-from: #f1f5f9 !important; }
   :root:not(.dark) .from-surface-900 { --tw-gradient-from: #f8fafc !important; }
   :root:not(.dark) .to-surface-900 { --tw-gradient-to: #f8fafc !important; }
 
-  /* Light mode — bg-black overlays → softer */
   :root:not(.dark) .bg-black\/20 { background-color: rgba(15, 23, 42, 0.1) !important; }
   :root:not(.dark) .bg-black\/30 { background-color: rgba(15, 23, 42, 0.15) !important; }
   :root:not(.dark) .bg-black\/40 { background-color: rgba(15, 23, 42, 0.25) !important; }
   :root:not(.dark) .bg-black\/50 { background-color: rgba(15, 23, 42, 0.3) !important; }
   :root:not(.dark) .bg-black\/80 { background-color: rgba(15, 23, 42, 0.6) !important; }
 
-  /* Light mode — white-alpha backgrounds → slate equivalents */
   :root:not(.dark) .bg-white\/\[0\.03\] { background-color: rgba(15, 23, 42, 0.03) !important; }
   :root:not(.dark) .bg-white\/\[0\.06\] { background-color: rgba(15, 23, 42, 0.04) !important; }
   :root:not(.dark) .bg-white\/\[0\.02\] { background-color: rgba(15, 23, 42, 0.02) !important; }
@@ -156,7 +167,6 @@
   :root:not(.dark) .bg-white\/5 { background-color: rgba(15, 23, 42, 0.04) !important; }
   :root:not(.dark) .bg-white\/20 { background-color: rgba(15, 23, 42, 0.08) !important; }
 
-  /* Light mode — text-white opacity → dark text */
   :root:not(.dark) .text-white { color: #0f172a !important; }
   :root:not(.dark) .text-white\/60 { color: rgba(51, 65, 85, 0.75) !important; }
   :root:not(.dark) .text-white\/70 { color: rgba(51, 65, 85, 0.8) !important; }
@@ -164,33 +174,19 @@
   :root:not(.dark) .text-white\/50 { color: rgba(51, 65, 85, 0.65) !important; }
   :root:not(.dark) .text-white\/40 { color: rgba(51, 65, 85, 0.55) !important; }
 
-  /* Light mode — shadows */
   :root:not(.dark) .shadow-black\/50 { --tw-shadow-color: rgba(148, 163, 184, 0.15) !important; }
   :root:not(.dark) .shadow-black\/40 { --tw-shadow-color: rgba(148, 163, 184, 0.12) !important; }
 
-  /* Light mode — modal/dropdown overlays */
   :root:not(.dark) .bg-black\/60 { background-color: rgba(15, 23, 42, 0.4) !important; }
 
-  /* Mobile bottom nav safe area */
   .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-  /* Light mode — Chat content (markdown rendered) */
   :root:not(.dark) .chat-content { color: #334155 !important; }
   :root:not(.dark) .chat-content strong { color: #0f172a !important; }
   :root:not(.dark) .chat-content em { color: #475569 !important; }
-  :root:not(.dark) .chat-content th {
-    color: #0f172a !important;
-    background: rgba(15, 23, 42, 0.03) !important;
-    border-bottom-color: rgba(15, 23, 42, 0.1) !important;
-  }
-  :root:not(.dark) .chat-content th:hover {
-    background: rgba(15, 23, 42, 0.06) !important;
-    color: #0f172a !important;
-  }
-  :root:not(.dark) .chat-content td {
-    color: #475569 !important;
-    border-bottom-color: rgba(15, 23, 42, 0.05) !important;
-  }
+  :root:not(.dark) .chat-content th { color: #0f172a !important; background: rgba(15, 23, 42, 0.03) !important; border-bottom-color: rgba(15, 23, 42, 0.1) !important; }
+  :root:not(.dark) .chat-content th:hover { background: rgba(15, 23, 42, 0.06) !important; color: #0f172a !important; }
+  :root:not(.dark) .chat-content td { color: #475569 !important; border-bottom-color: rgba(15, 23, 42, 0.05) !important; }
   :root:not(.dark) .chat-content tr:hover td { background: rgba(15, 23, 42, 0.02) !important; }
   :root:not(.dark) .chat-code-block { background: #f1f5f9 !important; color: #334155 !important; }
   :root:not(.dark) .chat-code-wrapper { background: #f1f5f9 !important; }
@@ -201,23 +197,10 @@
   :root:not(.dark) .chat-hr { border-color: rgba(15, 23, 42, 0.1) !important; }
   :root:not(.dark) .chat-list li { color: #475569 !important; }
 
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.2);
-    border-radius: 999px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.4);
-  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); }
 }
 
 @layer components {
@@ -232,7 +215,7 @@
   }
 
   .glass-card-hover {
-    @apply glass-card transition-all duration-300 hover:border-brand-500/20 hover:shadow-brand-500/5 hover:shadow-2xl;
+    @apply bg-surface-800/60 dark:bg-surface-800/60 backdrop-blur-xl border border-white/5 rounded-2xl shadow-xl transition-all duration-300 hover:border-brand-500/20 hover:shadow-brand-500/5 hover:shadow-2xl;
   }
 
   :root:not(.dark) .glass-card-hover {
@@ -270,15 +253,13 @@
     @apply bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-brand-400 focus:ring-brand-400/20;
   }
 
-  /* Legacy styled-select classes removed — replaced by CustomSelect component */
-
   /* === Badges === */
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
 
   .badge-success {
-    @apply badge bg-emerald-500/15 text-emerald-400 border border-emerald-500/20;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20;
   }
 
   :root:not(.dark) .badge-success {
@@ -286,7 +267,7 @@
   }
 
   .badge-warning {
-    @apply badge bg-amber-500/15 text-amber-400 border border-amber-500/20;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20;
   }
 
   :root:not(.dark) .badge-warning {
@@ -294,7 +275,7 @@
   }
 
   .badge-danger {
-    @apply badge bg-red-500/15 text-red-400 border border-red-500/20;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/20;
   }
 
   :root:not(.dark) .badge-danger {
@@ -302,7 +283,7 @@
   }
 
   .badge-info {
-    @apply badge bg-brand-500/15 text-brand-400 border border-brand-500/20;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-500/15 text-brand-400 border border-brand-500/20;
   }
 
   :root:not(.dark) .badge-info {
@@ -319,7 +300,7 @@
   }
 
   .sidebar-link-active {
-    @apply sidebar-link bg-brand-500/10 text-brand-400 hover:text-brand-400;
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 bg-brand-500/10 text-brand-400 hover:text-brand-400;
   }
 
   :root:not(.dark) .sidebar-link-active {
@@ -328,7 +309,7 @@
 
   /* === Stats === */
   .stat-card {
-    @apply glass-card p-5 flex flex-col gap-2;
+    @apply bg-surface-800/60 dark:bg-surface-800/60 backdrop-blur-xl border border-white/5 rounded-2xl shadow-xl transition-colors duration-300 p-5 flex flex-col gap-2;
   }
 
   /* === Table === */
@@ -346,9 +327,9 @@
   }
 
   @keyframes pageEnter {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 
   /* === Chat Content === */
   .chat-content strong { @apply text-surface-100; }
@@ -386,27 +367,18 @@
     .btn-primary, .btn-secondary { @apply px-3 py-2 text-xs; }
     .input-field { @apply px-3 py-2 text-sm; }
     .stat-card { @apply p-2.5; }
-    
-    /* Full-screen modals on mobile — only target actual modal backdrops, NOT the app layout wrapper */
+
     .fixed.inset-0.backdrop-blur-sm .glass-card,
     .fixed.inset-0[class*="bg-black"] .glass-card {
       @apply max-w-none m-0 rounded-none min-h-screen;
     }
-    
-    /* Smaller text in tables */
+
     table { @apply text-xs; }
     th, td { @apply px-2 py-2; }
-    
-    /* Stack header buttons */
     .flex-wrap { @apply gap-2; }
-    
-    /* Reduce heading sizes */
     h1 { @apply text-lg; }
-
-    /* Compact scale via base font-size */
     html { font-size: 13px; }
 
-    /* Tighter vertical rhythm on mobile */
     .space-y-6 > :not([hidden]) ~ :not([hidden]) {
       --tw-space-y-reverse: 0;
       margin-top: calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));
@@ -414,7 +386,6 @@
     }
   }
 
-  /* Extra compact for small phones */
   @media (max-width: 480px) {
     html { font-size: 11.5px; }
     h1 { font-size: 1rem !important; }
@@ -424,20 +395,17 @@
     .stat-card { @apply p-2; }
     .sidebar-link { @apply px-2 py-2 text-xs gap-2; }
   }
-  
-  /* Tablet adjustments */
+
   @media (max-width: 1024px) and (min-width: 769px) {
     .stat-card { @apply p-4; }
   }
 
-  /* Mobile-friendly toast position */
   @media (max-width: 640px) {
     .fixed.bottom-6.right-6 {
       @apply bottom-4 right-4 left-4 max-w-none;
     }
   }
 
-  /* Pulse animation for live indicators */
   .pulse-dot {
     @apply w-1.5 h-1.5 rounded-full bg-emerald-400;
     animation: pulse-glow 2s ease-in-out infinite;
@@ -448,13 +416,11 @@
     50% { box-shadow: 0 0 0 4px rgba(52, 211, 153, 0); }
   }
 
-  /* #11: Shimmer animation for subtle refresh indicator */
   @keyframes shimmer {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(400%); }
   }
 
-  /* Code syntax highlighting */
   .chat-code-wrapper {
     position: relative;
     margin: 0.5rem 0;
@@ -463,67 +429,34 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
   }
   .chat-code-lang {
-    position: absolute;
-    top: 0;
-    right: 0;
-    padding: 2px 8px;
-    font-size: 9px;
+    position: absolute; top: 0; right: 0;
+    padding: 2px 8px; font-size: 9px;
     color: rgba(255, 255, 255, 0.3);
     background: rgba(255, 255, 255, 0.05);
     border-radius: 0 0.75rem 0 0.5rem;
-    font-family: monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em;
   }
   .chat-code-block {
     background: rgba(0, 0, 0, 0.3) !important;
-    padding: 1rem;
-    overflow-x: auto;
-    font-size: 12px;
-    line-height: 1.6;
+    padding: 1rem; overflow-x: auto; font-size: 12px; line-height: 1.6;
   }
   .chat-code-block code {
     font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
     color: #e2e8f0;
   }
 
-  /* Chat content table styling + sortable headers */
-  .chat-content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0.5rem 0;
-    font-size: 12px;
-  }
+  .chat-content table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; font-size: 12px; }
   .chat-content th {
-    padding: 6px 10px;
-    text-align: left;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.6);
-    background: rgba(255, 255, 255, 0.03);
+    padding: 6px 10px; text-align: left; font-weight: 600;
+    color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.03);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.15s;
+    cursor: pointer; user-select: none; transition: background 0.15s;
   }
-  .chat-content th:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.8);
-  }
-  .chat-content th::after {
-    content: ' ↕';
-    font-size: 9px;
-    opacity: 0.3;
-  }
-  .chat-content td {
-    padding: 5px 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-    color: rgba(255, 255, 255, 0.5);
-  }
-  .chat-content tr:hover td {
-    background: rgba(255, 255, 255, 0.02);
-  }
+  .chat-content th:hover { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.8); }
+  .chat-content th::after { content: ' ↕'; font-size: 9px; opacity: 0.3; }
+  .chat-content td { padding: 5px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); color: rgba(255, 255, 255, 0.5); }
+  .chat-content tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
-  /* === Bottom Sheet === */
   @keyframes slideUp {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
@@ -536,48 +469,26 @@
     animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
-  /* === Floating Chat Bubble === */
   @keyframes float-pulse {
     0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3); }
     50% { transform: scale(1.05); box-shadow: 0 6px 30px rgba(99, 102, 241, 0.45); }
   }
-  .floating-chat-btn {
-    animation: float-pulse 3s ease-in-out infinite;
-  }
-  .floating-chat-btn:hover {
-    animation: none;
-    transform: scale(1.1);
-  }
+  .floating-chat-btn { animation: float-pulse 3s ease-in-out infinite; }
+  .floating-chat-btn:hover { animation: none; transform: scale(1.1); }
 
-  /* === Chat Page Mobile Overrides === */
   @media (max-width: 767px) {
-    
     .chat-page-mobile {
-      margin: -1rem !important;
-      height: 100vh !important;
-      height: 100dvh !important;
-      border-radius: 0 !important;
-      border: none !important;
+      margin: -1rem !important; height: 100vh !important; height: 100dvh !important;
+      border-radius: 0 !important; border: none !important;
     }
-    /* Safe area bottom padding for input */
-    .chat-input-safe {
-      padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
-    }
-    /* Chat sidebar as bottom sheet on mobile */
+    .chat-input-safe { padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)); }
     .chat-sidebar-sheet {
-      position: fixed !important;
-      top: auto !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      width: 100% !important;
-      max-height: 70vh !important;
-      border-radius: 1.25rem 1.25rem 0 0 !important;
-      z-index: 50 !important;
+      position: fixed !important; top: auto !important; bottom: 0 !important;
+      left: 0 !important; right: 0 !important; width: 100% !important;
+      max-height: 70vh !important; border-radius: 1.25rem 1.25rem 0 0 !important; z-index: 50 !important;
     }
   }
 
-  /* === Achievement Toast === */
   @keyframes slideInDown {
     from { transform: translateX(-50%) translateY(-120%); opacity: 0; }
     to { transform: translateX(-50%) translateY(0); opacity: 1; }
@@ -589,16 +500,9 @@
   .animate-slideIn { animation: slideInDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
   .animate-slideOut { animation: slideOutUp 0.4s ease-in forwards; }
 
-  /* === Scrollbar Hide (for horizontal scroll chips) === */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-  /* === Shake Animation (empty input feedback) === */
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     20% { transform: translateX(-4px); }
@@ -607,20 +511,13 @@
     80% { transform: translateX(3px); }
   }
 
-  /* === Custom scrollbar (thin, unobtrusive) === */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.15);
-    border-radius: 999px;
-  }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.15); border-radius: 999px; }
 
-  /* === Light Mode — Tool Cards, Paste Banner, Action Sheet === */
   :root:not(.dark) .border-white\/3 { border-color: rgba(15, 23, 42, 0.04) !important; }
 }
+
 @layer utilities {
   .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
   .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }

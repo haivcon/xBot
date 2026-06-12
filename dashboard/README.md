@@ -1,208 +1,120 @@
-# XBot Dashboard
+# 🌐 xlayer.my — Web3 Ecosystem Portal
 
-A modern, responsive web dashboard for managing your XBot Telegram bot.
+**xlayer.my** is the unified web portal for the xBot ecosystem, serving 3 independent React applications from a single Vite Multi-Page App (MPA):
 
-## Quick Start
+| Route | App | Description |
+|---|---|---|
+| `/` | Landing Page | Ecosystem introduction with i18n (15 languages) |
+| `/xBot/` | xBot Dashboard | Telegram bot management (admin & user views) |
+| `/xKey/` | xKey Web Demo | Offline wallet vault preview ([latest on GitHub](https://github.com/haivcon/xKey)) |
 
-### Prerequisites
-
-- **Node.js** v18+
-- **npm** v9+
-- The XBot bot server running (see root `README.md`)
-
-### Installation
-
-```bash
-# Navigate to the dashboard directory
-cd dashboard
-
-# Install dependencies
-npm install
-
-# (Optional) Copy and customize environment variables
-cp .env.example .env
-```
-
-### Development
-
-```bash
-npm run dev
-# → Opens at http://localhost:5173
-# → API proxy: /api/* → http://localhost:3000
-```
-
-### Production Build
-
-```bash
-npm run build
-# → Output: dashboard/dist/
-# → Served automatically by the bot's Express server
-```
-
-No separate deployment needed — the bot serves the built dashboard at `/dashboard/`.
+> **⚡ Tech Stack**: React 19, Vite 8, Tailwind CSS v4, Zustand, react-i18next
 
 ---
 
-## Environment Variables
+## 🚀 What's New in v2.0.0
 
-All dashboard env vars must start with `VITE_` to be available in the browser.
+### 🏗️ Ecosystem Architecture (MPA)
+- **Vite Multi-Page App**: 3 independent React apps sharing one `node_modules` and build pipeline
+- **Separate entry points**: Each app has its own `index.html`, `main.jsx`, and CSS
+- **Shared vendor chunks**: React, react-router-dom, lucide-react bundled once
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VITE_APP_NAME` | `XBot` | App name shown in sidebar |
-| `VITE_APP_TAGLINE` | `Dashboard` | Tagline below app name |
-| `VITE_APP_DESCRIPTION` | — | Meta description |
-| `VITE_EXPLORER_URL` | OKX Explorer | Blockchain explorer URL |
-| `VITE_CHAIN_NAME` | `X Layer` | Chain display name |
-| `VITE_API_BASE` | `/api/dashboard` | API base path |
-| `VITE_WS_URL` | Auto-detected | WebSocket URL |
-| `VITE_DEFAULT_LANG` | `en` | Default language (en/vi/zh/ko/ru/id) |
+### 🎨 Tailwind CSS v4 Migration
+- **Removed**: `tailwind.config.js`, `postcss.config.js`
+- **Added**: `@import "tailwindcss"` + `@theme` blocks in each app's CSS
+- **Custom dark mode**: `@custom-variant dark` for class-based toggling
+- **Refactored**: All `@apply` cross-references inlined for strict v4 compatibility
+
+### 🌍 Landing Page (15 Languages)
+- **Glassmorphism UI**: Animated gradient background with glow orbs
+- **Full i18n**: All text translated (vi, en, zh, ko, ja, ru, id, th, es, fr, de, pt, ar, hi, tr)
+- **Language selector**: Dropdown with flag emojis, persisted selection
+- **Product cards**: xBot and xKey with feature pills and action buttons
+
+### 🔗 xKey Web Demo Integration
+- **Embedded preview**: xKey source code served as a demo at `/xKey/`
+- **"WEB DEMO" banner**: Bottom bar with dismissible notice and GitHub release link
+- **Not a production build**: Users are directed to GitHub for the latest APK/source
+
+### 🧭 Navigation
+- **"← xlayer.my" button**: Fixed back-to-home button on both xBot and xKey pages
+- **Telegram-aware**: Back button hidden when running inside Telegram Mini App
+- **Trailing-slash routing**: Proper MPA routing with `/xBot/` and `/xKey/`
 
 ---
 
-## Directory Structure
+<details>
+<summary><b>📦 Previous Dashboard Features (v1.x)</b></summary>
+<br>
+
+### Dashboard v1.3.7
+- Security & Analytics upgrade
+- JWT authentication with Telegram
+- Owner/User role-based access
+
+### Dashboard Core
+- **Auth**: Telegram Login Widget + bot deep link one-time token
+- **Owner Pages**: Dashboard, Users, Groups, Analytics, Alerts, Posts, Config
+- **User Pages**: Profile, Wallets, Trading, Leaderboard, Settings, AI Trader, Chat
+- **Real-time**: WebSocket auto-reconnect for live updates
+- **i18n**: 6 languages via react-i18next
+- **PWA**: Service worker, manifest.json, offline-capable
+
+</details>
+
+---
+
+## 📁 Directory Structure
 
 ```
 dashboard/
-├── public/               # Static assets (favicon, etc.)
-├── src/
-│   ├── api/
-│   │   └── client.js     # API client — all HTTP requests to backend
-│   │
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Header.jsx    # Top bar: search, theme toggle, user avatar
-│   │   │   ├── Layout.jsx    # Main layout: sidebar + header + content
-│   │   │   └── Sidebar.jsx   # Navigation sidebar with role-based links
-│   │   ├── LoginModal.jsx    # Telegram login widget + bot deep link
-│   │   ├── Skeleton.jsx      # Loading skeleton components
-│   │   └── ToastContainer.jsx # Toast notification overlay
-│   │
-│   ├── i18n/
-│   │   └── index.js      # Translations for 6 languages
-│   │
-│   ├── pages/
-│   │   ├── owner/             # Owner-only pages (admin)
-│   │   │   ├── DashboardPage.jsx  # Bot health, user/group stats, latency
-│   │   │   ├── UsersPage.jsx      # User list, search, ban/unban
-│   │   │   ├── GroupsPage.jsx     # Group management
-│   │   │   ├── AnalyticsPage.jsx  # Usage charts and stats
-│   │   │   ├── AlertsPage.jsx    # Price alert management
-│   │   │   ├── PostsPage.jsx     # Scheduled post management
-│   │   │   └── ConfigPage.jsx    # Bot configuration & API keys
-│   │   ├── user/              # User pages (everyone)
-│   │   │   ├── ProfilePage.jsx    # User profile and preferences
-│   │   │   ├── WalletsPage.jsx    # Wallet management
-│   │   │   ├── TradingPage.jsx    # Trading history
-│   │   │   ├── LeaderboardPage.jsx # Game leaderboards
-│   │   │   └── SettingsPage.jsx   # User settings
-│   │   ├── LandingPage.jsx    # Public landing page
-│   │   ├── LoginPage.jsx      # Login page
-│   │   └── NotFoundPage.jsx   # 404 page
-│   │
-│   ├── stores/            # Zustand state management
-│   │   ├── authStore.js   # Auth state, JWT, role, view mode toggle
-│   │   ├── themeStore.js  # Dark/Light theme
-│   │   ├── toastStore.js  # Toast notification queue
-│   │   └── wsStore.js     # WebSocket connection & real-time events
-│   │
-│   ├── App.jsx            # Root component with routes & code splitting
-│   ├── config.js          # Dashboard configuration (from VITE_ env)
-│   ├── index.css          # Global styles and design system
-│   └── main.jsx           # Entry point
+├── index.html                # Landing page entry
+├── vite.config.js            # MPA config (3 entry points)
+├── package.json              # Shared dependencies
 │
-├── .env.example           # Environment variable template
-├── index.html             # HTML entry point
-├── package.json           # Dependencies
-├── tailwind.config.js     # Tailwind CSS configuration
-└── vite.config.js         # Vite build config with vendor chunks
+├── src-landing/              # Landing page source
+│   ├── main.jsx
+│   ├── App.jsx               # 15-language ecosystem intro
+│   └── index.css
+│
+├── xBot/                     # xBot Dashboard
+│   ├── index.html            # Entry (Telegram SDK lazy-load)
+│   └── src/                  # Full dashboard source
+│       ├── App.jsx, main.jsx, index.css
+│       ├── components/, pages/, stores/
+│       ├── hooks/, api/, i18n/, utils/
+│       └── config.js
+│
+├── xKey/                     # xKey Web Demo (read-only copy)
+│   ├── index.html            # Entry (WEB DEMO banner)
+│   └── src/                  # Mirrored from github.com/haivcon/xKey
+│
+└── public/
+    ├── xbot-logo.png, xkey-logo.png
+    ├── manifest.json, sw.js
+    └── icons/
 ```
 
 ---
 
-## Architecture
+## 🚀 Quick Start
 
-### Authentication Flow
-
-```
-User → /dashboard
-  ├── Has valid JWT in localStorage? → Dashboard (Owner or User view)
-  └── No JWT →  Landing Page
-       ├── Click "Login with Telegram" → Telegram Login Widget → JWT
-       └── Click "Open Bot" → /start dashboard_login → One-time token → JWT
+```bash
+cd dashboard
+npm install
+npm run dev          # http://localhost:5173
 ```
 
-### Role System
-
-| Role | Access | How assigned |
-|------|--------|--------------|
-| **Owner** | All pages (admin + user) | Telegram ID matches `BOT_OWNER_ID` |
-| **User** | Profile, Wallets, Trading, Leaderboard, Settings | Any authenticated Telegram user |
-
-**Owner View Toggle**: Owners can switch between Owner and User views using the toggle button in the sidebar.
-
-### API Endpoints
-
-All endpoints are prefixed with `/api/dashboard`.
-
-#### Public
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/bot-info` | Bot username |
-| GET | `/health` | Server health status |
-| GET | `/auth/auto-login?token=` | One-time token login |
-
-#### Protected (JWT Required)
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/auth/refresh` | Refresh JWT token |
-| GET | `/user/profile` | User profile |
-| PUT | `/user/preferences` | Update preferences |
-| GET | `/user/wallets` | User wallets |
-| GET | `/user/trading-history` | Trade history |
-| GET | `/user/leaderboard` | Game leaderboard |
-
-#### Owner Only
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/owner/overview` | User/group stats, Telegram latency |
-| GET | `/owner/users` | All users |
-| POST | `/owner/users/ban` | Ban user |
-| POST | `/owner/users/unban` | Unban user |
-| GET | `/owner/groups` | All groups |
-| GET | `/owner/analytics` | Command usage stats |
-| GET | `/owner/config/runtime` | Runtime configuration |
-| GET/POST/PUT/DELETE | `/owner/alerts/*` | Price alert CRUD |
-| GET/POST/PUT/DELETE | `/owner/posts/*` | Scheduled post CRUD |
-
-### Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | React 19 + Vite 6 |
-| Routing | React Router 7 |
-| State | Zustand |
-| Styling | Tailwind CSS 3 |
-| Icons | Lucide React |
-| i18n | react-i18next (6 languages) |
-| Real-time | WebSocket (auto-reconnect) |
+### Build for Production
+```bash
+npm run build        # Outputs to dist/
+npm run preview      # Preview production build
+```
 
 ---
 
-## Security
+## ⚠️ Notes
 
-- **Telegram-only auth** — No password-based login
-- **JWT with 7-day expiry** — Auto-refresh available
-- **Login rate limiting** — 5 attempts/min per IP
-- **Gzip compression** — All responses compressed
-- **Owner verification** — Server-side role check via Telegram ID
-- **Wallet key stripping** — Private keys never sent to dashboard
-
----
-
-## Customization
-
-1. **Branding**: Override via `VITE_*` env vars (see table above)
-2. **Languages**: Edit `src/i18n/index.js` to add or modify translations
-3. **Theme**: Tailwind config in `tailwind.config.js`, design tokens in `index.css`
-4. **Pages**: Add new pages in `src/pages/`, register routes in `App.jsx`
+- **xKey at `/xKey/` is a web demo only.** The production xKey app is a standalone Capacitor Android project at [github.com/haivcon/xKey](https://github.com/haivcon/xKey).
+- **xBot dashboard requires the bot backend** running at `localhost:3000` for API proxy to work.
+- **Tailwind v4** requires `@tailwindcss/vite` plugin — no PostCSS needed.

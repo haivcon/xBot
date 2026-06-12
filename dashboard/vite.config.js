@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
@@ -19,19 +20,20 @@ function swVersionPlugin() {
         }
     };
 }
+
 // Read version from package.json for build-time injection
 const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
 
 export default defineConfig(({ mode }) => ({
     base: '/',
-    plugins: [react(), swVersionPlugin()],
+    plugins: [tailwindcss(), react(), swVersionPlugin()],
     define: {
         __APP_VERSION__: JSON.stringify(pkg.version),
         __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     },
     resolve: {
         alias: {
-            '@': path.resolve(__dirname, './src'),
+            '@': path.resolve(__dirname, './xBot/src'),
         },
     },
     server: {
@@ -47,9 +49,13 @@ export default defineConfig(({ mode }) => ({
         outDir: 'dist',
         emptyOutDir: true,
         rollupOptions: {
+            input: {
+                main: path.resolve(__dirname, 'index.html'),
+                xbot: path.resolve(__dirname, 'xBot/index.html'),
+                xkey: path.resolve(__dirname, 'xKey/index.html'),
+            },
             output: {
                 manualChunks: {
-                    // Separate vendor chunks for better caching
                     'vendor-react': ['react', 'react-dom', 'react-router-dom'],
                     'vendor-i18n': ['react-i18next', 'i18next', 'i18next-browser-languagedetector'],
                     'vendor-icons': ['lucide-react'],
@@ -59,4 +65,3 @@ export default defineConfig(({ mode }) => ({
         },
     },
 }));
-
