@@ -29,7 +29,7 @@ tests
 # ─── Build Output & Separated Projects ───
 dashboard/dist/
 dashboard/*.local
-xKey/
+/xKey/
 xbot-check/
 
 
