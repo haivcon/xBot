@@ -54,16 +54,7 @@ export default defineConfig(({ mode }) => ({
                 xbot: path.resolve(__dirname, 'xBot/index.html'),
                 xkey: path.resolve(__dirname, 'xKey/index.html'),
             },
-            output: {
-                manualChunks(id) {
-                    if (id.includes('node_modules')) {
-                        if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) return 'vendor-react';
-                        if (id.includes('react-i18next') || id.includes('i18next')) return 'vendor-i18n';
-                        if (id.includes('lucide-react')) return 'vendor-icons';
-                        if (id.includes('zustand')) return 'vendor-state';
-                    }
-                },
-            },
+
         },
     },
 }));
