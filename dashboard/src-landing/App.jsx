@@ -208,9 +208,23 @@ const TEXTS = {
     },
 };
 
+const getInitialLang = () => {
+    try {
+        const saved = localStorage.getItem('xlayer_lang');
+        if (saved && LANGUAGES.some(l => l.code === saved)) return saved;
+        const browserLang = (navigator.language || navigator.userLanguage).split('-')[0].toLowerCase();
+        if (LANGUAGES.some(l => l.code === browserLang)) return browserLang;
+    } catch (e) {}
+    return 'en';
+};
+
 export default function App() {
-    const [lang, setLang] = useState('vi');
+    const [lang, setLang] = useState(getInitialLang);
     const [langOpen, setLangOpen] = useState(false);
+
+    useEffect(() => {
+        try { localStorage.setItem('xlayer_lang', lang); } catch (e) {}
+    }, [lang]);
     
     // Auto-redirect to xBot dashboard if opened within Telegram Mini App
     useEffect(() => {
@@ -297,7 +311,7 @@ export default function App() {
                         </div>
                     </div>
 
-                    <p className="text-surface-400 leading-relaxed mb-6 flex-1">
+                    <p className="text-surface-400 leading-relaxed mb-6">
                         {t.xbotDesc}
                     </p>
 
@@ -309,7 +323,7 @@ export default function App() {
                         <span className="feature-pill"><Wallet size={12} className="text-cyan-400" /> {t.portfolio}</span>
                     </div>
 
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-3 mt-auto">
                         <a href="/xBot/" className="btn-primary btn-xbot">
                             {t.launchXbot} <ArrowRight size={16} />
                         </a>
@@ -333,7 +347,7 @@ export default function App() {
                         </div>
                     </div>
 
-                    <p className="text-surface-400 leading-relaxed mb-6 flex-1">
+                    <p className="text-surface-400 leading-relaxed mb-6">
                         {t.xkeyDesc}
                     </p>
 
@@ -345,7 +359,7 @@ export default function App() {
                         <span className="feature-pill"><Layers size={12} className="text-violet-400" /> {t.batchOps}</span>
                     </div>
 
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-3 mt-auto">
                         <a href="/xKey/" className="btn-primary btn-xkey">
                             {t.launchXkey} <ArrowRight size={16} />
                         </a>
