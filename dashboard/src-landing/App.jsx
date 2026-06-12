@@ -323,13 +323,16 @@ export default function App() {
                         <span className="feature-pill"><Wallet size={12} className="text-cyan-400" /> {t.portfolio}</span>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 mt-auto">
-                        <a href="/xBot/" className="btn-primary btn-xbot">
+                    <div className="mt-auto flex flex-col gap-3 w-full">
+                        <a href="/xBot/" className="btn-primary btn-xbot justify-center w-full">
                             {t.launchXbot} <ArrowRight size={16} />
                         </a>
-                        <a href="https://github.com/haivcon/xbot" target="_blank" rel="noopener noreferrer" className="btn-outline">
-                            <GithubIcon size={16} /> {t.source}
-                        </a>
+                        <div className="grid grid-cols-2 gap-3">
+                            <a href="https://github.com/haivcon/xbot" target="_blank" rel="noopener noreferrer" className="btn-outline justify-center">
+                                <GithubIcon size={16} /> {t.source}
+                            </a>
+                            <div className="hidden sm:block"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -359,16 +362,24 @@ export default function App() {
                         <span className="feature-pill"><Layers size={12} className="text-violet-400" /> {t.batchOps}</span>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 mt-auto">
-                        <a href="/xKey/" className="btn-primary btn-xkey">
+                    <div className="mt-auto flex flex-col gap-3 w-full">
+                        <a href="/xKey/" className="btn-primary btn-xkey justify-center w-full">
                             {t.launchXkey} <ArrowRight size={16} />
                         </a>
-                        <a href="https://play.google.com/store/apps/details?id=com.haivcon.xkey" target="_blank" rel="noopener noreferrer" className="btn-outline">
-                            <Smartphone size={16} /> Google Play
-                        </a>
-                        <a href="https://github.com/haivcon/xkey" target="_blank" rel="noopener noreferrer" className="btn-outline">
-                            <GithubIcon size={16} /> {t.source}
-                        </a>
+                        <div className="grid grid-cols-2 gap-3">
+                            <a href="https://play.google.com/store/apps/details?id=com.haivcon.xkey" target="_blank" rel="noopener noreferrer" className="btn-outline justify-center px-1">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-surface-200">
+                                    <path d="M4.646 2.378a2 2 0 0 0-.646 1.488v16.268a2 2 0 0 0 .646 1.488L13.882 12 4.646 2.378z" opacity=".6"/>
+                                    <path d="m18.796 14.673-4.914-2.673 4.914-2.673 2.502 1.362a1.5 1.5 0 0 1 0 2.622l-2.502 1.362z" opacity=".8"/>
+                                    <path d="m4.646 2.378 9.236 9.622 4.914-2.673L6.071 2.404A1.996 1.996 0 0 0 4.646 2.378z" opacity=".4"/>
+                                    <path d="m4.646 21.622 9.236-9.622 4.914 2.673-12.725 6.923a1.996 1.996 0 0 1-1.425.026z" opacity=".3"/>
+                                </svg>
+                                Google Play
+                            </a>
+                            <a href="https://github.com/haivcon/xkey" target="_blank" rel="noopener noreferrer" className="btn-outline justify-center px-1">
+                                <GithubIcon size={16} /> {t.source}
+                            </a>
+                        </div>
                     </div>
                 </div>
             </main>
