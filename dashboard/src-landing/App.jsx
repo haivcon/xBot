@@ -328,10 +328,15 @@ export default function App() {
                             {t.launchXbot} <ArrowRight size={16} />
                         </a>
                         <div className="grid grid-cols-2 gap-3">
-                            <a href="https://github.com/haivcon/xbot" target="_blank" rel="noopener noreferrer" className="btn-outline justify-center">
+                            <a href="https://github.com/haivcon/xbot" target="_blank" rel="noopener noreferrer" className="btn-outline justify-center px-1">
                                 <GithubIcon size={16} /> {t.source}
                             </a>
-                            <div className="hidden sm:block"></div>
+                            <a href="https://t.me/XlayerAi_bot" target="_blank" rel="noopener noreferrer" className="btn-outline justify-center px-1">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-surface-200">
+                                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.686c.223-.195-.054-.282-.346-.09l-6.4 4.024-2.76-.86c-.6-.185-.612-.6.125-.89l10.814-4.18c.5-.184.95.12.75 1.05z"/>
+                                </svg>
+                                Telegram
+                            </a>
                         </div>
                     </div>
                 </div>
