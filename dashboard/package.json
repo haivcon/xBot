@@ -5,11 +5,8 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build && npm run docs:build",
-        "preview": "vite preview",
-        "docs:dev": "vitepress dev docs --port 5174",
-        "docs:build": "vitepress build docs",
-        "docs:preview": "vitepress preview docs"
+        "build": "vite build",
+        "preview": "vite preview"
     },
     "dependencies": {
         "@capacitor/app": "^8.1.0",
@@ -47,7 +44,6 @@
         "@types/react-dom": "^19.2.3",
         "@vitejs/plugin-react": "^6.0.1",
         "tailwindcss": "^4.2.4",
-        "vite": "^8.0.10",
-        "vitepress": "^1.6.4"
+        "vite": "^8.0.10"
     }
 }

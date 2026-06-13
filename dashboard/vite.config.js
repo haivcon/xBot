@@ -42,10 +42,6 @@ export default defineConfig(({ mode }) => ({
             '/api': {
                 target: 'http://localhost:3000',
                 changeOrigin: true,
-            },
-            '/docs': {
-                target: 'http://localhost:5174',
-                changeOrigin: true,
             }
         },
     },
@@ -57,6 +53,7 @@ export default defineConfig(({ mode }) => ({
                 main: path.resolve(__dirname, 'index.html'),
                 xbot: path.resolve(__dirname, 'xBot/index.html'),
                 xkey: path.resolve(__dirname, 'xKey/index.html'),
+                docs: path.resolve(__dirname, 'docs/index.html'),
             },
 
         },
