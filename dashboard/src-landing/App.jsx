@@ -238,7 +238,7 @@ export default function App() {
     const currentLang = LANGUAGES.find(l => l.code === lang);
 
     return (
-        <div className="hero-gradient min-h-screen relative">
+        <div className="hero-gradient min-h-[140vh] relative overflow-hidden">
             {/* Background grid */}
             <div className="absolute inset-0 z-0 opacity-[0.02] pointer-events-none mix-blend-overlay" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
             
