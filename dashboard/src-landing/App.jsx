@@ -36,7 +36,7 @@ const TEXTS = {
         aiTrading: 'AI Trading', analytics: 'Phân tích', telegram: 'Telegram', multiLang: 'Đa ngôn ngữ', portfolio: 'Danh mục',
         offlineVault: 'Kho Offline', aes: 'AES-256', biometric: 'Sinh trắc', languages: '15 Ngôn ngữ', batchOps: 'Thao tác hàng loạt',
         launchXbot: 'Mở xBot', launchXkey: 'Mở xKey', source: 'Mã nguồn',
-        footer: 'Được xây dựng bởi',
+        footer: 'Được xây dựng bởi', docs: 'Tài liệu',
     },
     en: {
         ecosystem: 'Web3 Ecosystem',
@@ -48,7 +48,7 @@ const TEXTS = {
         aiTrading: 'AI Trading', analytics: 'Analytics', telegram: 'Telegram', multiLang: 'Multi-lang', portfolio: 'Portfolio',
         offlineVault: 'Offline Vault', aes: 'AES-256', biometric: 'Biometric', languages: '15 Languages', batchOps: 'Batch Ops',
         launchXbot: 'Launch xBot', launchXkey: 'Launch xKey', source: 'Source',
-        footer: 'Built by',
+        footer: 'Built by', docs: 'Docs',
     },
     zh: {
         ecosystem: 'Web3 生态系统',
@@ -60,7 +60,7 @@ const TEXTS = {
         aiTrading: 'AI 交易', analytics: '分析', telegram: 'Telegram', multiLang: '多语言', portfolio: '投资组合',
         offlineVault: '离线金库', aes: 'AES-256', biometric: '生物识别', languages: '15种语言', batchOps: '批量操作',
         launchXbot: '启动 xBot', launchXkey: '启动 xKey', source: '源代码',
-        footer: '由...构建',
+        footer: '由...构建', docs: '文档',
     },
     ko: {
         ecosystem: 'Web3 생태계',
@@ -72,7 +72,7 @@ const TEXTS = {
         aiTrading: 'AI 트레이딩', analytics: '분석', telegram: '텔레그램', multiLang: '다국어', portfolio: '포트폴리오',
         offlineVault: '오프라인 금고', aes: 'AES-256', biometric: '생체인증', languages: '15개 언어', batchOps: '일괄 작업',
         launchXbot: 'xBot 실행', launchXkey: 'xKey 실행', source: '소스코드',
-        footer: '제작자',
+        footer: '제작자', docs: '문서',
     },
     ja: {
         ecosystem: 'Web3エコシステム',
@@ -84,7 +84,7 @@ const TEXTS = {
         aiTrading: 'AIトレード', analytics: '分析', telegram: 'Telegram', multiLang: '多言語', portfolio: 'ポートフォリオ',
         offlineVault: 'オフライン金庫', aes: 'AES-256', biometric: '生体認証', languages: '15言語', batchOps: '一括操作',
         launchXbot: 'xBot起動', launchXkey: 'xKey起動', source: 'ソースコード',
-        footer: '開発者',
+        footer: '開発者', docs: 'ドキュメント',
     },
     ru: {
         ecosystem: 'Экосистема Web3',
@@ -96,7 +96,7 @@ const TEXTS = {
         aiTrading: 'AI Трейдинг', analytics: 'Аналитика', telegram: 'Telegram', multiLang: 'Мультиязычный', portfolio: 'Портфель',
         offlineVault: 'Оффлайн', aes: 'AES-256', biometric: 'Биометрия', languages: '15 языков', batchOps: 'Пакетные',
         launchXbot: 'Открыть xBot', launchXkey: 'Открыть xKey', source: 'Исходники',
-        footer: 'Создано',
+        footer: 'Создано', docs: 'Документы',
     },
     id: {
         ecosystem: 'Ekosistem Web3',
@@ -108,7 +108,7 @@ const TEXTS = {
         aiTrading: 'AI Trading', analytics: 'Analitik', telegram: 'Telegram', multiLang: 'Multi-bahasa', portfolio: 'Portofolio',
         offlineVault: 'Vault Offline', aes: 'AES-256', biometric: 'Biometrik', languages: '15 Bahasa', batchOps: 'Batch',
         launchXbot: 'Buka xBot', launchXkey: 'Buka xKey', source: 'Sumber',
-        footer: 'Dibuat oleh',
+        footer: 'Dibuat oleh', docs: 'Dokumen',
     },
     th: {
         ecosystem: 'ระบบนิเวศ Web3',
@@ -120,7 +120,7 @@ const TEXTS = {
         aiTrading: 'AI Trading', analytics: 'วิเคราะห์', telegram: 'Telegram', multiLang: 'หลายภาษา', portfolio: 'พอร์ต',
         offlineVault: 'ออฟไลน์', aes: 'AES-256', biometric: 'ไบโอเมตริก', languages: '15 ภาษา', batchOps: 'แบทช์',
         launchXbot: 'เปิด xBot', launchXkey: 'เปิด xKey', source: 'ซอร์สโค้ด',
-        footer: 'สร้างโดย',
+        footer: 'สร้างโดย', docs: 'เอกสาร',
     },
     es: {
         ecosystem: 'Ecosistema Web3',
@@ -132,7 +132,7 @@ const TEXTS = {
         aiTrading: 'Trading AI', analytics: 'Analítica', telegram: 'Telegram', multiLang: 'Multi-idioma', portfolio: 'Portafolio',
         offlineVault: 'Bóveda Offline', aes: 'AES-256', biometric: 'Biométrico', languages: '15 Idiomas', batchOps: 'Lotes',
         launchXbot: 'Abrir xBot', launchXkey: 'Abrir xKey', source: 'Código',
-        footer: 'Creado por',
+        footer: 'Creado por', docs: 'Docs',
     },
     fr: {
         ecosystem: 'Écosystème Web3',
@@ -144,7 +144,7 @@ const TEXTS = {
         aiTrading: 'Trading IA', analytics: 'Analytique', telegram: 'Telegram', multiLang: 'Multilingue', portfolio: 'Portefeuille',
         offlineVault: 'Coffre Offline', aes: 'AES-256', biometric: 'Biométrique', languages: '15 Langues', batchOps: 'Par lots',
         launchXbot: 'Ouvrir xBot', launchXkey: 'Ouvrir xKey', source: 'Source',
-        footer: 'Créé par',
+        footer: 'Créé par', docs: 'Docs',
     },
     de: {
         ecosystem: 'Web3-Ökosystem',
@@ -156,7 +156,7 @@ const TEXTS = {
         aiTrading: 'KI-Trading', analytics: 'Analytik', telegram: 'Telegram', multiLang: 'Mehrsprachig', portfolio: 'Portfolio',
         offlineVault: 'Offline-Tresor', aes: 'AES-256', biometric: 'Biometrisch', languages: '15 Sprachen', batchOps: 'Stapel',
         launchXbot: 'xBot öffnen', launchXkey: 'xKey öffnen', source: 'Quellcode',
-        footer: 'Erstellt von',
+        footer: 'Erstellt von', docs: 'Docs',
     },
     pt: {
         ecosystem: 'Ecossistema Web3',
@@ -168,7 +168,7 @@ const TEXTS = {
         aiTrading: 'Trading IA', analytics: 'Analítica', telegram: 'Telegram', multiLang: 'Multi-idioma', portfolio: 'Portfólio',
         offlineVault: 'Cofre Offline', aes: 'AES-256', biometric: 'Biométrico', languages: '15 Idiomas', batchOps: 'Lote',
         launchXbot: 'Abrir xBot', launchXkey: 'Abrir xKey', source: 'Fonte',
-        footer: 'Criado por',
+        footer: 'Criado por', docs: 'Docs',
     },
     ar: {
         ecosystem: 'نظام Web3 البيئي',
@@ -180,7 +180,7 @@ const TEXTS = {
         aiTrading: 'تداول AI', analytics: 'تحليلات', telegram: 'تيليجرام', multiLang: 'متعدد اللغات', portfolio: 'محفظة',
         offlineVault: 'خزنة', aes: 'AES-256', biometric: 'بيومتري', languages: '15 لغة', batchOps: 'دفعات',
         launchXbot: 'فتح xBot', launchXkey: 'فتح xKey', source: 'المصدر',
-        footer: 'صنع بواسطة',
+        footer: 'صنع بواسطة', docs: 'مستندات',
     },
     hi: {
         ecosystem: 'Web3 इकोसिस्टम',
@@ -192,7 +192,7 @@ const TEXTS = {
         aiTrading: 'AI ट्रेडिंग', analytics: 'एनालिटिक्स', telegram: 'टेलीग्राम', multiLang: 'बहु-भाषा', portfolio: 'पोर्टफोलियो',
         offlineVault: 'ऑफलाइन वॉल्ट', aes: 'AES-256', biometric: 'बायोमेट्रिक', languages: '15 भाषाएँ', batchOps: 'बैच',
         launchXbot: 'xBot खोलें', launchXkey: 'xKey खोलें', source: 'सोर्स',
-        footer: 'द्वारा निर्मित',
+        footer: 'द्वारा निर्मित', docs: 'दस्तावेज़',
     },
     tr: {
         ecosystem: 'Web3 Ekosistemi',
@@ -204,7 +204,7 @@ const TEXTS = {
         aiTrading: 'AI Ticaret', analytics: 'Analitik', telegram: 'Telegram', multiLang: 'Çok dilli', portfolio: 'Portföy',
         offlineVault: 'Çevrimdışı Kasa', aes: 'AES-256', biometric: 'Biyometrik', languages: '15 Dil', batchOps: 'Toplu İşlem',
         launchXbot: 'xBot Aç', launchXkey: 'xKey Aç', source: 'Kaynak',
-        footer: 'Yapımcı',
+        footer: 'Yapımcı', docs: 'Belgeler',
     },
 };
 
@@ -250,7 +250,7 @@ export default function App() {
             <div className="absolute top-4 right-6 z-20 flex items-center gap-3">
                 <a href="/docs/" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.1] text-sm font-medium text-surface-300 hover:bg-white/[0.08] hover:text-white transition-all">
                     <BookOpen size={14} className="text-purple-400" />
-                    <span>Docs</span>
+                    <span>{t.docs}</span>
                 </a>
                 
                 <div className="relative">

@@ -43,6 +43,10 @@ export default defineConfig(({ mode }) => ({
                 target: 'http://localhost:3000',
                 changeOrigin: true,
             },
+            '/docs': {
+                target: 'http://localhost:5174',
+                changeOrigin: true,
+            }
         },
     },
     build: {
