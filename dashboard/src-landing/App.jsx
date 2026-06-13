@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, Shield, Cpu, Globe, Smartphone, Lock, Layers, Wallet, BarChart3, Bot, Key, ChevronDown } from 'lucide-react';
+import { ArrowRight, Shield, Cpu, Globe, Smartphone, Lock, Layers, Wallet, BarChart3, Bot, Key, ChevronDown, BookOpen } from 'lucide-react';
 
 const GithubIcon = ({ size = 16, className = '' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -246,9 +246,15 @@ export default function App() {
             <div className="glow-orb-1" style={{ top: '-10%', right: '-5%' }} />
             <div className="glow-orb-2" style={{ bottom: '10%', left: '-8%' }} />
 
-            {/* ── Language Selector (top-right) ── */}
-            <div className="absolute top-4 right-6 z-20">
-                <button
+            {/* ── Top-right Navigation ── */}
+            <div className="absolute top-4 right-6 z-20 flex items-center gap-3">
+                <a href="/docs/" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.1] text-sm font-medium text-surface-300 hover:bg-white/[0.08] hover:text-white transition-all">
+                    <BookOpen size={14} className="text-purple-400" />
+                    <span>Docs</span>
+                </a>
+                
+                <div className="relative">
+                    <button
                     onClick={() => setLangOpen(!langOpen)}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.1] text-sm text-surface-300 hover:bg-white/[0.08] hover:text-white transition-all"
                 >
@@ -271,6 +277,7 @@ export default function App() {
                         ))}
                     </div>
                 )}
+                </div>
             </div>
 
             {/* ── Hero Section ── */}
