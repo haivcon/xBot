@@ -94,6 +94,7 @@ const OKX_API_CREDENTIALS = (() => {
             }
         }
     }
+    console.info(`[Config] Loaded ${creds.length} OKX API Key(s) from environment.`);
     return creds;
 })();
 const OKX_API_KEY = OKX_API_CREDENTIALS.length > 0 ? OKX_API_CREDENTIALS[0].apiKey : null;

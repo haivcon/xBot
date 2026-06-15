@@ -938,7 +938,9 @@ function startSignalPolling(userId, config, minimalContext) {
                         }
                     }
                 } catch (chainErr) {
-                    log.warn(`Signal poll error for chain ${chain}:`, chainErr.message);
+                    const errMsg = chainErr.message || chainErr.msg || JSON.stringify(chainErr);
+                    const errCode = chainErr.code ? `[Code: ${chainErr.code}] ` : '';
+                    log.warn(`Signal poll error for chain ${chain}: ${errCode}${errMsg}`);
                 }
             }
 
