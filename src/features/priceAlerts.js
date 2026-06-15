@@ -1568,8 +1568,16 @@ function createPriceAlerts(deps) {
         if (state.type === 'set_website' || state.type === 'set_twitter') {
             priceWizardStates.delete(userId);
             const url = text.trim();
+            
+            // Delete user's message and prompt message
+            try { await bot.deleteMessage(msg.chat.id, msg.message_id); } catch (_) { }
+            if (state.promptMessageId) {
+                try { await bot.deleteMessage(msg.chat.id, state.promptMessageId); } catch (_) { }
+            }
+
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                await bot.sendMessage(msg.chat.id, t(lang, 'price_alert_url_invalid'));
+                const warnMsg = await bot.sendMessage(msg.chat.id, t(lang, 'price_alert_url_invalid'));
+                setTimeout(() => bot.deleteMessage(msg.chat.id, warnMsg.message_id).catch(() => {}), 3000);
                 return true;
             }
             const updatePayload = {};
@@ -1579,7 +1587,8 @@ function createPriceAlerts(deps) {
                 updatePayload.twitterUrl = url;
             }
             await updatePriceAlertToken(state.chatId, state.tokenId, updatePayload);
-            await bot.sendMessage(msg.chat.id, t(lang, 'price_alert_url_saved'));
+            const successMsg = await bot.sendMessage(msg.chat.id, t(lang, 'price_alert_url_saved'));
+            setTimeout(() => bot.deleteMessage(msg.chat.id, successMsg.message_id).catch(() => {}), 3000);
             await sendPriceAdminMenu(userId, state.chatId, { fallbackLang: lang, view: 'links', tokenId: state.tokenId });
             return true;
         }
