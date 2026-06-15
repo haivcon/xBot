@@ -479,7 +479,7 @@ function createPriceAlerts(deps) {
     const TITLE_PAGE_SIZE = 5;
     const MEDIA_PAGE_SIZE = 5;
     const MAX_TITLES = 44;
-    const MAX_MEDIA = 44;
+    const MAX_MEDIA = 200;
 
     const buildTitleListMenu = async (chatId, tokenId, lang, page = 0) => {
         const titleList = await listPriceAlertTitles(tokenId, chatId);
