@@ -1870,11 +1870,20 @@ function createOkxService(config) {
         };
     }
 
+    const PRICE_CACHE = new Map();
+    const PRICE_CACHE_TTL_MS = 60000;
+
     async function fetchTokenPriceOverview(options = {}) {
-        const { tokenAddress, chainIndex = null, chainShortName = null, throttleMs = 0 } = options;
+        const { tokenAddress, chainIndex = null, chainShortName = null, throttleMs = 0, mode = 'premium' } = options;
         const normalizedAddress = typeof tokenAddress === 'string' ? tokenAddress.trim() : tokenAddress;
         if (!normalizedAddress) {
             throw new Error('Missing token address');
+        }
+
+        const cacheKey = `${mode}:${normalizedAddress}:${chainIndex || ''}:${chainShortName || ''}`;
+        const cached = PRICE_CACHE.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < PRICE_CACHE_TTL_MS) {
+            return cached.data;
         }
 
         const baseQuery = ensureQueryChainParams({
@@ -1887,11 +1896,19 @@ function createOkxService(config) {
         let priceInfoEntry = null;
         let lastError = null;
         try {
-            const payload = await callOkxDexEndpoint('/api/v6/dex/market/price-info', baseQuery, {
-                method: 'POST',
-                bodyType: 'array'
-            });
-            priceInfoEntry = unwrapOkxFirst(payload);
+            if (mode === 'premium') {
+                const payload = await callOkxDexEndpoint('/api/v6/dex/market/price-info', baseQuery, {
+                    method: 'POST',
+                    bodyType: 'array'
+                });
+                priceInfoEntry = unwrapOkxFirst(payload);
+            } else {
+                const payload = await callOkxDexEndpoint('/api/v6/dex/market/price', baseQuery, {
+                    method: 'POST',
+                    bodyType: 'array'
+                });
+                priceInfoEntry = unwrapOkxFirst(payload);
+            }
         } catch (error) {
             lastError = error;
         }
@@ -2016,7 +2033,7 @@ function createOkxService(config) {
             lpBurnedPercent = pickOkxNumeric(advEntry, ['lpBurnedPercent']);
         } catch (_advErr) { /* non-critical, silently ignore */ }
 
-        return {
+        const finalResult = {
             chainIndex: baseQuery.chainIndex,
             chainShortName: baseQuery.chainShortName,
             tokenAddress: normalizedAddress,
@@ -2053,8 +2070,11 @@ function createOkxService(config) {
             lpBurnedPercent: normalizeNumeric(lpBurnedPercent),
             fetchedAt: Date.now(),
             tokenPrices,
-            raw: { priceInfoEntry, basicInfoEntry }
+            raw: { priceEntry: priceInfoEntry, priceInfoEntry, basicInfoEntry }
         };
+
+        PRICE_CACHE.set(cacheKey, { timestamp: Date.now(), data: finalResult });
+        return finalResult;
     }
 
     async function fetchBanmaoTokenProfile(options = {}) {

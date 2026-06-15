@@ -1894,19 +1894,21 @@ function createPriceAlerts(deps) {
                 : null,
             '',
             // ═══ ACTIVITY SECTION ═══
-            `<b>━━━ 📈 ${t(lang, 'price_section_activity')} ━━━</b>`,
-            `👥 ${t(lang, 'price_table_holders')}: <code>${formatValue(snapshot?.holders, { maxDecimals: 4 })}</code>`,
-            '',
-            `📊 ${t(lang, 'price_table_volume')}:`,
-            `  5m: <code>${formatValue(snapshot?.volume5M, { prefix: '$', maxDecimals: 4 })}</code> │ 1h: <code>${formatValue(snapshot?.volume1H, { prefix: '$', maxDecimals: 4 })}</code>`,
-            `  4h: <code>${formatValue(snapshot?.volume4H, { prefix: '$', maxDecimals: 4 })}</code> │ 24h: <code>${formatValue(snapshot?.volume24H, { prefix: '$', maxDecimals: 4 })}</code>`,
-            '',
-            `🔀 ${t(lang, 'price_table_txs')}:`,
-            `  5m: <code>${formatValue(snapshot?.txs5M, { maxDecimals: 4 })}</code> │ 1h: <code>${formatValue(snapshot?.txs1H, { maxDecimals: 4 })}</code>`,
-            `  4h: <code>${formatValue(snapshot?.txs4H, { maxDecimals: 4 })}</code> │ 24h: <code>${formatValue(snapshot?.txs24H, { maxDecimals: 4 })}</code>`,
-            '',
-            `📝 ${t(lang, 'price_table_trade_num')}: <code>${formatValue(snapshot?.tradeNum, { maxDecimals: 4 })}${snapshot?.tokenSymbol ? ' ' + escapeHtml(snapshot.tokenSymbol) : ''}</code>`,
-            '',
+            snapshot?.volume24H != null ? [
+                `<b>━━━ 📈 ${t(lang, 'price_section_activity')} ━━━</b>`,
+                `👥 ${t(lang, 'price_table_holders')}: <code>${formatValue(snapshot?.holders, { maxDecimals: 4 })}</code>`,
+                '',
+                `📊 ${t(lang, 'price_table_volume')}:`,
+                `  5m: <code>${formatValue(snapshot?.volume5M, { prefix: '$', maxDecimals: 4 })}</code> │ 1h: <code>${formatValue(snapshot?.volume1H, { prefix: '$', maxDecimals: 4 })}</code>`,
+                `  4h: <code>${formatValue(snapshot?.volume4H, { prefix: '$', maxDecimals: 4 })}</code> │ 24h: <code>${formatValue(snapshot?.volume24H, { prefix: '$', maxDecimals: 4 })}</code>`,
+                '',
+                `🔀 ${t(lang, 'price_table_txs')}:`,
+                `  5m: <code>${formatValue(snapshot?.txs5M, { maxDecimals: 4 })}</code> │ 1h: <code>${formatValue(snapshot?.txs1H, { maxDecimals: 4 })}</code>`,
+                `  4h: <code>${formatValue(snapshot?.txs4H, { maxDecimals: 4 })}</code> │ 24h: <code>${formatValue(snapshot?.txs24H, { maxDecimals: 4 })}</code>`,
+                '',
+                `📝 ${t(lang, 'price_table_trade_num')}: <code>${formatValue(snapshot?.tradeNum, { maxDecimals: 4 })}${snapshot?.tokenSymbol ? ' ' + escapeHtml(snapshot.tokenSymbol) : ''}</code>`,
+                ''
+            ].join('\n') : null,
             // ═══ PERFORMANCE ═══
             `<b>━━━ 📉 ${t(lang, 'price_section_performance')} ━━━</b>`,
             (() => {
@@ -1975,7 +1977,8 @@ function createPriceAlerts(deps) {
                 tokenAddress: token.tokenAddress,
                 chainIndex: token.chainIndex,
                 chainShortName: token.chainShortName,
-                throttleMs: PRICE_ALERT_RATE_LIMIT_MS
+                throttleMs: PRICE_ALERT_RATE_LIMIT_MS,
+                mode: 'basic'
             });
             if (snapshot) {
                 cacheTokenMeta(cacheKey, snapshot);
