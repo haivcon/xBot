@@ -62,13 +62,7 @@ function generateSmartReplies(responseText, toolCalls = [], lang = 'en') {
             { text: isVi ? '💼 Portfolio' : '💼 Portfolio', data: 'sr|portfolio' }
         );
     }
-    // Auto Trading
-    else if (toolNames.some(n => /auto_trading/.test(n))) {
-        suggestions.push(
-            { text: isVi ? '📊 Trạng thái agent' : '📊 Agent Status', data: 'sr|agent_status' },
-            { text: isVi ? '💼 Portfolio' : '💼 Portfolio', data: 'sr|portfolio' }
-        );
-    }
+    // Auto Trading removed
     // Arbitrage
     else if (toolNames.some(n => /arbitrage/.test(n))) {
         suggestions.push(
@@ -123,7 +117,6 @@ const SMART_REPLY_PROMPTS = {
     'sr|portfolio': 'Check my portfolio',
     'sr|analyze': 'Analyze the token we discussed',
     'sr|leaderboard': 'Show copy trading leaderboard',
-    'sr|agent_status': 'Show my auto trading agent status',
     'sr|scan': 'Scan arbitrage for another token',
     'sr|prices': 'Check token prices',
 };

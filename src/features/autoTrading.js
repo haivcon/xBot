@@ -839,6 +839,15 @@ function startSignalPolling(userId, config, minimalContext) {
             const dbConfig = await dbGet('SELECT * FROM auto_trading_config WHERE userId = ? AND enabled = 1 AND pausedByUser = 0', [userId]);
             if (!dbConfig) { stopSignalPolling(userId); return; }
 
+            // MUST have user OKX API keys to run Auto Trading
+            const { getUserOkxCredentials } = require('./userOkxKeys');
+            const userKeys = await getUserOkxCredentials(userId);
+            if (!userKeys || !userKeys.apiKey) {
+                log.warn(`User ${userId} has no OKX keys. Auto-pausing Auto Trading agent.`);
+                await pauseAgent(userId, true);
+                return;
+            }
+
             // Check if profit target reached → auto-stop
             if (dbConfig.profitTargetPct > 0 && dbConfig.totalBudgetUsd > 0) {
                 const targetUsd = dbConfig.totalBudgetUsd * (dbConfig.profitTargetPct / 100);
@@ -852,7 +861,10 @@ function startSignalPolling(userId, config, minimalContext) {
             const chains = (dbConfig.chains || '196').split(',');
             for (const chain of chains) {
                 try {
-                    const signals = await onchainos.getSignalList(chain.trim(), { walletType: '4' });
+                    const signals = await onchainos.getSignalList(chain.trim(), { 
+                        walletType: '4',
+                        userCredentials: userKeys
+                    });
                     const allSignals = Array.isArray(signals) ? signals : [];
 
                     // ★ FIX: Filter signals by user's selectedTokens

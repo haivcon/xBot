@@ -96,7 +96,8 @@ async function discoverLeaders(chainIndex = XLAYER_CHAIN, options = {}) {
     try {
         // 1. Get Smart Money + Whale signals
         const signals = await onchainos.getSignalList(chainIndex, {
-            walletType: '1,2,3' // Smart Money, KOL, Whale
+            walletType: '1,2,3', // Smart Money, KOL, Whale
+            userCredentials: options.userCredentials
         });
 
         if (!Array.isArray(signals)) return leaders;
@@ -127,7 +128,7 @@ async function discoverLeaders(chainIndex = XLAYER_CHAIN, options = {}) {
         const wallets = [...walletSet].slice(0, 20);
         const portfolioResults = await Promise.allSettled(
             wallets.map(addr =>
-                onchainos.getPortfolioOverview(chainIndex, addr, '4') // 1-month timeframe
+                onchainos.getPortfolioOverview(chainIndex, addr, '4', { userCredentials: options.userCredentials }) // 1-month timeframe
                     .then(data => ({ address: addr, data }))
                     .catch(() => ({ address: addr, data: null }))
             )
@@ -197,6 +198,17 @@ async function startSession(userId, options = {}) {
     if (existing) {
         return { success: false, error: 'You already have an active copy session. Stop it first.' };
     }
+
+    // Check for OKX Keys
+    const { getUserOkxCredentials } = require('./userOkxKeys');
+    const userKeys = await getUserOkxCredentials(userId);
+    if (!userKeys || !userKeys.apiKey) {
+        const { t } = require('../core/i18n');
+        const { resolveNotificationLanguage } = require('../app/language');
+        const lang = await resolveNotificationLanguage(userId);
+        return { success: false, error: t(lang, 'copy_trade_api_key_required') };
+    }
+    options.userCredentials = userKeys;
 
     const chainIndex = options.chainIndex || XLAYER_CHAIN;
     const budget = Math.max(MIN_TRADE_USD, Number(options.budgetUsd) || DEFAULT_COPY_BUDGET_USD);
@@ -282,10 +294,19 @@ async function pollLeaderTrades(userId, session) {
     const walletFilter = session.trackedWallets.slice(0, 10).join(',');
 
     try {
+        const { getUserOkxCredentials } = require('./userOkxKeys');
+        const userKeys = await getUserOkxCredentials(userId);
+        if (!userKeys || !userKeys.apiKey) {
+            log.warn(`User ${userId} has no OKX keys. Auto-pausing Copy Trade session.`);
+            await stopSession(userId);
+            return;
+        }
+
         // Fetch recent trades by tracked wallets
         const trades = await onchainos.getMarketTrades(session.chainIndex, '', {
             walletAddressFilter: walletFilter,
-            limit: '50'
+            limit: '50',
+            userCredentials: userKeys
         });
 
         if (!Array.isArray(trades)) return;

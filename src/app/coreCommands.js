@@ -56,6 +56,8 @@ function registerCoreCommands(deps = {}) {
         handleAiaCommand
     } = deps;
 
+    const { handleSetOkxKeyCommand } = require('../features/userOkxKeys');
+
     if (!bot) throw new Error('bot is required for core commands');
 
     bot.onText(/^\/donate(?:@[\w_]+)?$/, async (msg) => {
@@ -728,6 +730,15 @@ function registerCoreCommands(deps = {}) {
         await handlePriceTargetCommand(msg);
     });
 
+    bot.onText(/^\/setokxkey(?:@[\w_]+)?(?:\s+(.+))?$/i, async (msg) => {
+        if (await enforceBanForMessage(msg)) {
+            return;
+        }
+        const userLang = 'en'; // default, or resolve from state
+        const { t } = require('./language');
+        await handleSetOkxKeyCommand(msg, bot, t, userLang);
+    });
+
     bot.onText(/^\/pricex(?:@[\w_]+)?$/, async (msg) => {
         if (await enforceBanForMessage(msg)) {
             return;
@@ -977,26 +988,11 @@ function registerCoreCommands(deps = {}) {
     registerOnchainCallbacks({ bot, getLang, t });
 
     // ═══════════════════════════════════════════════════════
-    // Gap #1: Wire restoreAgents() at startup
-    // ═══════════════════════════════════════════════════════
-    (async () => {
-        try {
-            const { restoreAgents } = require('../features/autoTrading');
-            const logger = require('../core/logger');
-            await restoreAgents();
-            logger.child('AutoTrading').info('Auto trading agents restored on startup');
-        } catch (err) {
-            const logger = require('../core/logger');
-            logger.child('AutoTrading').warn('Could not restore agents:', err.message);
-        }
-    })();
-
-    // ═══════════════════════════════════════════════════════
     // Gap #2: Callback handlers for auto trading + copy trading
     // ═══════════════════════════════════════════════════════
     bot.on('callback_query', async (query) => {
         const data = query.data || '';
-        if (!data.startsWith('agent|') && !data.startsWith('copy|')) return;
+        if (!data.startsWith('copy|')) return;
 
         const chatId = query.message?.chat?.id;
         const userId = String(query.from?.id);
@@ -1005,37 +1001,6 @@ function registerCoreCommands(deps = {}) {
         const log = logger.child('Callbacks');
 
         try {
-            // ── Auto Trading Agent buttons ──
-            if (data.startsWith('agent|buy|')) {
-                const confirmId = data.slice('agent|buy|'.length);
-                await bot.answerCallbackQuery(query.id, { text: '⏳ Processing...' }).catch(() => {});
-                try {
-                    const { dbGet, dbRun } = require('../../db/core');
-                    // Ensure table exists first
-                    await dbRun('CREATE TABLE IF NOT EXISTS auto_trade_pending (confirmId TEXT PRIMARY KEY, userId TEXT, status TEXT DEFAULT "pending", data TEXT, createdAt INTEGER)');
-                    const pending = await dbGet('SELECT * FROM auto_trade_pending WHERE confirmId = ? AND userId = ?', [confirmId, userId]);
-                    if (!pending) {
-                        return bot.answerCallbackQuery(query.id, { text: '❌ Expired or already processed', show_alert: true }).catch(() => {});
-                    }
-                    await dbRun('UPDATE auto_trade_pending SET status = ? WHERE confirmId = ?', ['confirmed', confirmId]);
-                } catch (dbErr) {
-                    log.warn('auto_trade_pending DB error:', dbErr.message);
-                }
-                const labels = { vi: '✅ Đã xác nhận mua! Đang thực hiện swap...', en: '✅ Buy confirmed! Executing swap...' };
-                await bot.sendMessage(chatId, labels[lang] || labels.en, { parse_mode: 'HTML' }).catch(() => {});
-                return;
-            }
-
-            if (data.startsWith('agent|skip|')) {
-                const confirmId = data.slice('agent|skip|'.length);
-                try {
-                    const { dbRun } = require('../../db/core');
-                    await dbRun('UPDATE auto_trade_pending SET status = ? WHERE confirmId = ?', ['skipped', confirmId]);
-                } catch (e) { /* table may not exist yet */ }
-                await bot.answerCallbackQuery(query.id, { text: '⏭️ Skipped' }).catch(() => {});
-                return;
-            }
-
             // ── Copy Trading buttons ──
             if (data.startsWith('copy|yes|')) {
                 const confirmId = data.slice('copy|yes|'.length);

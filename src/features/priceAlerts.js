@@ -374,6 +374,7 @@ function createPriceAlerts(deps) {
                 [{ text: t(lang, 'price_button_chain'), callback_data: `price_chain|${token.chatId}|${token.id}` }],
                 [{ text: t(lang, 'price_button_rename'), callback_data: `price_rename|${token.chatId}|${token.id}` }],
                 [{ text: t(lang, 'price_button_topics'), callback_data: `price_topics|${token.chatId}|${token.id}` }],
+                [{ text: '📊 ' + t(lang, 'price_button_premium'), callback_data: `price_premium|${token.chatId}|${token.id}` }],
                 [
                     { text: t(lang, 'price_button_custom_title', { count: titleCount }), callback_data: `price_title|${token.chatId}|${token.id}` },
                     { text: t(lang, 'price_button_attach_media', { count: mediaCount }), callback_data: `price_media|${token.chatId}|${token.id}` }
@@ -411,7 +412,8 @@ function createPriceAlerts(deps) {
                             tokenAddress: token.tokenAddress,
                             chainIndex: token.chainIndex,
                             chainShortName: token.chainShortName,
-                            throttleMs: PRICE_ALERT_RATE_LIMIT_MS
+                            throttleMs: PRICE_ALERT_RATE_LIMIT_MS,
+                            mode: 'basic'
                         });
                         if (snapshot) {
                             cacheTokenMeta(cacheKey, snapshot);
@@ -779,6 +781,29 @@ function createPriceAlerts(deps) {
                     await sendPriceAdminMenu(userId, targetChatId, { fallbackLang: callbackLang, view: 'manage' });
                     await bot.answerCallbackQuery(query.id);
                     return true;
+                case 'premium': {
+                    const token = await getPriceAlertToken(targetChatId, tokenId);
+                    if (token) {
+                        try {
+                            const snapshot = await fetchTokenPriceOverview({
+                                tokenAddress: token.tokenAddress,
+                                chainIndex: token.chainIndex,
+                                chainShortName: token.chainShortName,
+                                throttleMs: 0, // Force fetch
+                                mode: 'premium'
+                            });
+                            if (snapshot) {
+                                const cacheKey = `${token.tokenAddress}|${token.chainIndex || ''}`;
+                                cacheTokenMeta(cacheKey, snapshot);
+                            }
+                        } catch (error) {
+                            // ignore
+                        }
+                    }
+                    await sendPriceAdminMenu(userId, targetChatId, { fallbackLang: callbackLang, view: 'token', tokenId });
+                    await bot.answerCallbackQuery(query.id);
+                    return true;
+                }
                 case 'topics': {
                     const payload = await buildTopicsView(targetChatId, tokenId, callbackLang);
                     if (!payload) {
@@ -1511,7 +1536,8 @@ function createPriceAlerts(deps) {
                     tokenAddress: token.tokenAddress,
                     chainIndex: token.chainIndex,
                     chainShortName: token.chainShortName,
-                    throttleMs: PRICE_ALERT_RATE_LIMIT_MS
+                    throttleMs: PRICE_ALERT_RATE_LIMIT_MS,
+                    mode: 'basic'
                 });
                 const cacheKey = `${token.tokenAddress}|${token.chainIndex || ''}`;
                 if (snapshot) {
@@ -1876,80 +1902,87 @@ function createPriceAlerts(deps) {
             '',
             // ═══ PRICE SECTION ═══
             `<b>━━━ 💰 ${t(lang, 'price_section_price')} ━━━</b>`,
-            `💲 USD: <code>${formatValue(snapshot?.priceUsd, { prefix: '$' })}</code>`,
-            `☒ OKB: <code>${formatValue(snapshot?.priceOkb)} OKB</code>`,
-            `⟠ ETH: <code>${formatValue(snapshot?.priceEth)} ETH</code>`,
-            `₿ BTC: <code>${formatValue(snapshot?.priceBtc)} BTC</code>`,
-            '',
-            // ═══ MARKET SECTION ═══
-            `<b>━━━ 📊 ${t(lang, 'price_section_market')} ━━━</b>`,
-            `💎 ${t(lang, 'price_table_market_cap')}: <code>${formatValue(snapshot?.marketCap, { prefix: '$', maxDecimals: 4 })}</code>`,
-            `💧 ${t(lang, 'price_table_liquidity')}: <code>${formatValue(snapshot?.liquidity, { prefix: '$', maxDecimals: 4 })}</code>`,
-            `🔄 ${t(lang, 'price_table_circ_supply')}: <code>${formatValue(snapshot?.circSupply, { maxDecimals: 4 })}${snapshot?.tokenSymbol ? ' ' + escapeHtml(snapshot.tokenSymbol) : ''}</code>`,
-            Number.isFinite(snapshot?.lpBurnedPercent) ? `🔥 ${t(lang, 'price_table_lp_burned')}: <code>${Number(snapshot.lpBurnedPercent).toFixed(2)}%</code>` : null,
-            '',
-            // ═══ 24H RANGE ═══
-            (Number.isFinite(snapshot?.minPrice) && Number.isFinite(snapshot?.maxPrice))
-                ? `📊 ${t(lang, 'price_table_24h_range')}: <code>${formatValue(snapshot.minPrice, { prefix: '$', maxDecimals: 4 })} – ${formatValue(snapshot.maxPrice, { prefix: '$', maxDecimals: 4 })}</code>`
-                : null,
-            '',
-            // ═══ ACTIVITY SECTION ═══
-            snapshot?.volume24H != null ? [
-                `<b>━━━ 📈 ${t(lang, 'price_section_activity')} ━━━</b>`,
-                `👥 ${t(lang, 'price_table_holders')}: <code>${formatValue(snapshot?.holders, { maxDecimals: 4 })}</code>`,
-                '',
-                `📊 ${t(lang, 'price_table_volume')}:`,
-                `  5m: <code>${formatValue(snapshot?.volume5M, { prefix: '$', maxDecimals: 4 })}</code> │ 1h: <code>${formatValue(snapshot?.volume1H, { prefix: '$', maxDecimals: 4 })}</code>`,
-                `  4h: <code>${formatValue(snapshot?.volume4H, { prefix: '$', maxDecimals: 4 })}</code> │ 24h: <code>${formatValue(snapshot?.volume24H, { prefix: '$', maxDecimals: 4 })}</code>`,
-                '',
-                `🔀 ${t(lang, 'price_table_txs')}:`,
-                `  5m: <code>${formatValue(snapshot?.txs5M, { maxDecimals: 4 })}</code> │ 1h: <code>${formatValue(snapshot?.txs1H, { maxDecimals: 4 })}</code>`,
-                `  4h: <code>${formatValue(snapshot?.txs4H, { maxDecimals: 4 })}</code> │ 24h: <code>${formatValue(snapshot?.txs24H, { maxDecimals: 4 })}</code>`,
-                '',
-                `📝 ${t(lang, 'price_table_trade_num')}: <code>${formatValue(snapshot?.tradeNum, { maxDecimals: 4 })}${snapshot?.tokenSymbol ? ' ' + escapeHtml(snapshot.tokenSymbol) : ''}</code>`,
-                ''
-            ].join('\n') : null,
-            // ═══ PERFORMANCE ═══
-            `<b>━━━ 📉 ${t(lang, 'price_section_performance')} ━━━</b>`,
-            (() => {
-                const c5 = formatChange(snapshot?.priceChange5M);
-                const c1 = formatChange(snapshot?.priceChange1H);
-                const c4 = formatChange(snapshot?.priceChange4H);
-                const c24 = formatChange(snapshot?.change24h);
-                const parts = [];
-                if (c5) parts.push(`5m: ${c5}`);
-                if (c1) parts.push(`1h: ${c1}`);
-                if (c4) parts.push(`4h: ${c4}`);
-                if (c24) parts.push(`24h: ${c24}`);
-                return parts.length > 0 ? parts.join(' │ ') : `⚪ ${t(lang, 'price_metric_missing')}`;
-            })(),
-            '',
-            // ═══ TOKEN INFO ═══
-            `<b>━━━ 🔗 ${t(lang, 'price_section_info')} ━━━</b>`,
-            chainName ? `⛓️ ${t(lang, 'price_table_chain')}: <code>${escapeHtml(chainName)}</code>` : null,
-            snapshot?.tokenSymbol ? `🏷️ ${t(lang, 'price_table_symbol')}: <code>${escapeHtml(snapshot.tokenSymbol)}</code>` : null,
-            snapshot?.tokenLogoUrl ? `🖼️ ${t(lang, 'price_table_icon')}: <a href="${escapeHtml(snapshot.tokenLogoUrl)}">Click Link</a>` : null,
-            snapshot?.fetchedAt ? (() => {
-                const localeMap = {
-                    'vi': { locale: 'vi-VN', tz: 'Asia/Ho_Chi_Minh' },
-                    'en': { locale: 'en-US', tz: 'America/New_York' },
-                    'zh': { locale: 'zh-CN', tz: 'Asia/Shanghai' },
-                    'ko': { locale: 'ko-KR', tz: 'Asia/Seoul' },
-                    'ru': { locale: 'ru-RU', tz: 'Europe/Moscow' },
-                    'id': { locale: 'id-ID', tz: 'Asia/Jakarta' }
-                };
-                const { locale, tz } = localeMap[lang] || localeMap['en'];
-                return `🕐 ${t(lang, 'price_table_time')}: <code>${new Date(snapshot.fetchedAt).toLocaleString(locale, { timeZone: tz })}</code>`;
-            })() : null,
-            `📍 ${t(lang, 'price_table_address')}:`,
-            (() => {
-                const slugMap = { '196': 'xlayer', '1': 'eth', '56': 'bsc', '42161': 'arbitrum', '8453': 'base', '137': 'polygon', '501': 'solana' };
-                const ci = String(chainIndex || token?.chainIndex || '196');
-                const slug = slugMap[ci] || 'xlayer';
-                const explorerUrl = `https://www.okx.com/web3/explorer/${slug}/token/${address}`;
-                return `<a href="${explorerUrl}">${escapeHtml(address)}</a>`;
-            })()
+            `💲 USD: <code>${formatValue(snapshot?.priceUsd, { prefix: '$' })}</code>`
         ];
+        
+        if (snapshot?.priceOkb) lines.push(`☒ OKB: <code>${formatValue(snapshot?.priceOkb)} OKB</code>`);
+        if (snapshot?.priceEth) lines.push(`⟠ ETH: <code>${formatValue(snapshot?.priceEth)} ETH</code>`);
+        if (snapshot?.priceBtc) lines.push(`₿ BTC: <code>${formatValue(snapshot?.priceBtc)} BTC</code>`);
+        
+        // ═══ MARKET SECTION ═══
+        if (snapshot?.marketCap || snapshot?.liquidity || snapshot?.circSupply) {
+            lines.push('');
+            lines.push(`<b>━━━ 📊 ${t(lang, 'price_section_market')} ━━━</b>`);
+            if (snapshot?.marketCap) lines.push(`💎 ${t(lang, 'price_table_market_cap')}: <code>${formatValue(snapshot?.marketCap, { prefix: '$', maxDecimals: 4 })}</code>`);
+            if (snapshot?.liquidity) lines.push(`💧 ${t(lang, 'price_table_liquidity')}: <code>${formatValue(snapshot?.liquidity, { prefix: '$', maxDecimals: 4 })}</code>`);
+            if (snapshot?.circSupply) lines.push(`🔄 ${t(lang, 'price_table_circ_supply')}: <code>${formatValue(snapshot?.circSupply, { maxDecimals: 4 })}${snapshot?.tokenSymbol ? ' ' + escapeHtml(snapshot.tokenSymbol) : ''}</code>`);
+            if (Number.isFinite(snapshot?.lpBurnedPercent)) lines.push(`🔥 ${t(lang, 'price_table_lp_burned')}: <code>${Number(snapshot.lpBurnedPercent).toFixed(2)}%</code>`);
+        }
+
+        // ═══ 24H RANGE ═══
+        if (Number.isFinite(snapshot?.minPrice) && Number.isFinite(snapshot?.maxPrice)) {
+            lines.push('');
+            lines.push(`📊 ${t(lang, 'price_table_24h_range')}: <code>${formatValue(snapshot.minPrice, { prefix: '$', maxDecimals: 4 })} – ${formatValue(snapshot.maxPrice, { prefix: '$', maxDecimals: 4 })}</code>`);
+        }
+
+        // ═══ ACTIVITY SECTION ═══
+        if (snapshot?.volume24H != null) {
+            lines.push('');
+            lines.push(`<b>━━━ 📈 ${t(lang, 'price_section_activity')} ━━━</b>`);
+            lines.push(`👥 ${t(lang, 'price_table_holders')}: <code>${formatValue(snapshot?.holders, { maxDecimals: 4 })}</code>`);
+            lines.push('');
+            lines.push(`📊 ${t(lang, 'price_table_volume')}:`);
+            lines.push(`  5m: <code>${formatValue(snapshot?.volume5M, { prefix: '$', maxDecimals: 4 })}</code> │ 1h: <code>${formatValue(snapshot?.volume1H, { prefix: '$', maxDecimals: 4 })}</code>`);
+            lines.push(`  4h: <code>${formatValue(snapshot?.volume4H, { prefix: '$', maxDecimals: 4 })}</code> │ 24h: <code>${formatValue(snapshot?.volume24H, { prefix: '$', maxDecimals: 4 })}</code>`);
+            lines.push('');
+            lines.push(`🔀 ${t(lang, 'price_table_txs')}:`);
+            lines.push(`  5m: <code>${formatValue(snapshot?.txs5M, { maxDecimals: 4 })}</code> │ 1h: <code>${formatValue(snapshot?.txs1H, { maxDecimals: 4 })}</code>`);
+            lines.push(`  4h: <code>${formatValue(snapshot?.txs4H, { maxDecimals: 4 })}</code> │ 24h: <code>${formatValue(snapshot?.txs24H, { maxDecimals: 4 })}</code>`);
+            lines.push('');
+            lines.push(`📝 ${t(lang, 'price_table_trade_num')}: <code>${formatValue(snapshot?.tradeNum, { maxDecimals: 4 })}${snapshot?.tokenSymbol ? ' ' + escapeHtml(snapshot.tokenSymbol) : ''}</code>`);
+        }
+
+        // ═══ PERFORMANCE ═══
+        if (snapshot?.priceChange5M != null || snapshot?.priceChange1H != null || snapshot?.priceChange4H != null || snapshot?.change24h != null) {
+            lines.push('');
+            lines.push(`<b>━━━ 📉 ${t(lang, 'price_section_performance')} ━━━</b>`);
+            const c5 = formatChange(snapshot?.priceChange5M);
+            const c1 = formatChange(snapshot?.priceChange1H);
+            const c4 = formatChange(snapshot?.priceChange4H);
+            const c24 = formatChange(snapshot?.change24h);
+            const parts = [];
+            if (c5) parts.push(`5m: ${c5}`);
+            if (c1) parts.push(`1h: ${c1}`);
+            if (c4) parts.push(`4h: ${c4}`);
+            if (c24) parts.push(`24h: ${c24}`);
+            lines.push(parts.length > 0 ? parts.join(' │ ') : `⚪ ${t(lang, 'price_metric_missing')}`);
+        }
+
+        // ═══ TOKEN INFO ═══
+        lines.push('');
+        lines.push(`<b>━━━ 🔗 ${t(lang, 'price_section_info')} ━━━</b>`);
+        if (chainName) lines.push(`⛓️ ${t(lang, 'price_table_chain')}: <code>${escapeHtml(chainName)}</code>`);
+        if (snapshot?.tokenSymbol) lines.push(`🏷️ ${t(lang, 'price_table_symbol')}: <code>${escapeHtml(snapshot.tokenSymbol)}</code>`);
+        if (snapshot?.tokenLogoUrl) lines.push(`🖼️ ${t(lang, 'price_table_icon')}: <a href="${escapeHtml(snapshot.tokenLogoUrl)}">Click Link</a>`);
+        if (snapshot?.fetchedAt) {
+            const localeMap = {
+                'vi': { locale: 'vi-VN', tz: 'Asia/Ho_Chi_Minh' },
+                'en': { locale: 'en-US', tz: 'America/New_York' },
+                'zh': { locale: 'zh-CN', tz: 'Asia/Shanghai' },
+                'ko': { locale: 'ko-KR', tz: 'Asia/Seoul' },
+                'ru': { locale: 'ru-RU', tz: 'Europe/Moscow' },
+                'id': { locale: 'id-ID', tz: 'Asia/Jakarta' }
+            };
+            const { locale, tz } = localeMap[lang] || localeMap['en'];
+            lines.push(`🕐 ${t(lang, 'price_table_time')}: <code>${new Date(snapshot.fetchedAt).toLocaleString(locale, { timeZone: tz })}</code>`);
+        }
+        lines.push(`📍 ${t(lang, 'price_table_address')}:`);
+        const slugMap = { '196': 'xlayer', '1': 'eth', '56': 'bsc', '42161': 'arbitrum', '8453': 'base', '137': 'polygon', '501': 'solana' };
+        const ci = String(chainIndex || token?.chainIndex || '196');
+        const slug = slugMap[ci] || 'xlayer';
+        const explorerUrl = `https://www.okx.com/web3/explorer/${slug}/token/${address}`;
+        lines.push(`<a href="${explorerUrl}">${escapeHtml(address)}</a>`);
+
         return lines.filter(Boolean).join('\n');
     };
     const sendPriceAlertNow = async (token) => {

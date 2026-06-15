@@ -730,12 +730,7 @@ module.exports.ONCHAIN_TOOLS = [
                 description: 'Run a comprehensive AI deep research analysis on a token. Calls 10+ APIs to produce a detailed report with Technical Score, Safety Score, Whale Interest, and AI Verdict. Vietnamese: "phân tích sâu", "research token", "đánh giá token". Use when user wants a thorough, multi-dimensional analysis beyond simple price/info.',
                 parameters: { type: 'object', properties: { chainIndex: { type: 'string', description: 'Chain ID. Default "196"' }, tokenContractAddress: { type: 'string', description: 'Token contract address OR symbol' } }, required: ['chainIndex', 'tokenContractAddress'] }
             },
-            // ── Idea #1: AI Auto Trading Agent ──
-            {
-                name: 'manage_auto_trading',
-                description: 'Manage autonomous AI trading agent. Actions: enable, disable, status, set_config. Vietnamese: "bật auto trade", "tắt auto trade", "cấu hình trading AI", "trạng thái agent". The agent monitors Smart Money/Whale signals and auto-trades based on AI risk scoring.',
-                parameters: { type: 'object', properties: { action: { type: 'string', description: '"enable", "disable", "status", "set_config"' }, riskLevel: { type: 'string', description: '"conservative", "moderate", "aggressive". Default "conservative"' }, maxAmountUsd: { type: 'string', description: 'Max USD per auto trade. Default "5"' }, chains: { type: 'string', description: 'Comma-separated chains to watch. Default "196,1,56,501"' }, stopLossPct: { type: 'number', description: 'Stop loss %. Default 20' }, takeProfitPct: { type: 'number', description: 'Take profit %. Default 50' } }, required: ['action'] }
-            },
+            // Auto Trading has been removed
             // ── Idea #9: Cross-Chain Arbitrage Scanner ──
             {
                 name: 'scan_arbitrage',

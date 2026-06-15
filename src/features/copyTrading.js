@@ -52,10 +52,20 @@ async function initDB() {
  * Register as a copy trading leader
  */
 async function registerAsLeader(userId, walletAddress, displayName) {
-    // W10 fix: Validate wallet address format
     if (!walletAddress || !walletAddress.startsWith('0x') || walletAddress.length !== 42) {
         return { success: false, error: 'Invalid wallet address format. Must be 0x... (42 chars).' };
     }
+
+    // Check for OKX Keys
+    const { getUserOkxCredentials } = require('./userOkxKeys');
+    const userKeys = await getUserOkxCredentials(userId);
+    if (!userKeys || !userKeys.apiKey) {
+        const { t } = require('../core/i18n');
+        const { resolveNotificationLanguage } = require('../app/language');
+        const lang = await resolveNotificationLanguage(userId);
+        return { success: false, error: t(lang, 'copy_trade_api_key_leader_required') };
+    }
+
     await initDB();
     const { dbRun } = require('../../db/core');
     await dbRun(`INSERT OR REPLACE INTO copy_leaders (userId, walletAddress, displayName) VALUES (?, ?, ?)`,
@@ -68,6 +78,17 @@ async function registerAsLeader(userId, walletAddress, displayName) {
  */
 async function followLeader(followerId, leaderId, options = {}) {
     if (followerId === leaderId) return { success: false, error: 'Cannot follow yourself.' };
+    
+    // Check for OKX Keys
+    const { getUserOkxCredentials } = require('./userOkxKeys');
+    const userKeys = await getUserOkxCredentials(followerId);
+    if (!userKeys || !userKeys.apiKey) {
+        const { t } = require('../core/i18n');
+        const { resolveNotificationLanguage } = require('../app/language');
+        const lang = await resolveNotificationLanguage(followerId);
+        return { success: false, error: t(lang, 'copy_trade_api_key_required') };
+    }
+
     await initDB();
     const { dbGet, dbRun } = require('../../db/core');
 

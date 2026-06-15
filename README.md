@@ -31,15 +31,25 @@
 - [Roadmap](#️-project-roadmap)
 - [Contributing](#-contributing)
 
-### 🚀 What's New in v1.3.8 (OKX API Key Rotation Engine)
+### 🚀 What's New in v1.3.9 (Copy Trade Credentials & API Optimization)
+
+#### Copy Trading OKX API Credential Enforcement
+- **Personal OKX Keys Mandated**: Mandated personal OKX API Keys for all Copy Trading operations (Leader registration, follower tracking, and active sessions) to ensure complete server API isolation. Integrated 6-language automated guidance pointing users to the OKX Dev Portal.
+- **Auto Trading Engine Complete Deprecation**: Completely removed legacy Auto Trading backend modules, web dashboard routes, and associated database schemas to streamline the bot architecture.
+
+#### Cost-Optimized Group Price Alerts
+- **80% Cost Reduction**: Transitioned the automated group price alert engine from the expensive Premium API to the highly cost-effective Basic Market API (`/api/v6/dex/market/price`).
+- **Data Restoration**: Fully restored all missing market data metrics and localization features in group chats while maintaining the ultra-low $0.0001 per request API cost.
+
+<details>
+<summary><b>View previous updates (v1.3.8 & older)</b></summary>
+
+### v1.3.8 (OKX API Key Rotation Engine)
 
 #### High-Availability API Infrastructure
 - **Automated Key Rotation**: Engineered a robust `OkxKeyManager` to handle multiple OKX OnchainOS API credentials seamlessly. xBot now automatically detects and shifts to fallback API keys dynamically without user intervention.
 - **Fail-Fast & Race Condition Protection**: Implemented strict concurrency guards to prevent index-jumping during simultaneous bulk requests. Added fail-fast break loops for `ALL_OKX_KEYS_EXHAUSTED` states to preserve system stability and protect IP reputation.
 - **Array-Based Credentials Loader**: Upgraded the environment parser to support infinite arrays of OKX credentials via `.env` (using both JSON format and sequenced `_1`, `_2` suffix declarations).
-
-<details>
-<summary><b>View previous updates (v1.3.7 & older)</b></summary>
 
 ### v1.3.7 (Dashboard Security & Analytics Upgrade)
 

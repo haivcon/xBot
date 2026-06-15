@@ -72,7 +72,7 @@ async function okxFetch(method, path, body, options = {}) {
 
     let lastError = null;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        const creds = getCredentials();
+        const creds = options.userCredentials || getCredentials();
         // Create a fresh AbortController per attempt so retries are not pre-aborted
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeout);
@@ -278,7 +278,7 @@ async function getMarketTrades(chainIndex, tokenContractAddress, options = {}) {
         walletAddressFilter: options.walletAddressFilter,
         after: options.after
     });
-    return okxFetch('GET', path);
+    return okxFetch('GET', path, null, options);
 }
 
 /**
@@ -307,7 +307,7 @@ async function getSignalList(chainIndex, options = {}) {
     };
     // remove undefined
     const cleanPayload = Object.fromEntries(Object.entries(payload).filter(([_, v]) => v !== undefined));
-    return okxFetch('POST', '/api/v6/dex/market/signal/list', cleanPayload);
+    return okxFetch('POST', '/api/v6/dex/market/signal/list', cleanPayload, options);
 }
 
 /**
@@ -584,9 +584,9 @@ async function getMemePumpApedWallets(chainIndex, tokenContractAddress, walletAd
 // Portfolio API  (/api/v6/dex/market/portfolio)
 // ═══════════════════════════════════════════════════════
 
-async function getPortfolioOverview(chainIndex, walletAddress, timeFrame) {
-    const path = buildGetPath('/api/v6/dex/market/portfolio/overview', { chainIndex, walletAddress, timeFrame });
-    return okxFetch('GET', path);
+async function getPortfolioOverview(chainIndex, walletAddress, timeFrame = '1', options = {}) {
+    const path = `/api/v6/dex/market/wallet/portfolio-overview?chainIndex=${chainIndex}&walletAddress=${walletAddress}&timeFrame=${timeFrame}`;
+    return okxFetch('GET', path, null, options);
 }
 
 async function getRecentPnl(chainIndex, walletAddress, options = {}) {

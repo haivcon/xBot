@@ -159,7 +159,11 @@ function createOkxService(config) {
         let activeSecretKey = OKX_SECRET_KEY;
         let activePassphrase = OKX_API_PASSPHRASE;
 
-        if (auth && hasOkxCredentials) {
+        if (options.userCredentials) {
+            activeApiKey = options.userCredentials.apiKey;
+            activeSecretKey = options.userCredentials.secretKey;
+            activePassphrase = options.userCredentials.passphrase;
+        } else if (auth && hasOkxCredentials) {
             try {
                 const creds = require('../utils/okxKeyManager').getCredentials();
                 if (creds) {
@@ -419,8 +423,8 @@ function createOkxService(config) {
                         : query;
 
                     const requestOptions = currentMethod === 'GET'
-                        ? { query, auth }
-                        : { body: requestBody, auth };
+                        ? { query, auth, userCredentials: options.userCredentials }
+                        : { body: requestBody, auth, userCredentials: options.userCredentials };
 
                     return await okxJsonRequest(currentMethod, path, requestOptions);
                 } catch (error) {
@@ -1896,7 +1900,33 @@ function createOkxService(config) {
         let priceInfoEntry = null;
         let lastError = null;
         try {
-            if (mode === 'premium') {
+            if (mode === 'quote') {
+                const quoteQuery = {
+                    chainIndex: baseQuery.chainIndex || baseQuery.chainId,
+                    fromTokenAddress: normalizedAddress,
+                    toTokenAddress: '0x0000000000000000000000000000000000000000', // native token or USDT
+                    amount: '1000000000000000000', // 1 unit in 18 decimals, will be normalized by OKX
+                    swapMode: 'exactIn'
+                };
+                const payload = await callOkxDexEndpoint('/api/v6/dex/aggregator/quote', quoteQuery, { method: 'GET' });
+                const quoteEntries = unwrapOkxData(payload);
+                const quoteEntry = selectOkxQuoteByLiquidity(quoteEntries) || unwrapOkxFirst(payload);
+                if (quoteEntry) {
+                    const priceInfo = extractOkxQuotePrice(quoteEntry, { requestAmount: quoteQuery.amount });
+                    priceInfoEntry = {
+                        priceUsd: priceInfo.price ? priceInfo.price.toString() : '0',
+                        price: priceInfo.price ? priceInfo.price.toString() : '0',
+                        tokenSymbol: quoteEntry.fromToken?.symbol || 'UNKNOWN',
+                        tokenName: quoteEntry.fromToken?.name || 'UNKNOWN',
+                        decimals: quoteEntry.fromToken?.decimals || 18,
+                        liquidityUsd: '0',
+                        vol24hUsd: '0',
+                        priceChange24h: '0',
+                        dexName: quoteEntry.dexName || 'Aggregator',
+                        _isQuote: true // flag for UI to show limited data
+                    };
+                }
+            } else if (mode === 'premium') {
                 const payload = await callOkxDexEndpoint('/api/v6/dex/market/price-info', baseQuery, {
                     method: 'POST',
                     bodyType: 'array'
