@@ -2153,5 +2153,13 @@
   "help_command_topmcap": "Топ по капитализации",
   "price_button_premium": "Премиум данные",
   "copy_trade_api_key_required": "Вы должны настроить свой личный OKX API Key для использования Copy Trade. Получите бесплатный ключ API по адресу: https://web3.okx.com/ru/onchainos/dev-portal/\nЗатем используйте команду /setokxkey для его установки.",
-  "copy_trade_api_key_leader_required": "Вы должны настроить свой личный OKX API Key для регистрации в качестве лидера. Получите бесплатный ключ API по адресу: https://web3.okx.com/ru/onchainos/dev-portal/\nЗатем используйте команду /setokxkey для его установки."
+  "copy_trade_api_key_leader_required": "Вы должны настроить свой личный OKX API Key для регистрации в качестве лидера. Получите бесплатный ключ API по адресу: https://web3.okx.com/ru/onchainos/dev-portal/\nЗатем используйте команду /setokxkey для его установки.",
+  "price_alert_ecosystem_btn": "🌐 Испытайте экосистему Web3",
+  "price_alert_custom_links_menu": "🔗 Пользовательские ссылки",
+  "price_alert_set_website": "Установить веб-сайт",
+  "price_alert_set_twitter": "Установить Twitter/X",
+  "price_alert_prompt_website": "Пожалуйста, отправьте URL-адрес веб-сайта для этого токена:",
+  "price_alert_prompt_twitter": "Пожалуйста, отправьте URL-адрес Twitter/X для этого токена:",
+  "price_alert_url_saved": "✅ URL-адрес успешно сохранен!",
+  "price_alert_url_invalid": "❌ Неверный формат URL. Убедитесь, что он начинается с http:// или https://"
 }

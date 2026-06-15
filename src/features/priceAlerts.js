@@ -379,6 +379,7 @@ function createPriceAlerts(deps) {
                     { text: t(lang, 'price_button_custom_title', { count: titleCount }), callback_data: `price_title|${token.chatId}|${token.id}` },
                     { text: t(lang, 'price_button_attach_media', { count: mediaCount }), callback_data: `price_media|${token.chatId}|${token.id}` }
                 ],
+                [{ text: '🔗 ' + t(lang, 'price_alert_custom_links_menu'), callback_data: `price_links|${token.chatId}|${token.id}` }],
                 [{ text: t(lang, 'price_button_send_now'), callback_data: `price_send|${token.chatId}|${token.id}` }],
                 [{ text: '🗑️ ' + t(lang, 'price_button_delete'), callback_data: `price_delete|${token.chatId}|${token.id}` }],
                 [
@@ -426,6 +427,8 @@ function createPriceAlerts(deps) {
                 const titleCount = await countPriceAlertTitles(token.id, token.chatId);
                 payload = await buildTokenDetailView(token, snapshot, lang, mediaCount, titleCount);
             }
+        } else if (view === 'links' && tokenId) {
+            payload = await buildLinksMenu(chatId, tokenId, lang);
         } else {
             payload = await buildAdminHomeView(chatId, lang);
         }
@@ -594,6 +597,30 @@ function createPriceAlerts(deps) {
         ].join('\n');
 
         return { text, keyboard, page: currentPage, totalPages };
+    };
+
+    const buildLinksMenu = async (chatId, tokenId, lang) => {
+        const token = await getPriceAlertToken(chatId, tokenId);
+        const websiteDisplay = token?.websiteUrl ? token.websiteUrl : 'Not set';
+        const twitterDisplay = token?.twitterUrl ? token.twitterUrl : 'Not set';
+
+        const keyboard = {
+            inline_keyboard: [
+                [{ text: `🌐 ${t(lang, 'price_alert_set_website')}`, callback_data: `price_set_website|${chatId}|${tokenId}` }],
+                [{ text: `🐦 ${t(lang, 'price_alert_set_twitter')}`, callback_data: `price_set_twitter|${chatId}|${tokenId}` }],
+                [{ text: '⬅️ ' + t(lang, 'price_button_back'), callback_data: `price_token|${chatId}|${tokenId}` }],
+                [{ text: '✖️ ' + t(lang, 'price_button_close'), callback_data: `price_close|${chatId}` }]
+            ]
+        };
+
+        const text = [
+            `<b>🔗 ${t(lang, 'price_alert_custom_links_menu')}</b>`,
+            '',
+            `🌐 Website: ${escapeHtml(websiteDisplay)}`,
+            `🐦 Twitter/X: ${escapeHtml(twitterDisplay)}`
+        ].join('\n');
+
+        return { text, reply_markup: keyboard };
     };
 
     const handlePriceCommand = async (msg) => {
@@ -842,6 +869,36 @@ function createPriceAlerts(deps) {
                         return true;
                     }
                     break;
+                case 'links':
+                    if (tokenId) {
+                        await sendPriceAdminMenu(userId, targetChatId, { fallbackLang: callbackLang, view: 'links', tokenId });
+                        await bot.answerCallbackQuery(query.id);
+                        return true;
+                    }
+                    break;
+                case 'set': {
+                    if (subAction2 === 'website' || subAction2 === 'twitter') {
+                        const token = await getPriceAlertToken(targetChatId, tokenId);
+                        if (!token) {
+                            await bot.answerCallbackQuery(query.id, { text: t(callbackLang, 'price_token_missing'), show_alert: true });
+                            return true;
+                        }
+                        const promptText = subAction2 === 'website' ? t(callbackLang, 'price_alert_prompt_website') : t(callbackLang, 'price_alert_prompt_twitter');
+                        const prompt = await bot.sendMessage(userId, promptText, {
+                            reply_markup: { force_reply: true, input_field_placeholder: 'https://...' }
+                        });
+                        priceWizardStates.set(userId.toString(), {
+                            type: `set_${subAction2}`,
+                            chatId: targetChatId,
+                            tokenId,
+                            promptMessageId: prompt?.message_id || null,
+                            lang: callbackLang
+                        });
+                        await bot.answerCallbackQuery(query.id);
+                        return true;
+                    }
+                    break;
+                }
                 case 'toggle': {
                     const token = await getPriceAlertToken(targetChatId, tokenId);
                     if (!token) {
@@ -1508,6 +1565,25 @@ function createPriceAlerts(deps) {
 
         // NOTE: Do NOT delete state here - let each handler manage its own state deletion
         // Some handlers like media_bulk_add need to persist state across multiple messages
+        if (state.type === 'set_website' || state.type === 'set_twitter') {
+            priceWizardStates.delete(userId);
+            const url = text.trim();
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                await bot.sendMessage(msg.chat.id, t(lang, 'price_alert_url_invalid'));
+                return true;
+            }
+            const updatePayload = {};
+            if (state.type === 'set_website') {
+                updatePayload.websiteUrl = url;
+            } else {
+                updatePayload.twitterUrl = url;
+            }
+            await updatePriceAlertToken(state.chatId, state.tokenId, updatePayload);
+            await bot.sendMessage(msg.chat.id, t(lang, 'price_alert_url_saved'));
+            await sendPriceAdminMenu(userId, state.chatId, { fallbackLang: lang, view: 'links', tokenId: state.tokenId });
+            return true;
+        }
+
         if (state.type === 'add_address') {
             priceWizardStates.delete(userId);
             const address = text.trim();
@@ -2045,8 +2121,22 @@ function createPriceAlerts(deps) {
             const lang = await resolveTopicLanguage(token.chatId, threadId, defaultLang);
             const text = buildAlertText(lang, token, snapshot || {}, randomTitle);
 
+            const keyboardRows = [];
+            const customLinksRow = [];
+            if (token.websiteUrl) {
+                customLinksRow.push({ text: '🌐 Website', url: token.websiteUrl });
+            }
+            if (token.twitterUrl) {
+                customLinksRow.push({ text: '🐦 Twitter/X', url: token.twitterUrl });
+            }
+            if (customLinksRow.length > 0) {
+                keyboardRows.push(customLinksRow);
+            }
+            keyboardRows.push([{ text: t(lang, 'price_alert_ecosystem_btn'), url: 'https://xlayer.my/' }]);
+
             const options = {
-                parse_mode: 'HTML'
+                parse_mode: 'HTML',
+                reply_markup: { inline_keyboard: keyboardRows }
             };
             if (threadId !== null && threadId !== undefined) {
                 options.message_thread_id = Number(threadId);

@@ -2273,5 +2273,13 @@
   "help_command_topmcap": "Top market cap tokens",
   "price_button_premium": "View Premium Data",
   "copy_trade_api_key_required": "You must configure your personal OKX API Key to use Copy Trade. Get a free API key at: https://web3.okx.com/en/onchainos/dev-portal/\nThen use the /setokxkey command to set it.",
-  "copy_trade_api_key_leader_required": "You must configure your personal OKX API Key to register as a Leader. Get a free API key at: https://web3.okx.com/en/onchainos/dev-portal/\nThen use the /setokxkey command to set it."
+  "copy_trade_api_key_leader_required": "You must configure your personal OKX API Key to register as a Leader. Get a free API key at: https://web3.okx.com/en/onchainos/dev-portal/\nThen use the /setokxkey command to set it.",
+  "price_alert_ecosystem_btn": "🌐 Experience Web3 Ecosystem",
+  "price_alert_custom_links_menu": "🔗 Custom Links",
+  "price_alert_set_website": "Set Website URL",
+  "price_alert_set_twitter": "Set Twitter/X URL",
+  "price_alert_prompt_website": "Please reply with the Website URL for this token:",
+  "price_alert_prompt_twitter": "Please reply with the Twitter/X URL for this token:",
+  "price_alert_url_saved": "✅ URL has been saved successfully!",
+  "price_alert_url_invalid": "❌ Invalid URL format. Please make sure it starts with http:// or https://"
 }

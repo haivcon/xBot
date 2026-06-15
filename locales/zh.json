@@ -2241,5 +2241,13 @@
   "help_command_topmcap": "市值排行榜",
   "price_button_premium": "查看高级数据",
   "copy_trade_api_key_required": "您需要配置个人的OKX API Key才能使用跟单交易。在 https://web3.okx.com/zh-hans/onchainos/dev-portal/ 免费获取API密钥。\n然后使用 /setokxkey 命令进行设置。",
-  "copy_trade_api_key_leader_required": "您需要配置个人的OKX API Key才能注册为带单员。在 https://web3.okx.com/zh-hans/onchainos/dev-portal/ 免费获取API密钥。\n然后使用 /setokxkey 命令进行设置。"
+  "copy_trade_api_key_leader_required": "您需要配置个人的OKX API Key才能注册为带单员。在 https://web3.okx.com/zh-hans/onchainos/dev-portal/ 免费获取API密钥。\n然后使用 /setokxkey 命令进行设置。",
+  "price_alert_ecosystem_btn": "🌐 体验 Web3 生态系统",
+  "price_alert_custom_links_menu": "🔗 自定义链接",
+  "price_alert_set_website": "设置网站",
+  "price_alert_set_twitter": "设置 Twitter/X",
+  "price_alert_prompt_website": "请回复此代币的网站链接：",
+  "price_alert_prompt_twitter": "请回复此代币的 Twitter/X 链接：",
+  "price_alert_url_saved": "✅ 链接已成功保存！",
+  "price_alert_url_invalid": "❌ 链接格式无效，请确保以 http:// 或 https:// 开头"
 }

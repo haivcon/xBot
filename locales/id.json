@@ -2153,5 +2153,13 @@
   "help_command_topmcap": "Top kapitalisasi pasar",
   "price_button_premium": "Lihat Data Premium",
   "copy_trade_api_key_required": "Anda harus mengonfigurasi Kunci API OKX pribadi Anda untuk menggunakan Copy Trade. Dapatkan kunci API gratis di: https://web3.okx.com/id/onchainos/dev-portal/\nKemudian gunakan perintah /setokxkey untuk mengaturnya.",
-  "copy_trade_api_key_leader_required": "Anda harus mengonfigurasi Kunci API OKX pribadi Anda untuk mendaftar sebagai Leader. Dapatkan kunci API gratis di: https://web3.okx.com/id/onchainos/dev-portal/\nKemudian gunakan perintah /setokxkey untuk mengaturnya."
+  "copy_trade_api_key_leader_required": "Anda harus mengonfigurasi Kunci API OKX pribadi Anda untuk mendaftar sebagai Leader. Dapatkan kunci API gratis di: https://web3.okx.com/id/onchainos/dev-portal/\nKemudian gunakan perintah /setokxkey untuk mengaturnya.",
+  "price_alert_ecosystem_btn": "🌐 Rasakan Ekosistem Web3",
+  "price_alert_custom_links_menu": "🔗 Tautan Kustom",
+  "price_alert_set_website": "Atur Situs Web",
+  "price_alert_set_twitter": "Atur Twitter/X",
+  "price_alert_prompt_website": "Silakan balas dengan URL Situs Web untuk token ini:",
+  "price_alert_prompt_twitter": "Silakan balas dengan URL Twitter/X untuk token ini:",
+  "price_alert_url_saved": "✅ URL telah berhasil disimpan!",
+  "price_alert_url_invalid": "❌ Format URL tidak valid. Pastikan dimulai dengan http:// atau https://"
 }

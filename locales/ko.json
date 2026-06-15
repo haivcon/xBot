@@ -2153,5 +2153,13 @@
   "help_command_topmcap": "시가총액 순위",
   "price_button_premium": "프리미엄 데이터 보기",
   "copy_trade_api_key_required": "카피 트레이드를 사용하려면 개인 OKX API 키를 구성해야 합니다. https://web3.okx.com/ko/onchainos/dev-portal/ 에서 무료 API 키를 받으세요.\n그런 다음 /setokxkey 명령을 사용하여 설정하십시오.",
-  "copy_trade_api_key_leader_required": "리더로 등록하려면 개인 OKX API 키를 구성해야 합니다. https://web3.okx.com/ko/onchainos/dev-portal/ 에서 무료 API 키를 받으세요.\n그런 다음 /setokxkey 명령을 사용하여 설정하십시오."
+  "copy_trade_api_key_leader_required": "리더로 등록하려면 개인 OKX API 키를 구성해야 합니다. https://web3.okx.com/ko/onchainos/dev-portal/ 에서 무료 API 키를 받으세요.\n그런 다음 /setokxkey 명령을 사용하여 설정하십시오.",
+  "price_alert_ecosystem_btn": "🌐 Web3 생태계 체험하기",
+  "price_alert_custom_links_menu": "🔗 사용자 지정 링크",
+  "price_alert_set_website": "웹사이트 설정",
+  "price_alert_set_twitter": "Twitter/X 설정",
+  "price_alert_prompt_website": "이 토큰의 웹사이트 URL을 답장으로 보내주세요:",
+  "price_alert_prompt_twitter": "이 토큰의 Twitter/X URL을 답장으로 보내주세요:",
+  "price_alert_url_saved": "✅ URL이 성공적으로 저장되었습니다!",
+  "price_alert_url_invalid": "❌ 잘못된 URL 형식입니다. http:// 또는 https://로 시작하는지 확인하세요."
 }

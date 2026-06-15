@@ -2288,5 +2288,13 @@
   "help_command_topmcap": "Top vốn hóa thị trường",
   "price_button_premium": "Xem Dữ Liệu Nâng Cao",
   "copy_trade_api_key_required": "Bạn cần cấu hình OKX API Key cá nhân để sử dụng Copy Trade. Lấy API free tại: https://web3.okx.com/vi/onchainos/dev-portal/\nSau đó dùng lệnh /setokxkey để thiết lập.",
-  "copy_trade_api_key_leader_required": "Bạn cần cấu hình OKX API Key cá nhân để đăng ký Leader. Lấy API free tại: https://web3.okx.com/vi/onchainos/dev-portal/\nSau đó dùng lệnh /setokxkey để thiết lập."
+  "copy_trade_api_key_leader_required": "Bạn cần cấu hình OKX API Key cá nhân để đăng ký Leader. Lấy API free tại: https://web3.okx.com/vi/onchainos/dev-portal/\nSau đó dùng lệnh /setokxkey để thiết lập.",
+  "price_alert_ecosystem_btn": "🌐 Trải nghiệm Web3 Ecosystem",
+  "price_alert_custom_links_menu": "🔗 Custom Links",
+  "price_alert_set_website": "Cài Website",
+  "price_alert_set_twitter": "Cài Twitter/X",
+  "price_alert_prompt_website": "Vui lòng phản hồi tin nhắn này bằng link Website của token:",
+  "price_alert_prompt_twitter": "Vui lòng phản hồi tin nhắn này bằng link Twitter/X của token:",
+  "price_alert_url_saved": "✅ Đã lưu URL thành công!",
+  "price_alert_url_invalid": "❌ Định dạng URL không hợp lệ. Vui lòng bắt đầu bằng http:// hoặc https://"
 }

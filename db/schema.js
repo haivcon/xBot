@@ -345,6 +345,8 @@ async function init() {
         tokenAddress TEXT,
         tokenLabel TEXT,
         customTitle TEXT,
+        websiteUrl TEXT,
+        twitterUrl TEXT,
         chainIndex INTEGER,
         chainShortName TEXT,
         intervalSeconds INTEGER DEFAULT 300,
@@ -354,6 +356,16 @@ async function init() {
         createdAt INTEGER,
         updatedAt INTEGER
     )`);
+
+    // Migration: add websiteUrl to price_alert_tokens
+    try {
+        await dbRun(`ALTER TABLE price_alert_tokens ADD COLUMN websiteUrl TEXT`);
+    } catch (e) { /* Column likely exists already */ }
+
+    // Migration: add twitterUrl to price_alert_tokens
+    try {
+        await dbRun(`ALTER TABLE price_alert_tokens ADD COLUMN twitterUrl TEXT`);
+    } catch (e) { /* Column likely exists already */ }
 
     // Price alert media attachments
     await dbRun(`CREATE TABLE IF NOT EXISTS price_alert_media (

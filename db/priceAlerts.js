@@ -18,6 +18,8 @@ function mapPriceAlertRow(row) {
         tokenAddress: row.tokenAddress,
         tokenLabel: row.tokenLabel || null,
         customTitle: row.customTitle || null,
+        websiteUrl: row.websiteUrl || null,
+        twitterUrl: row.twitterUrl || null,
         chainIndex: Number.isFinite(row.chainIndex) ? Number(row.chainIndex) : null,
         chainShortName: row.chainShortName || null,
         intervalSeconds: Number.isFinite(row.intervalSeconds) ? Number(row.intervalSeconds) : PRICE_ALERT_DEFAULT_INTERVAL,
@@ -62,7 +64,7 @@ async function upsertPriceAlertToken(chatId, tokenData = {}) {
 
     if (tokenData.id) {
         const updates = [], values = [];
-        const patch = { tokenAddress, tokenLabel: label, chainIndex, chainShortName, intervalSeconds, enabled, nextRunAt, lastRunAt };
+        const patch = { tokenAddress, tokenLabel: label, websiteUrl: tokenData.websiteUrl, twitterUrl: tokenData.twitterUrl, chainIndex, chainShortName, intervalSeconds, enabled, nextRunAt, lastRunAt };
         for (const [key, value] of Object.entries(patch)) {
             if (value !== undefined) { updates.push(`${key} = ?`); values.push(value); }
         }
@@ -72,8 +74,8 @@ async function upsertPriceAlertToken(chatId, tokenData = {}) {
         return getPriceAlertToken(chatKey, tokenData.id);
     }
 
-    const result = await dbRun('INSERT INTO price_alert_tokens(chatId, tokenAddress, tokenLabel, chainIndex, chainShortName, intervalSeconds, enabled, lastRunAt, nextRunAt, createdAt, updatedAt) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [chatKey, tokenAddress, label, chainIndex, chainShortName, intervalSeconds, enabled, lastRunAt, nextRunAt, now, now]);
+    const result = await dbRun('INSERT INTO price_alert_tokens(chatId, tokenAddress, tokenLabel, websiteUrl, twitterUrl, chainIndex, chainShortName, intervalSeconds, enabled, lastRunAt, nextRunAt, createdAt, updatedAt) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [chatKey, tokenAddress, label, tokenData.websiteUrl || null, tokenData.twitterUrl || null, chainIndex, chainShortName, intervalSeconds, enabled, lastRunAt, nextRunAt, now, now]);
     if (result?.lastID) return getPriceAlertToken(chatKey, result.lastID);
     const row = await dbGet('SELECT * FROM price_alert_tokens WHERE chatId = ? AND tokenAddress = ? AND COALESCE(chainIndex, -1) = COALESCE(?, -1)', [chatKey, tokenAddress, chainIndex]);
     return mapPriceAlertRow(row);
@@ -83,7 +85,7 @@ async function updatePriceAlertToken(chatId, tokenId, patch = {}) {
     const chatKey = chatId ? chatId.toString() : null;
     const id = Number(tokenId);
     if (!chatKey || !Number.isFinite(id)) return null;
-    const allowed = ['tokenAddress', 'tokenLabel', 'customTitle', 'chainIndex', 'chainShortName', 'intervalSeconds', 'enabled', 'nextRunAt', 'lastRunAt'];
+    const allowed = ['tokenAddress', 'tokenLabel', 'customTitle', 'websiteUrl', 'twitterUrl', 'chainIndex', 'chainShortName', 'intervalSeconds', 'enabled', 'nextRunAt', 'lastRunAt'];
     const updates = [], values = [];
     for (const key of allowed) {
         if (Object.prototype.hasOwnProperty.call(patch, key)) {
