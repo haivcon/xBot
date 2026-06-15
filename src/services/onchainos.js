@@ -107,9 +107,9 @@ async function okxFetch(method, path, body, options = {}) {
 
             const res = await fetch(url, fetchOptions);
 
-            if (res.status === 429) {
-                lastError = { code: 'RATE_LIMITED', msg: 'Rate limited — retry with backoff', retryable: true };
-                okxKeyManager.rotate(creds.apiKey, 'HTTP 429 Too Many Requests');
+            if (res.status === 429 || res.status === 402) {
+                lastError = { code: 'RATE_LIMITED', msg: `Rate limited (HTTP ${res.status}) — retry with backoff`, retryable: true };
+                okxKeyManager.rotate(creds.apiKey, `HTTP ${res.status} Limit Reached`);
                 if (attempt < maxRetries) {
                     await sleep(retryDelay * (attempt + 1));
                     continue;

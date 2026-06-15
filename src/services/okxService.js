@@ -360,7 +360,7 @@ function createOkxService(config) {
         }
 
         const message = String(error.message).toLowerCase();
-        return message.includes('http 429') || message.includes('too many requests') || message.includes('rate limit') || error.okxCode === '50011';
+        return message.includes('http 429') || message.includes('http 402') || message.includes('too many requests') || message.includes('rate limit') || error.okxCode === '50011' || error.okxCode === '402';
     }
 
     function isOkxTransientResponseError(error) {
