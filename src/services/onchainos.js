@@ -130,6 +130,11 @@ async function okxFetch(method, path, body, options = {}) {
             if (json.code !== '0') {
                 if (json.code === '50011') {
                     okxKeyManager.rotate(creds.apiKey, `Code 50011: ${json.msg}`);
+                    if (attempt < maxRetries) {
+                        lastError = { code: '50011', msg: json.msg, retryable: true };
+                        await sleep(retryDelay * (attempt + 1));
+                        continue;
+                    }
                 }
                 throw { code: json.code, msg: json.msg || 'API error', retryable: false };
             }
