@@ -31,16 +31,23 @@
 - [Roadmap](#️-project-roadmap)
 - [Contributing](#-contributing)
 
-### 🚀 What's New in v1.3.7 (Dashboard Security & Analytics Upgrade)
+### 🚀 What's New in v1.3.8 (OKX API Key Rotation Engine)
+
+#### High-Availability API Infrastructure
+- **Automated Key Rotation**: Engineered a robust `OkxKeyManager` to handle multiple OKX OnchainOS API credentials seamlessly. xBot now automatically detects and shifts to fallback API keys dynamically without user intervention.
+- **Fail-Fast & Race Condition Protection**: Implemented strict concurrency guards to prevent index-jumping during simultaneous bulk requests. Added fail-fast break loops for `ALL_OKX_KEYS_EXHAUSTED` states to preserve system stability and protect IP reputation.
+- **Array-Based Credentials Loader**: Upgraded the environment parser to support infinite arrays of OKX credentials via `.env` (using both JSON format and sequenced `_1`, `_2` suffix declarations).
+
+<details>
+<summary><b>View previous updates (v1.3.7 & older)</b></summary>
+
+### v1.3.7 (Dashboard Security & Analytics Upgrade)
 
 #### Web Dashboard Security & Resiliency
 - **Transaction PIN Security**: Upgraded the web dashboard's API endpoints to strictly require the user's secure Telegram PIN for sensitive operations including single/batch swaps, token transfers, and wallet deletions.
 - **Enhanced Owner Analytics**: Overhauled the owner analytics endpoint (`/owner/analytics`) to include an `hourlyActivity` matrix mapping group engagement over a 24/7 weekly heatmap. Resolved variable collisions in daily user growth tracking.
 - **Robust API Client Engine**: Upgraded the frontend React `ApiClient` with built-in exponential backoff retries, intelligent TTL response caching, and request deduplication.
 - **Cross-Chain Wallet Generation**: Added `chainIndex` payload support allowing users to explicitly select networks (e.g., Ethereum, BNB Chain, Arbitrum) when generating new wallets from the web dashboard.
-
-<details>
-<summary><b>View previous updates (v1.3.6 & older)</b></summary>
 
 ### v1.3.6 (Vault Operations & API Optimization)
 
@@ -309,9 +316,13 @@ GEMINI_API_KEY=your_gemini_api_key
 WALLET_ENCRYPT_SECRET=generate_a_random_32_char_string_here
 
 # === OKX OnchainOS (Required for DeFi) ===
+# Note: You can add multiple keys by appending _1, _2... for automatic rotation
 OKX_API_KEY=your_okx_api_key
 OKX_SECRET_KEY=your_okx_secret_key
 OKX_API_PASSPHRASE=your_okx_passphrase
+# OKX_API_KEY_1=your_secondary_key
+# OKX_SECRET_KEY_1=your_secondary_secret
+# OKX_PASSPHRASE_1=your_secondary_passphrase
 
 # === Optional ===
 OPENAI_API_KEY=your_openai_key

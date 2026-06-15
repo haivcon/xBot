@@ -55,9 +55,50 @@ const BANMAO_ADDRESS_LOWER = OKX_BANMAO_TOKEN_ADDRESS ? OKX_BANMAO_TOKEN_ADDRESS
 const OKX_QUOTE_ADDRESS_LOWER = OKX_QUOTE_TOKEN_ADDRESS ? OKX_QUOTE_TOKEN_ADDRESS.toLowerCase() : null;
 const OKX_MARKET_INSTRUMENT = process.env.OKX_MARKET_INSTRUMENT || 'BANMAO-USDT';
 const OKX_FETCH_TIMEOUT = Number(process.env.OKX_FETCH_TIMEOUT || 10000);
-const OKX_API_KEY = process.env.OKX_API_KEY || null;
-const OKX_SECRET_KEY = process.env.OKX_SECRET_KEY || null;
-const OKX_API_PASSPHRASE = process.env.OKX_API_PASSPHRASE || null;
+const OKX_API_CREDENTIALS = (() => {
+    const creds = [];
+    try {
+        const raw = process.env.OKX_API_KEYS || '';
+        if (raw && raw.trim().startsWith('[')) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                for (const item of parsed) {
+                    if (item.apiKey && item.secretKey && item.passphrase) {
+                        creds.push({
+                            apiKey: String(item.apiKey).trim(),
+                            secretKey: String(item.secretKey).trim(),
+                            passphrase: String(item.passphrase).trim()
+                        });
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error('[Config] Failed to parse OKX_API_KEYS JSON array');
+    }
+
+    if (creds.length === 0) {
+        const baseKey = process.env.OKX_API_KEY || null;
+        const baseSecret = process.env.OKX_SECRET_KEY || null;
+        const basePassphrase = process.env.OKX_API_PASSPHRASE || process.env.OKX_PASSPHRASE || null;
+        if (baseKey && baseSecret && basePassphrase) {
+            creds.push({ apiKey: baseKey, secretKey: baseSecret, passphrase: basePassphrase });
+        }
+
+        for (let i = 1; i <= 20; i++) {
+            const k = process.env[`OKX_API_KEY_${i}`];
+            const s = process.env[`OKX_SECRET_KEY_${i}`];
+            const p = process.env[`OKX_API_PASSPHRASE_${i}`] || process.env[`OKX_PASSPHRASE_${i}`];
+            if (k && s && p) {
+                creds.push({ apiKey: k, secretKey: s, passphrase: p });
+            }
+        }
+    }
+    return creds;
+})();
+const OKX_API_KEY = OKX_API_CREDENTIALS.length > 0 ? OKX_API_CREDENTIALS[0].apiKey : null;
+const OKX_SECRET_KEY = OKX_API_CREDENTIALS.length > 0 ? OKX_API_CREDENTIALS[0].secretKey : null;
+const OKX_API_PASSPHRASE = OKX_API_CREDENTIALS.length > 0 ? OKX_API_CREDENTIALS[0].passphrase : null;
 const OKX_API_PROJECT = process.env.OKX_API_PROJECT || null;
 const OKX_API_SIMULATED = String(process.env.OKX_API_SIMULATED || '').toLowerCase() === 'true';
 const XLAYER_RPC_URL = process.env.XLAYER_RPC_URL || 'https://rpc.xlayer.tech';
@@ -123,7 +164,7 @@ const WALLET_CHAIN_CALLBACK_TTL = Number(process.env.WALLET_CHAIN_CALLBACK_TTL |
 const WALLET_TOKEN_CALLBACK_TTL = Number(process.env.WALLET_TOKEN_CALLBACK_TTL || 5 * 60 * 1000);
 const WALLET_TOKEN_BUTTON_LIMIT = Number(process.env.WALLET_TOKEN_BUTTON_LIMIT || 6);
 const TOPTOKEN_SESSION_TTL = Number(process.env.TOPTOKEN_SESSION_TTL || 10 * 60 * 1000);
-const hasOkxCredentials = Boolean(OKX_API_KEY && OKX_SECRET_KEY && OKX_API_PASSPHRASE);
+const hasOkxCredentials = OKX_API_CREDENTIALS.length > 0;
 const OKX_BANMAO_TOKEN_URL =
     process.env.OKX_BANMAO_TOKEN_URL ||
     'https://web3.okx.com/token/x-layer/0x16d91d1615fc55b76d5f92365bd60c069b46ef78';
@@ -617,6 +658,7 @@ module.exports = {
     OKX_API_KEY,
     OKX_SECRET_KEY,
     OKX_API_PASSPHRASE,
+    OKX_API_CREDENTIALS,
     OKX_API_PROJECT,
     OKX_API_SIMULATED,
     XLAYER_RPC_URL,

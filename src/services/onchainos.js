@@ -18,6 +18,7 @@ const {
     OKX_DEX_DEFAULT_MAX_RETRIES,
     OKX_DEX_DEFAULT_RETRY_DELAY_MS
 } = require('../config');
+const okxKeyManager = require('../utils/okxKeyManager');
 
 // ─── Shared test API key (fallback for development/testing only) ───
 const SANDBOX_API_KEY = '03f0b376-251c-4618-862e-ae92929e0416';
@@ -26,6 +27,15 @@ const SANDBOX_PASSPHRASE = 'onchainOS#666';
 
 function getCredentials() {
     if (hasOkxCredentials) {
+        try {
+            const creds = okxKeyManager.getCredentials();
+            if (creds) return creds;
+        } catch (e) {
+            if (e.message === 'ALL_OKX_KEYS_EXHAUSTED') {
+                e.retryable = false; // Fail fast, break the retry loop
+                throw e;
+            }
+        }
         return {
             apiKey: OKX_API_KEY,
             secretKey: OKX_SECRET_KEY,
@@ -57,12 +67,12 @@ async function okxFetch(method, path, body, options = {}) {
     const maxRetries = options.retries ?? OKX_DEX_DEFAULT_MAX_RETRIES ?? 2;
     const retryDelay = OKX_DEX_DEFAULT_RETRY_DELAY_MS || 400;
 
-    const creds = getCredentials();
     const bodyStr = body ? JSON.stringify(body) : '';
     const url = `${OKX_BASE_URL}${path}`;
 
     let lastError = null;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        const creds = getCredentials();
         // Create a fresh AbortController per attempt so retries are not pre-aborted
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeout);
@@ -99,6 +109,7 @@ async function okxFetch(method, path, body, options = {}) {
 
             if (res.status === 429) {
                 lastError = { code: 'RATE_LIMITED', msg: 'Rate limited — retry with backoff', retryable: true };
+                okxKeyManager.rotate(creds.apiKey, 'HTTP 429 Too Many Requests');
                 if (attempt < maxRetries) {
                     await sleep(retryDelay * (attempt + 1));
                     continue;
@@ -117,6 +128,9 @@ async function okxFetch(method, path, body, options = {}) {
 
             const json = await res.json();
             if (json.code !== '0') {
+                if (json.code === '50011') {
+                    okxKeyManager.rotate(creds.apiKey, `Code 50011: ${json.msg}`);
+                }
                 throw { code: json.code, msg: json.msg || 'API error', retryable: false };
             }
             clearTimeout(timer);

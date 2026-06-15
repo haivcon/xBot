@@ -155,18 +155,35 @@ function createOkxService(config) {
             headers['Content-Type'] = 'application/json';
         }
 
+        let activeApiKey = OKX_API_KEY;
+        let activeSecretKey = OKX_SECRET_KEY;
+        let activePassphrase = OKX_API_PASSPHRASE;
+
         if (auth && hasOkxCredentials) {
+            try {
+                const creds = require('../utils/okxKeyManager').getCredentials();
+                if (creds) {
+                    activeApiKey = creds.apiKey;
+                    activeSecretKey = creds.secretKey;
+                    activePassphrase = creds.passphrase;
+                }
+            } catch (e) {
+                if (e.message === 'ALL_OKX_KEYS_EXHAUSTED') {
+                    throw e;
+                }
+            }
+
             const timestamp = new Date().toISOString();
             const signPayload = `${timestamp}${methodUpper}${requestPath}${bodyString}`;
             const signature = crypto
-                .createHmac('sha256', OKX_SECRET_KEY)
+                .createHmac('sha256', activeSecretKey)
                 .update(signPayload)
                 .digest('base64');
 
-            headers['OK-ACCESS-KEY'] = OKX_API_KEY;
+            headers['OK-ACCESS-KEY'] = activeApiKey;
             headers['OK-ACCESS-SIGN'] = signature;
             headers['OK-ACCESS-TIMESTAMP'] = timestamp;
-            headers['OK-ACCESS-PASSPHRASE'] = OKX_API_PASSPHRASE;
+            headers['OK-ACCESS-PASSPHRASE'] = activePassphrase;
             if (OKX_API_PROJECT) {
                 headers['OK-ACCESS-PROJECT'] = OKX_API_PROJECT;
             }
@@ -175,11 +192,17 @@ function createOkxService(config) {
             }
         }
 
-        const response = await fetchJsonWithTimeout(url.toString(), {
-            method: methodUpper,
-            headers,
-            body: bodyString || undefined
-        }, OKX_FETCH_TIMEOUT);
+        let response;
+        try {
+            response = await fetchJsonWithTimeout(url.toString(), {
+                method: methodUpper,
+                headers,
+                body: bodyString || undefined
+            }, OKX_FETCH_TIMEOUT);
+        } catch (error) {
+            if (activeApiKey) error.usedApiKey = activeApiKey;
+            throw error;
+        }
 
         if (!response) {
             return null;
@@ -187,7 +210,10 @@ function createOkxService(config) {
 
         if (expectOkCode && response.code && response.code !== '0') {
             const msg = typeof response.msg === 'string' ? response.msg : 'Unknown error';
-            throw new Error(`OKX response code ${response.code}: ${msg}`);
+            const err = new Error(`OKX response code ${response.code}: ${msg}`);
+            err.okxCode = response.code;
+            if (activeApiKey) err.usedApiKey = activeApiKey;
+            throw err;
         }
 
         return response;
@@ -334,7 +360,7 @@ function createOkxService(config) {
         }
 
         const message = String(error.message).toLowerCase();
-        return message.includes('http 429') || message.includes('too many requests') || message.includes('rate limit');
+        return message.includes('http 429') || message.includes('too many requests') || message.includes('rate limit') || error.okxCode === '50011';
     }
 
     function isOkxTransientResponseError(error) {
@@ -399,7 +425,13 @@ function createOkxService(config) {
                     return await okxJsonRequest(currentMethod, path, requestOptions);
                 } catch (error) {
                     const methodNotAllowed = isOkxMethodNotAllowedError(error);
-                    const canRetry = !methodNotAllowed && attempt < resolvedMaxRetries && isOkxRetryableError(error);
+                    const isRateLimit = isOkxRateLimitError(error);
+                    
+                    if (isRateLimit && error.usedApiKey) {
+                        require('../utils/okxKeyManager').rotate(error.usedApiKey, error.message);
+                    }
+
+                    const canRetry = !methodNotAllowed && attempt < resolvedMaxRetries && (isRateLimit || isOkxTransientResponseError(error));
 
                     if (canRetry) {
                         const backoff = resolvedRetryDelayMs * Math.max(1, attempt + 1);
