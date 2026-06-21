@@ -2278,8 +2278,8 @@
   "price_alert_custom_links_menu": "🔗 Custom Links",
   "price_alert_set_website": "Set Website URL",
   "price_alert_set_twitter": "Set Twitter/X URL",
-  "price_alert_prompt_website": "Please reply with the Website URL for this token:",
-  "price_alert_prompt_twitter": "Please reply with the Twitter/X URL for this token:",
+  "price_alert_prompt_website": "Please reply with the Website URL for this token:\\n\\n💡 Hint: You can rename the button by using the | symbol (e.g., Buy Now | https://...)",
+  "price_alert_prompt_twitter": "Please reply with the Twitter/X URL for this token:\\n\\n💡 Hint: You can rename the button by using the | symbol (e.g., Buy Now | https://...)",
   "price_alert_url_saved": "✅ URL has been saved successfully!",
   "price_alert_url_invalid": "❌ Invalid URL format. Please make sure it starts with http:// or https://"
 }

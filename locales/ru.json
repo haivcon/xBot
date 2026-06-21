@@ -2158,8 +2158,8 @@
   "price_alert_custom_links_menu": "🔗 Пользовательские ссылки",
   "price_alert_set_website": "Установить веб-сайт",
   "price_alert_set_twitter": "Установить Twitter/X",
-  "price_alert_prompt_website": "Пожалуйста, отправьте URL-адрес веб-сайта для этого токена:",
-  "price_alert_prompt_twitter": "Пожалуйста, отправьте URL-адрес Twitter/X для этого токена:",
+  "price_alert_prompt_website": "Пожалуйста, отправьте URL-адрес веб-сайта для этого токена:\\n\\n💡 Подсказка: Вы можете переименовать кнопку, используя символ | (например: Купить | https://...)",
+  "price_alert_prompt_twitter": "Пожалуйста, отправьте URL-адрес Twitter/X для этого токена:\\n\\n💡 Подсказка: Вы можете переименовать кнопку, используя символ | (например: Купить | https://...)",
   "price_alert_url_saved": "✅ URL-адрес успешно сохранен!",
   "price_alert_url_invalid": "❌ Неверный формат URL. Убедитесь, что он начинается с http:// или https://"
 }

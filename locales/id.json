@@ -2158,8 +2158,8 @@
   "price_alert_custom_links_menu": "🔗 Tautan Kustom",
   "price_alert_set_website": "Atur Situs Web",
   "price_alert_set_twitter": "Atur Twitter/X",
-  "price_alert_prompt_website": "Silakan balas dengan URL Situs Web untuk token ini:",
-  "price_alert_prompt_twitter": "Silakan balas dengan URL Twitter/X untuk token ini:",
+  "price_alert_prompt_website": "Silakan balas dengan URL Situs Web untuk token ini:\\n\\n💡 Petunjuk: Anda dapat mengganti nama tombol menggunakan simbol | (misal: Beli Sekarang | https://...)",
+  "price_alert_prompt_twitter": "Silakan balas dengan URL Twitter/X untuk token ini:\\n\\n💡 Petunjuk: Anda dapat mengganti nama tombol menggunakan simbol | (misal: Beli Sekarang | https://...)",
   "price_alert_url_saved": "✅ URL telah berhasil disimpan!",
   "price_alert_url_invalid": "❌ Format URL tidak valid. Pastikan dimulai dengan http:// atau https://"
 }

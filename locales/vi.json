@@ -2293,8 +2293,8 @@
   "price_alert_custom_links_menu": "🔗 Custom Links",
   "price_alert_set_website": "Cài Website",
   "price_alert_set_twitter": "Cài Twitter/X",
-  "price_alert_prompt_website": "Vui lòng phản hồi tin nhắn này bằng link Website của token:",
-  "price_alert_prompt_twitter": "Vui lòng phản hồi tin nhắn này bằng link Twitter/X của token:",
+  "price_alert_prompt_website": "Vui lòng phản hồi tin nhắn này bằng link Website của token:\\n\\n💡 Mẹo: Bạn có thể đổi tên nút bằng cách dùng dấu | (VD: Mua Ngay | https://...)",
+  "price_alert_prompt_twitter": "Vui lòng phản hồi tin nhắn này bằng link Twitter/X của token:\\n\\n💡 Mẹo: Bạn có thể đổi tên nút bằng cách dùng dấu | (VD: Mua Ngay | https://...)",
   "price_alert_url_saved": "✅ Đã lưu URL thành công!",
   "price_alert_url_invalid": "❌ Định dạng URL không hợp lệ. Vui lòng bắt đầu bằng http:// hoặc https://"
 }
