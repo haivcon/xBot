@@ -218,9 +218,72 @@ const getInitialLang = () => {
     return 'en';
 };
 
+const GithubRepoInfo = ({ repo }) => {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchRepoData = async () => {
+            try {
+                const [commitRes, releaseRes] = await Promise.all([
+                    fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`),
+                    fetch(`https://api.github.com/repos/${repo}/releases/latest`)
+                ]);
+                
+                const commits = commitRes.ok ? await commitRes.json() : null;
+                const release = releaseRes.ok ? await releaseRes.json() : null;
+
+                if (commits && commits.length > 0) {
+                    const latestCommit = commits[0];
+                    setData({
+                        message: latestCommit.commit.message.split('\n')[0],
+                        date: new Date(latestCommit.commit.author.date).toLocaleDateString(),
+                        version: release ? release.tag_name : 'main',
+                        url: latestCommit.html_url
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch github data for", repo, error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRepoData();
+    }, [repo]);
+
+    if (loading) return <div className="h-16 mt-3 bg-white/[0.02] border border-white/[0.05] rounded-xl animate-pulse"></div>;
+    if (!data) return null;
+
+    return (
+        <a href={data.url} target="_blank" rel="noopener noreferrer" 
+           className="mt-3 flex flex-col gap-2 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.06] hover:border-white/[0.1] transition-all group">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-medium text-surface-400 group-hover:text-surface-300 transition-colors">
+                    <GithubIcon size={14} className="text-surface-500 group-hover:text-white transition-colors" />
+                    <span>{repo}</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-white/[0.1] font-mono">
+                    {data.version}
+                </span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+                <p className="text-sm text-surface-300 truncate font-medium group-hover:text-white transition-colors" title={data.message}>
+                    {data.message}
+                </p>
+                <span className="text-[10px] text-surface-500 whitespace-nowrap">
+                    {data.date}
+                </span>
+            </div>
+        </a>
+    );
+};
+
+
 export default function App() {
     const [lang, setLang] = useState(getInitialLang);
     const [langOpen, setLangOpen] = useState(false);
+    const [showXKeyModal, setShowXKeyModal] = useState(false);
 
     useEffect(() => {
         try { localStorage.setItem('xlayer_lang', lang); } catch (e) {}
@@ -345,6 +408,7 @@ export default function App() {
                                 Telegram
                             </a>
                         </div>
+                        <GithubRepoInfo repo="haivcon/xbot" />
                     </div>
                 </div>
 
@@ -375,7 +439,12 @@ export default function App() {
                     </div>
 
                     <div className="mt-auto flex flex-col gap-3 w-full">
-                        <a href="/xKey/" className="btn-primary btn-xkey justify-center w-full">
+                        <a href="/xKey/" 
+                           onClick={(e) => {
+                               e.preventDefault();
+                               setShowXKeyModal(true);
+                           }}
+                           className="btn-primary btn-xkey justify-center w-full">
                             {t.launchXkey} <ArrowRight size={16} />
                         </a>
                         <div className="grid grid-cols-2 gap-3">
@@ -392,6 +461,7 @@ export default function App() {
                                 <GithubIcon size={16} /> {t.source}
                             </a>
                         </div>
+                        <GithubRepoInfo repo="haivcon/xkey" />
                     </div>
                 </div>
             </main>
@@ -419,6 +489,46 @@ export default function App() {
                     </p>
                 </div>
             </footer>
+
+            {/* ── xKey Warning Modal ── */}
+            {showXKeyModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-surface-950/80 backdrop-blur-sm" onClick={() => setShowXKeyModal(false)}></div>
+                    <div className="relative bg-surface-900 border border-white/[0.1] rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-fade-up">
+                        <div className="p-6 sm:p-8">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                                    <Shield size={20} />
+                                </div>
+                                <span className="px-3 py-1 bg-[#422006] text-[#eab308] border border-[#eab308]/20 text-xs font-bold rounded-md tracking-wide">
+                                    BẢN WEB DEMO
+                                </span>
+                            </div>
+                            
+                            <h3 className="text-xl font-bold text-white mb-3">Lưu ý bảo mật</h3>
+                            <p className="text-surface-300 text-sm leading-relaxed mb-8">
+                                Đây chỉ là bản xem trước trên web. Để bảo mật và trải nghiệm tốt nhất, vui lòng tải phiên bản mới nhất ở Github.
+                            </p>
+                            
+                            <div className="flex flex-col gap-3">
+                                <a href="https://github.com/haivcon/xkey/releases" target="_blank" rel="noopener noreferrer" 
+                                   className="flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-white text-surface-900 font-bold rounded-xl hover:bg-surface-200 transition-all active:scale-[0.98]">
+                                    <GithubIcon size={18} />
+                                    Tải bản Android trên GitHub
+                                </a>
+                                <a href="/xKey/" 
+                                   className="flex items-center justify-center w-full py-3.5 px-4 bg-white/[0.03] border border-white/[0.05] text-surface-300 font-medium rounded-xl hover:bg-white/[0.08] hover:text-white transition-all active:scale-[0.98]">
+                                    Tiếp tục truy cập bản Web
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <button onClick={() => setShowXKeyModal(false)} className="absolute top-4 right-4 text-surface-500 hover:text-white transition-colors p-2 bg-surface-800 rounded-full hover:bg-surface-700">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
