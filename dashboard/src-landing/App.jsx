@@ -257,21 +257,21 @@ const GithubRepoInfo = ({ repo }) => {
 
     return (
         <a href={data.url} target="_blank" rel="noopener noreferrer" 
-           className="mt-3 flex flex-col gap-2 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.06] hover:border-white/[0.1] transition-all group">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-medium text-surface-400 group-hover:text-surface-300 transition-colors">
-                    <GithubIcon size={14} className="text-surface-500 group-hover:text-white transition-colors" />
-                    <span>{repo}</span>
+           className="mt-3 flex flex-col gap-2 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.06] hover:border-white/[0.1] transition-all group min-w-0">
+            <div className="flex items-center justify-between min-w-0">
+                <div className="flex items-center gap-2 text-xs font-medium text-surface-400 group-hover:text-surface-300 transition-colors min-w-0 flex-1">
+                    <GithubIcon size={14} className="text-surface-500 group-hover:text-white transition-colors shrink-0" />
+                    <span className="truncate">{repo}</span>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-white/[0.1] font-mono">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-white/[0.1] font-mono shrink-0">
                     {data.version}
                 </span>
             </div>
-            <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-surface-300 truncate font-medium group-hover:text-white transition-colors" title={data.message}>
+            <div className="flex items-center justify-between gap-4 min-w-0">
+                <p className="text-sm text-surface-300 truncate font-medium group-hover:text-white transition-colors flex-1 min-w-0" title={data.message}>
                     {data.message}
                 </p>
-                <span className="text-[10px] text-surface-500 whitespace-nowrap">
+                <span className="text-[10px] text-surface-500 whitespace-nowrap shrink-0">
                     {data.date}
                 </span>
             </div>
@@ -301,7 +301,7 @@ export default function App() {
     const currentLang = LANGUAGES.find(l => l.code === lang);
 
     return (
-        <div className="hero-gradient min-h-[140vh] relative overflow-hidden">
+        <div className="hero-gradient min-h-[140vh] w-full relative overflow-x-hidden">
             {/* Background grid */}
             <div className="absolute inset-0 z-0 opacity-[0.02] pointer-events-none mix-blend-overlay" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
             
@@ -310,7 +310,7 @@ export default function App() {
             <div className="glow-orb-2" style={{ bottom: '10%', left: '-8%' }} />
 
             {/* ── Top-right Navigation ── */}
-            <div className="absolute top-4 right-6 z-20 flex items-center gap-3">
+            <div className="absolute top-4 right-4 sm:right-6 z-20 flex items-center gap-2 sm:gap-3">
                 <a href="/docs/" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.1] text-sm font-medium text-surface-300 hover:bg-white/[0.08] hover:text-white transition-all">
                     <BookOpen size={14} className="text-purple-400" />
                     <span>{t.docs}</span>
@@ -344,7 +344,7 @@ export default function App() {
             </div>
 
             {/* ── Hero Section ── */}
-            <header className="relative z-10 pt-16 pb-10 px-6 text-center">
+            <header className="relative z-10 pt-16 pb-10 px-4 sm:px-6 text-center">
                 <div className="animate-fade-up max-w-3xl mx-auto">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.04] border border-white/[0.08] mb-8 text-sm text-surface-400">
                         <Layers size={14} className="text-brand-400" />
@@ -365,10 +365,10 @@ export default function App() {
             </header>
 
             {/* ── App Cards ── */}
-            <main className="relative z-10 max-w-5xl mx-auto px-6 pb-20 grid md:grid-cols-2 gap-8">
+            <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pb-20 grid md:grid-cols-2 gap-6 sm:gap-8">
 
                 {/* ─── xBot Card ─── */}
-                <div className="glass-card p-8 flex flex-col animate-fade-up delay-200">
+                <div className="glass-card min-w-0 p-6 sm:p-8 flex flex-col animate-fade-up delay-200">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-14 h-14 rounded-2xl overflow-hidden ring-2 ring-blue-500/20 shadow-lg shadow-blue-500/10">
                             <img src="/xbot-logo.png" alt="xBot" className="w-full h-full object-cover" />
@@ -393,11 +393,11 @@ export default function App() {
                         <span className="feature-pill"><Wallet size={12} className="text-cyan-400" /> {t.portfolio}</span>
                     </div>
 
-                    <div className="mt-auto flex flex-col gap-3 w-full">
+                    <div className="mt-auto flex flex-col gap-3 w-full min-w-0">
                         <a href="/xBot/" className="btn-primary btn-xbot justify-center w-full">
                             {t.launchXbot} <ArrowRight size={16} />
                         </a>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <a href="https://github.com/haivcon/xbot" target="_blank" rel="noopener noreferrer" className="btn-outline justify-center px-1">
                                 <GithubIcon size={16} /> {t.source}
                             </a>
@@ -413,7 +413,7 @@ export default function App() {
                 </div>
 
                 {/* ─── xKey Card ─── */}
-                <div className="glass-card p-8 flex flex-col animate-fade-up delay-300">
+                <div className="glass-card min-w-0 p-6 sm:p-8 flex flex-col animate-fade-up delay-300">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-14 h-14 rounded-2xl overflow-hidden ring-2 ring-cyan-500/20 shadow-lg shadow-cyan-500/10">
                             <img src="/xkey-logo.png" alt="xKey" className="w-full h-full object-cover" />
@@ -438,7 +438,7 @@ export default function App() {
                         <span className="feature-pill"><Layers size={12} className="text-violet-400" /> {t.batchOps}</span>
                     </div>
 
-                    <div className="mt-auto flex flex-col gap-3 w-full">
+                    <div className="mt-auto flex flex-col gap-3 w-full min-w-0">
                         <a href="/xKey/" 
                            onClick={(e) => {
                                e.preventDefault();
@@ -447,7 +447,7 @@ export default function App() {
                            className="btn-primary btn-xkey justify-center w-full">
                             {t.launchXkey} <ArrowRight size={16} />
                         </a>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <a href="https://play.google.com/store/apps/details?id=com.haivcon.xkey" target="_blank" rel="noopener noreferrer" className="btn-outline justify-center px-1">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-surface-200">
                                     <path d="M4.646 2.378a2 2 0 0 0-.646 1.488v16.268a2 2 0 0 0 .646 1.488L13.882 12 4.646 2.378z" opacity=".6"/>
@@ -467,7 +467,7 @@ export default function App() {
             </main>
 
             {/* ── Footer ── */}
-            <footer className="relative z-10 text-center pb-10 px-6 animate-fade-up delay-500">
+            <footer className="relative z-10 text-center pb-10 px-4 sm:px-6 animate-fade-up delay-500">
                 <div className="border-t border-white/[0.05] pt-8 max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex flex-wrap justify-center items-center gap-6">
                         <a href="https://x.com/XlayerAi_bot" target="_blank" rel="noopener noreferrer" className="text-surface-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium">
