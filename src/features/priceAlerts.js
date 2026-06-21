@@ -1575,7 +1575,13 @@ function createPriceAlerts(deps) {
                 try { await bot.deleteMessage(msg.chat.id, state.promptMessageId); } catch (_) { }
             }
 
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            let validateUrl = url;
+            if (url.includes('|')) {
+                const parts = url.split('|');
+                validateUrl = parts.slice(1).join('|').trim();
+            }
+
+            if (!validateUrl.startsWith('http://') && !validateUrl.startsWith('https://')) {
                 const warnMsg = await bot.sendMessage(msg.chat.id, t(lang, 'price_alert_url_invalid'));
                 setTimeout(() => bot.deleteMessage(msg.chat.id, warnMsg.message_id).catch(() => {}), 3000);
                 return true;
@@ -1990,9 +1996,7 @@ function createPriceAlerts(deps) {
             `💲 USD: <code>${formatValue(snapshot?.priceUsd, { prefix: '$' })}</code>`
         ];
         
-        if (snapshot?.priceOkb) lines.push(`☒ OKB: <code>${formatValue(snapshot?.priceOkb)} OKB</code>`);
-        if (snapshot?.priceEth) lines.push(`⟠ ETH: <code>${formatValue(snapshot?.priceEth)} ETH</code>`);
-        if (snapshot?.priceBtc) lines.push(`₿ BTC: <code>${formatValue(snapshot?.priceBtc)} BTC</code>`);
+        // Removed OKB, ETH, BTC price conversions per user request
         
         // ═══ MARKET SECTION ═══
         if (snapshot?.marketCap || snapshot?.liquidity || snapshot?.circSupply) {
@@ -2133,10 +2137,20 @@ function createPriceAlerts(deps) {
             const keyboardRows = [];
             const customLinksRow = [];
             if (token.websiteUrl) {
-                customLinksRow.push({ text: '🌐 Website', url: token.websiteUrl });
+                const parts = token.websiteUrl.split('|');
+                if (parts.length > 1) {
+                    customLinksRow.push({ text: parts[0].trim(), url: parts.slice(1).join('|').trim() });
+                } else {
+                    customLinksRow.push({ text: '🌐 Website', url: token.websiteUrl });
+                }
             }
             if (token.twitterUrl) {
-                customLinksRow.push({ text: '🐦 Twitter/X', url: token.twitterUrl });
+                const parts = token.twitterUrl.split('|');
+                if (parts.length > 1) {
+                    customLinksRow.push({ text: parts[0].trim(), url: parts.slice(1).join('|').trim() });
+                } else {
+                    customLinksRow.push({ text: '🐦 Twitter/X', url: token.twitterUrl });
+                }
             }
             if (customLinksRow.length > 0) {
                 keyboardRows.push(customLinksRow);
