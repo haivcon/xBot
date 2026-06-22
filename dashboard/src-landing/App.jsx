@@ -37,6 +37,7 @@ const TEXTS = {
         offlineVault: 'Kho Offline', aes: 'AES-256', biometric: 'Sinh trắc', languages: '15 Ngôn ngữ', batchOps: 'Thao tác hàng loạt',
         launchXbot: 'Mở xBot', launchXkey: 'Mở xKey', source: 'Mã nguồn',
         footer: 'Được xây dựng bởi', docs: 'Tài liệu',
+        webDemo: 'BẢN WEB DEMO', securityNotice: 'Lưu ý bảo mật', webPreviewMsg: 'Đây chỉ là bản xem trước trên web. Để bảo mật và trải nghiệm tốt nhất, vui lòng tải phiên bản mới nhất ở Github.', downloadAndroid: 'Tải bản Android trên GitHub', continueWeb: 'Tiếp tục truy cập bản Web',
     },
     en: {
         ecosystem: 'Web3 Ecosystem',
@@ -49,6 +50,7 @@ const TEXTS = {
         offlineVault: 'Offline Vault', aes: 'AES-256', biometric: 'Biometric', languages: '15 Languages', batchOps: 'Batch Ops',
         launchXbot: 'Launch xBot', launchXkey: 'Launch xKey', source: 'Source',
         footer: 'Built by', docs: 'Docs',
+        webDemo: 'WEB DEMO', securityNotice: 'Security Notice', webPreviewMsg: 'This is only a web preview. For security and the best experience, please download the latest version on Github.', downloadAndroid: 'Download Android on GitHub', continueWeb: 'Continue to Web version',
     },
     zh: {
         ecosystem: 'Web3 生态系统',
@@ -61,6 +63,7 @@ const TEXTS = {
         offlineVault: '离线金库', aes: 'AES-256', biometric: '生物识别', languages: '15种语言', batchOps: '批量操作',
         launchXbot: '启动 xBot', launchXkey: '启动 xKey', source: '源代码',
         footer: '由...构建', docs: '文档',
+        webDemo: '网页演示版', securityNotice: '安全提示', webPreviewMsg: '这只是网页预览版。为了您的安全和最佳体验，请在Github上下载最新版本。', downloadAndroid: '在GitHub上下载Android版本', continueWeb: '继续访问网页版',
     },
     ko: {
         ecosystem: 'Web3 생태계',
@@ -73,6 +76,7 @@ const TEXTS = {
         offlineVault: '오프라인 금고', aes: 'AES-256', biometric: '생체인증', languages: '15개 언어', batchOps: '일괄 작업',
         launchXbot: 'xBot 실행', launchXkey: 'xKey 실행', source: '소스코드',
         footer: '제작자', docs: '문서',
+        webDemo: '웹 데모', securityNotice: '보안 알림', webPreviewMsg: '이것은 웹 미리보기일 뿐입니다. 보안 및 최상의 경험을 위해 Github에서 최신 버전을 다운로드하세요.', downloadAndroid: 'GitHub에서 Android 버전 다운로드', continueWeb: '웹 버전 계속 이용하기',
     },
     ja: {
         ecosystem: 'Web3エコシステム',
@@ -85,6 +89,7 @@ const TEXTS = {
         offlineVault: 'オフライン金庫', aes: 'AES-256', biometric: '生体認証', languages: '15言語', batchOps: '一括操作',
         launchXbot: 'xBot起動', launchXkey: 'xKey起動', source: 'ソースコード',
         footer: '開発者', docs: 'ドキュメント',
+        webDemo: 'ウェブデモ', securityNotice: 'セキュリティに関する注意', webPreviewMsg: 'これはウェブプレビューです。セキュリティと最高のエクスペリエンスのために、Githubで最新バージョンをダウンロードしてください。', downloadAndroid: 'GitHubでAndroid版をダウンロード', continueWeb: 'ウェブ版を続行',
     },
     ru: {
         ecosystem: 'Экосистема Web3',
@@ -97,6 +102,7 @@ const TEXTS = {
         offlineVault: 'Оффлайн', aes: 'AES-256', biometric: 'Биометрия', languages: '15 языков', batchOps: 'Пакетные',
         launchXbot: 'Открыть xBot', launchXkey: 'Открыть xKey', source: 'Исходники',
         footer: 'Создано', docs: 'Документы',
+        webDemo: 'ВЕБ-ДЕМО', securityNotice: 'Уведомление о безопасности', webPreviewMsg: 'Это только веб-версия для предпросмотра. Для безопасности и лучшего опыта, пожалуйста, скачайте последнюю версию на Github.', downloadAndroid: 'Скачать Android версию на GitHub', continueWeb: 'Продолжить в веб-версии',
     },
     id: {
         ecosystem: 'Ekosistem Web3',
@@ -109,6 +115,7 @@ const TEXTS = {
         offlineVault: 'Vault Offline', aes: 'AES-256', biometric: 'Biometrik', languages: '15 Bahasa', batchOps: 'Batch',
         launchXbot: 'Buka xBot', launchXkey: 'Buka xKey', source: 'Sumber',
         footer: 'Dibuat oleh', docs: 'Dokumen',
+        webDemo: 'DEMO WEB', securityNotice: 'Pemberitahuan Keamanan', webPreviewMsg: 'Ini hanya pratinjau web. Untuk keamanan dan pengalaman terbaik, silakan unduh versi terbaru di Github.', downloadAndroid: 'Unduh versi Android di GitHub', continueWeb: 'Lanjutkan ke versi Web',
     },
     th: {
         ecosystem: 'ระบบนิเวศ Web3',
@@ -121,6 +128,7 @@ const TEXTS = {
         offlineVault: 'ออฟไลน์', aes: 'AES-256', biometric: 'ไบโอเมตริก', languages: '15 ภาษา', batchOps: 'แบทช์',
         launchXbot: 'เปิด xBot', launchXkey: 'เปิด xKey', source: 'ซอร์สโค้ด',
         footer: 'สร้างโดย', docs: 'เอกสาร',
+        webDemo: 'เว็บเดโม่', securityNotice: 'ประกาศด้านความปลอดภัย', webPreviewMsg: 'นี่เป็นเพียงการดูตัวอย่างผ่านเว็บ เพื่อความปลอดภัยและประสบการณ์ที่ดีที่สุด โปรดดาวน์โหลดเวอร์ชันล่าสุดบน Github', downloadAndroid: 'ดาวน์โหลดเวอร์ชัน Android บน GitHub', continueWeb: 'ดำเนินการต่อไปยังเวอร์ชันเว็บ',
     },
     es: {
         ecosystem: 'Ecosistema Web3',
@@ -133,6 +141,7 @@ const TEXTS = {
         offlineVault: 'Bóveda Offline', aes: 'AES-256', biometric: 'Biométrico', languages: '15 Idiomas', batchOps: 'Lotes',
         launchXbot: 'Abrir xBot', launchXkey: 'Abrir xKey', source: 'Código',
         footer: 'Creado por', docs: 'Docs',
+        webDemo: 'DEMO WEB', securityNotice: 'Aviso de Seguridad', webPreviewMsg: 'Esta es solo una vista previa web. Para seguridad y la mejor experiencia, descarga la última versión en Github.', downloadAndroid: 'Descargar versión Android en GitHub', continueWeb: 'Continuar a la versión Web',
     },
     fr: {
         ecosystem: 'Écosystème Web3',
@@ -145,6 +154,7 @@ const TEXTS = {
         offlineVault: 'Coffre Offline', aes: 'AES-256', biometric: 'Biométrique', languages: '15 Langues', batchOps: 'Par lots',
         launchXbot: 'Ouvrir xBot', launchXkey: 'Ouvrir xKey', source: 'Source',
         footer: 'Créé par', docs: 'Docs',
+        webDemo: 'DÉMO WEB', securityNotice: 'Avis de sécurité', webPreviewMsg: 'Ceci est seulement un aperçu web. Pour la sécurité et la meilleure expérience, veuillez télécharger la dernière version sur Github.', downloadAndroid: 'Télécharger la version Android sur GitHub', continueWeb: 'Continuer vers la version Web',
     },
     de: {
         ecosystem: 'Web3-Ökosystem',
@@ -157,6 +167,7 @@ const TEXTS = {
         offlineVault: 'Offline-Tresor', aes: 'AES-256', biometric: 'Biometrisch', languages: '15 Sprachen', batchOps: 'Stapel',
         launchXbot: 'xBot öffnen', launchXkey: 'xKey öffnen', source: 'Quellcode',
         footer: 'Erstellt von', docs: 'Docs',
+        webDemo: 'WEB-DEMO', securityNotice: 'Sicherheitshinweis', webPreviewMsg: 'Dies ist nur eine Webvorschau. Für Sicherheit und das beste Erlebnis laden Sie bitte die neueste Version auf Github herunter.', downloadAndroid: 'Android-Version auf GitHub herunterladen', continueWeb: 'Weiter zur Webversion',
     },
     pt: {
         ecosystem: 'Ecossistema Web3',
@@ -169,6 +180,7 @@ const TEXTS = {
         offlineVault: 'Cofre Offline', aes: 'AES-256', biometric: 'Biométrico', languages: '15 Idiomas', batchOps: 'Lote',
         launchXbot: 'Abrir xBot', launchXkey: 'Abrir xKey', source: 'Fonte',
         footer: 'Criado por', docs: 'Docs',
+        webDemo: 'DEMO WEB', securityNotice: 'Aviso de Segurança', webPreviewMsg: 'Esta é apenas uma prévia web. Para segurança e a melhor experiência, baixe a versão mais recente no Github.', downloadAndroid: 'Baixar versão Android no GitHub', continueWeb: 'Continuar na versão Web',
     },
     ar: {
         ecosystem: 'نظام Web3 البيئي',
@@ -181,6 +193,7 @@ const TEXTS = {
         offlineVault: 'خزنة', aes: 'AES-256', biometric: 'بيومتري', languages: '15 لغة', batchOps: 'دفعات',
         launchXbot: 'فتح xBot', launchXkey: 'فتح xKey', source: 'المصدر',
         footer: 'صنع بواسطة', docs: 'مستندات',
+        webDemo: 'عرض الويب', securityNotice: 'إشعار أمني', webPreviewMsg: 'هذه مجرد معاينة على الويب. للأمان وللحصول على أفضل تجربة، يرجى تنزيل أحدث إصدار من Github.', downloadAndroid: 'تنزيل إصدار Android على GitHub', continueWeb: 'الاستمرار إلى إصدار الويب',
     },
     hi: {
         ecosystem: 'Web3 इकोसिस्टम',
@@ -193,6 +206,7 @@ const TEXTS = {
         offlineVault: 'ऑफलाइन वॉल्ट', aes: 'AES-256', biometric: 'बायोमेट्रिक', languages: '15 भाषाएँ', batchOps: 'बैच',
         launchXbot: 'xBot खोलें', launchXkey: 'xKey खोलें', source: 'सोर्स',
         footer: 'द्वारा निर्मित', docs: 'दस्तावेज़',
+        webDemo: 'वेब डेमो', securityNotice: 'सुरक्षा सूचना', webPreviewMsg: 'यह केवल एक वेब पूर्वावलोकन है। सुरक्षा और सर्वोत्तम अनुभव के लिए, कृपया Github पर नवीनतम संस्करण डाउनलोड करें।', downloadAndroid: 'GitHub पर Android संस्करण डाउनलोड करें', continueWeb: 'वेब संस्करण पर जारी रखें',
     },
     tr: {
         ecosystem: 'Web3 Ekosistemi',
@@ -205,6 +219,7 @@ const TEXTS = {
         offlineVault: 'Çevrimdışı Kasa', aes: 'AES-256', biometric: 'Biyometrik', languages: '15 Dil', batchOps: 'Toplu İşlem',
         launchXbot: 'xBot Aç', launchXkey: 'xKey Aç', source: 'Kaynak',
         footer: 'Yapımcı', docs: 'Belgeler',
+        webDemo: 'WEB DEMOSU', securityNotice: 'Güvenlik Uyarısı', webPreviewMsg: 'Bu sadece bir web önizlemesidir. Güvenlik ve en iyi deneyim için lütfen en son sürümü Github\'dan indirin.', downloadAndroid: 'GitHub\'dan Android sürümünü indir', continueWeb: 'Web sürümüne devam et',
     },
 };
 
@@ -501,24 +516,24 @@ export default function App() {
                                     <Shield size={20} />
                                 </div>
                                 <span className="px-3 py-1 bg-[#422006] text-[#eab308] border border-[#eab308]/20 text-xs font-bold rounded-md tracking-wide">
-                                    BẢN WEB DEMO
+                                    {t.webDemo}
                                 </span>
                             </div>
                             
-                            <h3 className="text-xl font-bold text-white mb-3">Lưu ý bảo mật</h3>
+                            <h3 className="text-xl font-bold text-white mb-3">{t.securityNotice}</h3>
                             <p className="text-surface-300 text-sm leading-relaxed mb-8">
-                                Đây chỉ là bản xem trước trên web. Để bảo mật và trải nghiệm tốt nhất, vui lòng tải phiên bản mới nhất ở Github.
+                                {t.webPreviewMsg}
                             </p>
                             
                             <div className="flex flex-col gap-3">
                                 <a href="https://github.com/haivcon/xkey/releases" target="_blank" rel="noopener noreferrer" 
                                    className="flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-white text-surface-900 font-bold rounded-xl hover:bg-surface-200 transition-all active:scale-[0.98]">
                                     <GithubIcon size={18} />
-                                    Tải bản Android trên GitHub
+                                    {t.downloadAndroid}
                                 </a>
                                 <a href="/xKey/" 
                                    className="flex items-center justify-center w-full py-3.5 px-4 bg-white/[0.03] border border-white/[0.05] text-surface-300 font-medium rounded-xl hover:bg-white/[0.08] hover:text-white transition-all active:scale-[0.98]">
-                                    Tiếp tục truy cập bản Web
+                                    {t.continueWeb}
                                 </a>
                             </div>
                         </div>
