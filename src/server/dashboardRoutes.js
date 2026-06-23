@@ -636,20 +636,23 @@ function createDashboardRoutes() {
             }
 
             let success = 0, failed = 0;
+            const results = [];
             for (const [idx, userId] of targets.entries()) {
                 try {
                     await bot.sendMessage(userId, sanitizeTelegramHtml(text.trim()), { parse_mode: 'HTML' });
                     success++;
-                } catch {
+                    results.push({ userId, status: 'success' });
+                } catch (err) {
                     failed++;
+                    results.push({ userId, status: 'error', error: err.message });
                 }
                 if (idx < targets.length - 1) {
-                    await new Promise(r => setTimeout(r, 500));
+                    await new Promise(r => setTimeout(r, 40));
                 }
             }
 
             log.info(`Dashboard: Message sent to ${success}/${targets.length} users by ${req.dashboardUser.userId}`);
-            res.json({ success: true, sent: success, failed, total: targets.length });
+            res.json({ success: true, sent: success, failed, total: targets.length, results });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
@@ -786,9 +789,9 @@ function createDashboardRoutes() {
                 } catch {
                     failed++;
                 }
-                // Rate limit: wait 500ms between messages
+                // Rate limit: wait 40ms between messages
                 if (idx < groups.length - 1) {
-                    await new Promise(r => setTimeout(r, 500));
+                    await new Promise(r => setTimeout(r, 40));
                 }
             }
 
@@ -2414,9 +2417,9 @@ function createDashboardRoutes() {
                 } catch {
                     failed++;
                 }
-                // Rate limit: 500ms between messages
+                // Rate limit: wait 40ms between messages
                 if (idx < users.length - 1) {
-                    await new Promise(r => setTimeout(r, 500));
+                    await new Promise(r => setTimeout(r, 40));
                 }
             }
 

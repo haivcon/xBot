@@ -42,25 +42,33 @@ function SendMessageModal({ open, onClose, targetUsers, allUsers, onSend }) {
 
         setResult({ type: 'progress', current: 0, total: ids.length, logs });
 
-        for (let i = 0; i < ids.length; i++) {
-            const id = ids[i];
-            const user = allUsers?.find(u => u.chatId === id || u.userId === id);
-            const name = user?.firstName || user?.username || id;
-
+        const BATCH_SIZE = 50;
+        for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+            const batchIds = ids.slice(i, i + BATCH_SIZE);
             try {
-                await onSend([id], text.trim());
-                sent++;
-                logs.unshift({ id, name, status: 'success' });
+                const res = await onSend(batchIds, text.trim());
+                sent += res.sent || 0;
+                failed += res.failed || 0;
+                
+                if (res.results) {
+                    res.results.forEach(r => {
+                        const user = allUsers?.find(u => u.chatId === r.userId || u.userId === r.userId);
+                        const name = user?.firstName || user?.username || r.userId;
+                        logs.unshift({ id: r.userId, name, status: r.status, error: r.error });
+                    });
+                } else {
+                    logs.unshift({ id: 'Batch', name: `Batch ${Math.floor(i/BATCH_SIZE) + 1}`, status: 'success' });
+                }
             } catch (err) {
-                failed++;
-                logs.unshift({ id, name, status: 'error', error: err.message });
+                failed += batchIds.length;
+                logs.unshift({ id: 'Batch', name: `Batch ${Math.floor(i/BATCH_SIZE) + 1}`, status: 'error', error: err.message });
             }
 
-            if (logs.length > 50) logs.pop();
+            if (logs.length > 50) logs.length = 50;
 
             setResult({
                 type: 'progress',
-                current: i + 1,
+                current: Math.min(i + BATCH_SIZE, ids.length),
                 total: ids.length,
                 sent, failed,
                 logs: [...logs]
