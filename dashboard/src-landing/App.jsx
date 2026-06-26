@@ -472,11 +472,11 @@ export default function App() {
                                 </svg>
                                 Google Play
                             </a>
-                            <a href="https://github.com/haivcon/xkey" target="_blank" rel="noopener noreferrer" className="btn-outline justify-center px-1">
+                            <a href="https://github.com/haivcon/xKey" target="_blank" rel="noopener noreferrer" className="btn-outline justify-center px-1">
                                 <GithubIcon size={16} /> {t.source}
                             </a>
                         </div>
-                        <GithubRepoInfo repo="haivcon/xkey" />
+                        <GithubRepoInfo repo="haivcon/xKey" />
                     </div>
                 </div>
             </main>
@@ -526,7 +526,7 @@ export default function App() {
                             </p>
                             
                             <div className="flex flex-col gap-3">
-                                <a href="https://github.com/haivcon/xkey/releases" target="_blank" rel="noopener noreferrer" 
+                                <a href="https://github.com/haivcon/xKey/releases/latest" target="_blank" rel="noopener noreferrer" 
                                    className="flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-white text-surface-900 font-bold rounded-xl hover:bg-surface-200 transition-all active:scale-[0.98]">
                                     <GithubIcon size={18} />
                                     {t.downloadAndroid}
