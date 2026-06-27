@@ -10,7 +10,7 @@ const { GoogleGenAI } = require('@google/genai');
 const OpenAI = require('openai');
 const logger = require('../core/logger');
 const log = logger.child('WebChat');
-const { GEMINI_API_KEYS, GEMINI_MODEL, GEMINI_MODEL_FAMILIES, OPENAI_API_KEYS, OPENAI_MODEL, OPENAI_MODEL_FAMILIES, GROQ_API_KEYS, GROQ_MODEL_FAMILIES, GROQ_API_URL } = require('../config/env');
+const { GEMINI_API_KEYS, GEMINI_MODEL, GEMINI_MODEL_FAMILIES, OPENAI_API_KEYS, OPENAI_MODEL, OPENAI_MODEL_FAMILIES, GROQ_API_KEYS, GROQ_MODEL_FAMILIES, GROQ_API_URL, NINEROUTER_API_KEY, NINEROUTER_MODEL, NINEROUTER_MODELS_URL, NINEROUTER_CHAT_COMPLETIONS_URL } = require('../config/env');
 const { ONCHAIN_TOOLS, executeToolCall, buildSystemInstruction } = require('../features/ai/ai-onchain');
 const { WEB_TOOL_DECLARATIONS, executeWebToolCall } = require('./webToolExecutor');
 const { buildAIAPrompt } = require('../config/prompts');
@@ -152,6 +152,7 @@ async function resolveGeminiKey(userId) {
 /** Detect AI provider from model ID */
 function detectProviderFromModel(modelId) {
     if (!modelId) return 'google';
+    if (['xbot', 'plan', 'action'].includes(modelId)) return '9router';
     if (modelId.startsWith('gemini')) return 'google';
     if (OPENAI_MODEL_FAMILIES && OPENAI_MODEL_FAMILIES[modelId]) return 'openai';
     if (GROQ_MODEL_FAMILIES && GROQ_MODEL_FAMILIES[modelId]) return 'groq';
@@ -177,7 +178,20 @@ async function resolveOpenAIKey(userId) {
     return null;
 }
 
-/** Resolve Groq API key for user */
+/** Resolve 9Router API key for user */
+async function resolveNineRouterKey(userId) {
+    if (NINEROUTER_API_KEY) return NINEROUTER_API_KEY;
+    if (userId) {
+        try {
+            const database = require('../core/database');
+            const userKeys = await database.listUserAiKeys(userId);
+            const keys = userKeys.filter(k => ['9router', 'ninerouter', 'nine-router'].includes((k.provider || '').toLowerCase())).map(k => k.apiKey).filter(Boolean);
+            if (keys.length > 0) return keys[Math.floor(Math.random() * keys.length)];
+        } catch {}
+    }
+    return process.env.NINEROUTER_ALLOW_NO_KEY === 'false' ? null : '9router-local';
+}
+
 async function resolveGroqKey(userId) {
     if (GROQ_API_KEYS && GROQ_API_KEYS.length > 0) {
         return GROQ_API_KEYS[Math.floor(Math.random() * GROQ_API_KEYS.length)];
@@ -695,11 +709,12 @@ function createChatRoutes() {
         if (!chatRateLimit(userId)) return res.status(429).json({ error: 'Rate limited' });
 
         // Validate model selection (allow-list)
-        const ALLOWED_GEMINI_MODELS = ['gemini-3.1-pro-preview', 'gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview'];
+        const ALLOWED_GEMINI_MODELS = ['gemini-3.1-pro-preview', 'gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash'];
         const ALLOWED_OPENAI_MODELS = Object.keys(OPENAI_MODEL_FAMILIES);
         const ALLOWED_GROQ_MODELS = Object.keys(GROQ_MODEL_FAMILIES);
-        const ALLOWED_MODELS = [...ALLOWED_GEMINI_MODELS, ...ALLOWED_OPENAI_MODELS, ...ALLOWED_GROQ_MODELS];
-        let useModel = ALLOWED_MODELS.includes(requestedModel) ? requestedModel : (GEMINI_MODEL || 'gemini-3-flash-preview');
+        const ALLOWED_NINEROUTER_MODELS = ['xbot', 'plan', 'action', NINEROUTER_MODEL].filter(Boolean);
+        const ALLOWED_MODELS = [...ALLOWED_GEMINI_MODELS, ...ALLOWED_OPENAI_MODELS, ...ALLOWED_GROQ_MODELS, ...ALLOWED_NINEROUTER_MODELS];
+        let useModel = ALLOWED_MODELS.includes(requestedModel) ? requestedModel : (GEMINI_MODEL || 'gemini-2.5-flash');
 
         // ── Enforce default model for users without personal API key ──
         // Only owners and users with their own API key can change models
@@ -714,8 +729,8 @@ function createChatRoutes() {
                 const hasPersonalOpenAiKey = userKeys.some(k => (k.provider || '').toLowerCase() === 'openai' && k.apiKey);
                 const hasPersonalGroqKey = userKeys.some(k => (k.provider || '').toLowerCase() === 'groq' && k.apiKey);
                 const DEFAULT_MODELS = {
-                    google: GEMINI_MODEL || 'gemini-3-flash-preview',
-                    openai: ALLOWED_OPENAI_MODELS[0] || 'gpt-5.4',
+                    google: GEMINI_MODEL || 'gemini-2.5-flash',
+                    openai: ALLOWED_OPENAI_MODELS[0] || 'gpt-4o-mini',
                     groq: ALLOWED_GROQ_MODELS[0] || 'openai/gpt-oss-120b',
                 };
                 if (
@@ -820,8 +835,39 @@ function createChatRoutes() {
                 : '';
             const fullSystemPrompt = personaHeader + sysInstr + '\n\n' + aiaPrompt + dashboardNote + prefsCtx + personaFooter;
 
+            // ══════════ 9ROUTER ══════════
+            if (provider === '9router') {
+                const nKey = userApiKey || await resolveNineRouterKey(userId);
+                if (!nKey) { sendEvent('error', { error: 'No 9Router API key. Configure NINEROUTER_API_KEY or add one in AI Settings → API Keys.' }); res.end(); return; }
+                const baseURL = (NINEROUTER_CHAT_COMPLETIONS_URL || '').replace(/\/chat\/completions$/, '');
+                const nClient = new OpenAI({ apiKey: nKey === '9router-local' ? 'local' : nKey, baseURL });
+                if (!session) session = { id: sessionKey, userId, title: message.trim().substring(0, 60), messages: [], createdAt: Date.now(), updatedAt: Date.now() };
+
+                const nMsgs = [{ role: 'system', content: fullSystemPrompt }];
+                for (const m of (session.messages || [])) nMsgs.push({ role: m.role === 'model' ? 'assistant' : m.role, content: m.content || '' });
+                nMsgs.push({ role: 'user', content: message.trim() });
+
+                let nFinal = '';
+                const useModel = model || NINEROUTER_MODEL || 'xbot';
+                log.info(`[Stream] 9Router: model=${useModel}, msgs=${nMsgs.length}`);
+                try {
+                    const stream = await nClient.chat.completions.create({ model: useModel, messages: nMsgs, stream: true, temperature: 0.7, max_tokens: 4096 });
+                    for await (const chunk of stream) {
+                        const d = chunk.choices?.[0]?.delta;
+                        if (d?.content) { nFinal += d.content; sendEvent('text-delta', { text: d.content }); }
+                    }
+                } catch (apiErr) { log.error(`[Stream][9Router] ${apiErr?.message}`); sendEvent('error', { error: apiErr?.message || '9Router API failed' }); res.end(); return; }
+
+                if (nFinal.trim()) nMsgs.push({ role: 'assistant', content: nFinal.trim() });
+                session.messages = nMsgs.filter(m => m.role === 'user' || m.role === 'assistant').map(m => ({ role: m.role, content: m.content || '' })).slice(-SESSION_MAX_MESSAGES);
+                session.updatedAt = Date.now(); await saveSession(session);
+                sendEvent('done', { conversationId: sessionKey, title: session.title }); res.end();
+                if (session.messages.length <= 2 && session.title === message.trim().substring(0, 60)) {
+                    (async () => { try { const r = await nClient.chat.completions.create({ model: useModel, messages: [{ role: 'user', content: `Summarize in max 5 words as title. No quotes.\nUser: ${message}\nAI: ${(nFinal||'').substring(0,300)}` }], max_tokens: 30, temperature: 0.3 }); const t = r?.choices?.[0]?.message?.content?.trim(); if (t && t.length > 2 && t.length < 80) { session.title = t; await saveSession(session); } } catch {} })();
+                }
+
             // ══════════ GEMINI ══════════
-            if (provider === 'google') {
+            } else if (provider === 'google') {
             const apiKey = userApiKey || await resolveGeminiKey(userId);
             if (!apiKey) { sendEvent('error', { error: 'No Google API key configured' }); res.end(); return; }
             const client = getGeminiClient(apiKey);
@@ -1116,23 +1162,32 @@ function createChatRoutes() {
             );
             const hasServerKey = GEMINI_API_KEYS && GEMINI_API_KEYS.length > 0;
 
-            // Build model list based on user permissions
-            const geminiModels = [
-                { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', desc: 'Best reasoning & complex tasks', icon: '🧠', tier: 'pro', provider: 'google' },
-                { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash', desc: 'Powerful multimodal & agentic', icon: '🚀', tier: 'free', provider: 'google' },
-                { id: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Lite', desc: 'Fastest, lowest cost', icon: '💨', tier: 'free', provider: 'google' },
-            ];
+            // Build model list based on shared backend model configuration
+            const geminiModels = Object.values(GEMINI_MODEL_FAMILIES).map(m => ({
+                id: m.chat || m.id,
+                familyId: m.id,
+                label: m.label,
+                desc: m.description || m.descriptionKey || '',
+                icon: m.icon,
+                tier: m.id.includes('pro') ? 'pro' : 'free',
+                provider: 'google',
+                contextWindow: m.contextWindow,
+                supportsThinking: !!m.supportsThinking,
+                supportsVision: !!m.supportsVision || !!m.supportsImageGen,
+                supportsFunctionCalling: !!m.supportsFunctionCalling,
+                functionCallingOnly: !!m.functionCallingOnly,
+            }));
 
-            // Build OpenAI models from OPENAI_MODEL_FAMILIES
             const openaiModels = Object.values(OPENAI_MODEL_FAMILIES).map(m => ({
                 id: m.id,
                 label: m.label,
                 desc: m.description,
                 icon: m.icon,
-                tier: m.id === 'gpt-5.4' ? 'pro' : 'free',
+                tier: /pro|4o$|4\.1$/.test(m.id) ? 'pro' : 'free',
                 provider: 'openai',
                 contextWindow: m.contextWindow,
                 supportsReasoning: m.supportsReasoning || false,
+                supportsVision: m.supportsVision || false,
             }));
 
             const hasOpenAiKey = userKeys.some(k =>
@@ -1140,7 +1195,6 @@ function createChatRoutes() {
             );
             const hasServerOpenAiKey = OPENAI_API_KEYS && OPENAI_API_KEYS.length > 0;
 
-            // Build Groq models from GROQ_MODEL_FAMILIES
             const groqModels = Object.values(GROQ_MODEL_FAMILIES).map(m => ({
                 id: m.id,
                 label: m.label,
@@ -1150,6 +1204,8 @@ function createChatRoutes() {
                 provider: 'groq',
                 speed: m.speed,
                 contextWindow: m.contextWindow,
+                supportsVision: m.supportsVision || false,
+                supportsFunctionCalling: m.supportsFunctionCalling || false,
             }));
 
             const hasGroqKey = userKeys.some(k =>
@@ -1157,15 +1213,40 @@ function createChatRoutes() {
             );
             const hasServerGroqKey = GROQ_API_KEYS && GROQ_API_KEYS.length > 0;
 
-            // ── Always return ALL models with `locked` flag ──
-            // Frontend shows all models but disables locked ones
-            const defaultGemini = GEMINI_MODEL || 'gemini-3-flash-preview';
-            const defaultOpenAi = openaiModels[0]?.id || 'gpt-5.4';
-            const defaultGroq = groqModels[0]?.id;
+            const hasNineRouterKey = userKeys.some(k =>
+                ['9router', 'ninerouter', 'nine-router'].includes((k.provider || '').toLowerCase()) && k.apiKey
+            );
+            const hasServerNineRouterKey = Boolean(NINEROUTER_CHAT_COMPLETIONS_URL && (NINEROUTER_API_KEY || process.env.NINEROUTER_ALLOW_NO_KEY !== 'false'));
+            let nineRouterModels = [];
+            if (NINEROUTER_MODELS_URL) {
+                try {
+                    const axios = require('axios');
+                    const headers = NINEROUTER_API_KEY ? { Authorization: `Bearer ${NINEROUTER_API_KEY}` } : {};
+                    const resp = await axios.get(NINEROUTER_MODELS_URL, { headers, timeout: 5000 });
+                    const live = Array.isArray(resp?.data?.data) ? resp.data.data : [];
+                    nineRouterModels = live.slice(0, 80).map(m => ({
+                        id: m.id,
+                        label: m.id,
+                        desc: m.owned_by ? `9Router route/combo from ${m.owned_by}` : '9Router route/combo',
+                        icon: m.owned_by === 'combo' ? '??' : '??',
+                        tier: m.owned_by === 'combo' ? 'pro' : 'free',
+                        provider: '9router',
+                        owner: m.owned_by,
+                    }));
+                } catch (e) {
+                    nineRouterModels = NINEROUTER_MODEL ? [{ id: NINEROUTER_MODEL, label: NINEROUTER_MODEL, desc: '9Router configured model/combo', icon: '??', tier: 'pro', provider: '9router' }] : [];
+                }
+            }
+
+            const defaultGemini = GEMINI_MODEL || 'gemini-2.5-flash';
+            const defaultOpenAi = OPENAI_MODEL || openaiModels[0]?.id || 'gpt-4o-mini';
+            const defaultGroq = GROQ_MODEL_FAMILIES['llama-3.3-70b-versatile'] ? 'llama-3.3-70b-versatile' : groqModels[0]?.id;
+            const defaultNineRouter = NINEROUTER_MODEL || nineRouterModels[0]?.id;
 
             const canGoogle = isOwner || hasPersonalKey;
             const canOpenAi = isOwner || hasOpenAiKey;
             const canGroq = isOwner || hasGroqKey;
+            const canNineRouter = isOwner || hasNineRouterKey;
 
             const tagModels = (list, canChange, defaultId, available) => list.map(m => ({
                 ...m,
@@ -1174,6 +1255,7 @@ function createChatRoutes() {
             }));
 
             const models = [
+                ...tagModels(nineRouterModels, canNineRouter, defaultNineRouter, hasServerNineRouterKey || canNineRouter),
                 ...tagModels(geminiModels, canGoogle, defaultGemini, hasServerKey || canGoogle),
                 ...tagModels(openaiModels, canOpenAi, defaultOpenAi, hasServerOpenAiKey || canOpenAi),
                 ...tagModels(groqModels, canGroq, defaultGroq, hasServerGroqKey || canGroq),
@@ -1181,7 +1263,8 @@ function createChatRoutes() {
 
             res.json({
                 models,
-                defaultModel: GEMINI_MODEL,
+                defaultModel: defaultNineRouter || defaultGemini,
+                defaultProvider: defaultNineRouter ? '9router' : 'google',
                 hasPersonalKey,
                 hasServerKey,
                 isOwner,
@@ -1189,6 +1272,8 @@ function createChatRoutes() {
                 hasServerOpenAiKey,
                 hasGroqKey,
                 hasServerGroqKey,
+                hasNineRouterKey,
+                hasServerNineRouterKey,
             });
         } catch (err) {
             res.status(500).json({ error: err.message });
@@ -1236,7 +1321,13 @@ function createChatRoutes() {
             }
 
             const provider = (reqProvider || '').toLowerCase();
-            const normalizedProvider = provider === 'openai' ? 'openai' : provider === 'groq' ? 'groq' : 'google';
+            const normalizedProvider = ['9router', 'ninerouter', 'nine-router'].includes(provider)
+                ? '9router'
+                : provider === 'openai'
+                    ? 'openai'
+                    : provider === 'groq'
+                        ? 'groq'
+                        : 'google';
 
             // Quick validation based on provider
             if (normalizedProvider === 'openai') {
@@ -1275,17 +1366,34 @@ function createChatRoutes() {
                         return res.status(400).json({ error: msg });
                     }
                 }
+            } else if (normalizedProvider === '9router') {
+                try {
+                    const axios = require('axios');
+                    const url = NINEROUTER_MODELS_URL || 'https://xlayerbot.fun/v1/models';
+                    const resp = await axios.get(url, {
+                        headers: { Authorization: `Bearer ${apiKey.trim()}` },
+                        timeout: 8000,
+                    });
+                    if (!resp.data?.data?.length) throw new Error('No models returned');
+                } catch (testErr) {
+                    const msg = testErr?.response?.status === 401 ? 'Invalid 9Router API key'
+                        : testErr?.response?.status === 429 ? 'Rate limited, but key is valid'
+                        : `Validation failed: ${testErr?.message?.substring(0, 100) || 'unknown error'}`;
+                    if (testErr?.response?.status !== 429) {
+                        return res.status(400).json({ error: msg });
+                    }
+                }
             } else {
                 try {
                     const testClient = new GoogleGenAI({ apiKey: apiKey.trim() });
-                    await testClient.models.get({ model: 'gemini-3-flash-preview' });
+                    await testClient.models.get({ model: GEMINI_MODEL || 'gemini-2.5-flash' });
                 } catch (testErr) {
                     return res.status(400).json({ error: `Invalid key: ${testErr?.message?.substring(0, 100) || 'validation failed'}` });
                 }
             }
 
             const db = require('../../db');
-            const defaultName = normalizedProvider === 'openai' ? 'OpenAI' : normalizedProvider === 'groq' ? 'Groq' : 'Google AI';
+            const defaultName = normalizedProvider === 'openai' ? 'OpenAI' : normalizedProvider === 'groq' ? 'Groq' : normalizedProvider === '9router' ? '9Router' : 'Google AI';
             const result = await db.addUserAiKey(userId, name || defaultName, apiKey.trim(), normalizedProvider);
             res.json({ success: true, added: result?.added !== false });
         } catch (err) {
@@ -1303,7 +1411,8 @@ function createChatRoutes() {
             if (keyId) {
                 await db.deleteUserAiKey(userId, keyId);
             } else {
-                const provider = ['openai', 'groq'].includes((reqProvider || '').toLowerCase()) ? (reqProvider || '').toLowerCase() : 'google';
+                const reqProviderNorm = (reqProvider || '').toLowerCase();
+                const provider = ['openai', 'groq', '9router'].includes(reqProviderNorm) ? reqProviderNorm : 'google';
                 await db.deleteUserAiKeys(userId, provider);
             }
             res.json({ success: true });
@@ -1376,3 +1485,4 @@ function createChatRoutes() {
 }
 
 module.exports = { createChatRoutes };
+

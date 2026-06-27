@@ -2880,7 +2880,8 @@ function startTelegramBot() {
                 usageDate: session.usageDate,
                 googleUserKeys: session.googleUserKeys,
                 groqUserKeys: session.groqUserKeys,
-                openAiUserKeys: session.openAiUserKeys
+                openAiUserKeys: session.openAiUserKeys,
+                nineRouterUserKeys: session.nineRouterUserKeys
             });
             return;
         }

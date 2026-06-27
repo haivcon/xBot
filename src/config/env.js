@@ -248,7 +248,7 @@ const GROQ_API_KEYS = (() => {
 
     return Array.from(new Set(keys));
 })();
-const GEMINI_MODEL = 'gemini-3-flash-preview';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 // Gemini Model Families - for model selection feature
 // Each model has specific capabilities, see comments for details
@@ -373,7 +373,7 @@ const GEMINI_MODEL_FAMILIES = {
     }
 };
 const GEMINI_THINKING_LEVELS = ['low', 'high'];
-const GEMINI_DEFAULT_MODEL_FAMILY = 'gemini-3.1-flash-lite';
+const GEMINI_DEFAULT_MODEL_FAMILY = 'gemini-2.5-flash';
 
 const GEMINI_TTS_MODEL = process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts';
 const GEMINI_TTS_VOICE = process.env.GEMINI_TTS_VOICE || 'Kore';
@@ -485,8 +485,8 @@ const OPENAI_API_KEYS = (() => {
 
     return Array.from(new Set(keys));
 })();
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5-mini';
-const OPENAI_VISION_MODEL = process.env.OPENAI_VISION_MODEL || 'gpt-5-mini';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const OPENAI_VISION_MODEL = process.env.OPENAI_VISION_MODEL || 'gpt-4o-mini';
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1';
 const OPENAI_IMAGE_VARIATION_MODEL = process.env.OPENAI_IMAGE_VARIATION_MODEL || 'dall-e-2';
 const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image-preview';
@@ -499,95 +499,94 @@ const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || 'tts-1';
 const OPENAI_TTS_VOICE = process.env.OPENAI_TTS_VOICE || 'alloy';
 const OPENAI_TTS_FORMAT = process.env.OPENAI_TTS_FORMAT || 'mp3';
 const OPENAI_AUDIO_MODEL = process.env.OPENAI_AUDIO_MODEL || '';
+const NINEROUTER_BASE_URL = (process.env.NINEROUTER_BASE_URL || process.env.NINE_ROUTER_BASE_URL || '').replace(/\/$/, '');
+const NINEROUTER_API_KEY = (process.env.NINEROUTER_API_KEY || process.env.NINE_ROUTER_API_KEY || '').trim();
+const NINEROUTER_MODEL = (process.env.NINEROUTER_MODEL || process.env.NINE_ROUTER_MODEL || 'plan').trim();
+const NINEROUTER_API_ROOT = NINEROUTER_BASE_URL
+    ? (NINEROUTER_BASE_URL.endsWith('/v1') ? NINEROUTER_BASE_URL : `${NINEROUTER_BASE_URL}/v1`)
+    : '';
+const NINEROUTER_CHAT_COMPLETIONS_URL = NINEROUTER_API_ROOT
+    ? `${NINEROUTER_API_ROOT}/chat/completions`
+    : '';
+const NINEROUTER_MODELS_URL = NINEROUTER_API_ROOT
+    ? `${NINEROUTER_API_ROOT}/models`
+    : '';
 
 // OpenAI Model Families — for model selection feature
 // Mirrors GEMINI_MODEL_FAMILIES pattern for provider parity
 const OPENAI_MODEL_FAMILIES = {
     /**
-     * GPT-5.4 — Flagship reasoning & coding model
-     * ✅ Supports: Chat Completions, function calling, vision, reasoning (none/low/med/high/xhigh)
-     * Context: 1M tokens | Max output: 128K tokens
-     * Knowledge cutoff: Aug 2025
-     */
-    'gpt-5.4': {
-        id: 'gpt-5.4',
-        label: 'GPT-5.4',
-        icon: '🧠',
-        chat: 'gpt-5.4',
-        vision: 'gpt-5.4',
-        supportsReasoning: true,
-        reasoningLevels: ['none', 'low', 'medium', 'high', 'xhigh'],
-        defaultReasoningLevel: 'medium',
-        contextWindow: '1M / 128k',
-        description: 'Flagship model, best intelligence for complex tasks',
-        supportsVision: true,
-        supportsFunctionCalling: true,
-    },
-    /**
-     * GPT-5 Mini — Cost-efficient, low-latency
-     * ✅ Supports: Chat Completions, function calling, vision, reasoning (medium fixed)
-     * Context: 400K tokens | Max output: 128K tokens
-     * Knowledge cutoff: Sep 2024
-     */
-    'gpt-5-mini': {
-        id: 'gpt-5-mini',
-        label: 'GPT-5 Mini',
-        icon: '⚡',
-        chat: 'gpt-5-mini',
-        vision: 'gpt-5-mini',
-        supportsReasoning: true,
-        reasoningLevels: ['medium'],
-        defaultReasoningLevel: 'medium',
-        contextWindow: '400K / 128k',
-        description: 'Fast & affordable for high-volume tasks',
-        supportsVision: true,
-        supportsFunctionCalling: true,
-    },
-    /**
-     * GPT-4o — Previous generation multimodal
-     * ✅ Supports: Chat Completions, function calling, vision
-     * Context: 128K tokens
-     */
-    'gpt-4o': {
-        id: 'gpt-4o',
-        label: 'GPT-4o',
-        icon: '🌟',
-        chat: 'gpt-4o',
-        vision: 'gpt-4o',
-        supportsReasoning: false,
-        reasoningLevels: [],
-        defaultReasoningLevel: null,
-        contextWindow: '128K',
-        description: 'Reliable multimodal, previous generation',
-        supportsVision: true,
-        supportsFunctionCalling: true,
-    },
-    /**
-     * GPT-4o Mini — Previous generation, cost-efficient
-     * ✅ Supports: Chat Completions, function calling, vision
-     * Context: 128K tokens
+     * GPT-4o Mini � Stable, cost-efficient multimodal chat
+     * ? Supports: Chat Completions, function calling, vision
+     * Use as default direct OpenAI fallback when 9Router is unavailable.
      */
     'gpt-4o-mini': {
         id: 'gpt-4o-mini',
         label: 'GPT-4o Mini',
-        icon: '💡',
+        icon: '??',
         chat: 'gpt-4o-mini',
         vision: 'gpt-4o-mini',
         supportsReasoning: false,
         reasoningLevels: [],
         defaultReasoningLevel: null,
         contextWindow: '128K',
-        description: 'Budget-friendly, fast responses',
+        description: 'Stable, budget-friendly OpenAI fallback',
         supportsVision: true,
         supportsFunctionCalling: true,
     },
-};
-const OPENAI_REASONING_LEVELS = ['none', 'low', 'medium', 'high'];
-const OPENAI_DEFAULT_MODEL_FAMILY = 'gpt-5-mini';
+    /**
+     * GPT-4o � Stable multimodal flagship fallback
+     * ? Supports: Chat Completions, function calling, vision
+     */
+    'gpt-4o': {
+        id: 'gpt-4o',
+        label: 'GPT-4o',
+        icon: '??',
+        chat: 'gpt-4o',
+        vision: 'gpt-4o',
+        supportsReasoning: false,
+        reasoningLevels: [],
+        defaultReasoningLevel: null,
+        contextWindow: '128K',
+        description: 'Stable multimodal OpenAI fallback',
+        supportsVision: true,
+        supportsFunctionCalling: true,
+    },
+};const OPENAI_REASONING_LEVELS = ['none', 'low', 'medium', 'high'];
+const OPENAI_DEFAULT_MODEL_FAMILY = 'gpt-4o-mini';
 
 // Groq Model Families — for model selection feature
 // Mirrors GEMINI/OPENAI model families pattern for provider parity
 const GROQ_MODEL_FAMILIES = {
+    /**
+     * Qwen3 32B — Current strong general model on Groq
+     * Good quality/speed fallback for multilingual and coding tasks.
+     */
+    'qwen/qwen3-32b': {
+        id: 'qwen/qwen3-32b',
+        label: 'Qwen3 32B',
+        icon: '🐉',
+        chat: 'qwen/qwen3-32b',
+        speed: 'fast',
+        contextWindow: 'Live Groq catalog',
+        description: 'Strong current Groq model, multilingual/coding',
+        supportsVision: false,
+        supportsFunctionCalling: true,
+    },
+    /**
+     * Groq Compound — Groq hosted compound model/router
+     */
+    'groq/compound': {
+        id: 'groq/compound',
+        label: 'Groq Compound',
+        icon: '🧩',
+        chat: 'groq/compound',
+        speed: 'fast',
+        contextWindow: 'Live Groq catalog',
+        description: 'Groq compound reasoning/tool route',
+        supportsVision: false,
+        supportsFunctionCalling: true,
+    },
     /**
      * LLaMA 3.3 70B — Production, best quality from Meta
      * Speed: ~280 t/s | Context: 131K | Max output: 32K
@@ -832,6 +831,11 @@ module.exports = {
     OPENAI_TTS_VOICE,
     OPENAI_TTS_FORMAT,
     OPENAI_AUDIO_MODEL,
+    NINEROUTER_BASE_URL,
+    NINEROUTER_API_KEY,
+    NINEROUTER_MODEL,
+    NINEROUTER_CHAT_COMPLETIONS_URL,
+    NINEROUTER_MODELS_URL,
     OPENAI_MODEL_FAMILIES,
     OPENAI_REASONING_LEVELS,
     OPENAI_DEFAULT_MODEL_FAMILY,
@@ -854,3 +858,5 @@ module.exports = {
     ERC20_MIN_ABI,
     ERC20_TRANSFER_TOPIC
 };
+
+

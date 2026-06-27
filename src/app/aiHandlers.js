@@ -133,6 +133,12 @@ const {
   OPENAI_TTS_VOICE,
   OPENAI_TTS_FORMAT,
   OPENAI_AUDIO_MODEL,
+  NINEROUTER_API_KEY,
+  NINEROUTER_MODEL,
+  NINEROUTER_CHAT_COMPLETIONS_URL,
+  NINEROUTER_MODELS_URL,
+
+
   OPENAI_MODEL_FAMILIES,
   AI_IMAGE_MAX_BYTES,
   AI_IMAGE_DOWNLOAD_TIMEOUT_MS,
@@ -1216,6 +1222,44 @@ function createAiHandlers(deps) {
       await sendReply(msg, t(lang, 'error_generic') || '❌ An error occurred');
     }
   }
+  const nineRouterHealth = { ok: false, checkedAt: 0, lastError: null };
+
+  async function isNineRouterAvailable(force = false) {
+    if (!NINEROUTER_CHAT_COMPLETIONS_URL) return false;
+    const ttlMs = 60 * 1000;
+    if (!force && Date.now() - nineRouterHealth.checkedAt < ttlMs) {
+      return nineRouterHealth.ok;
+    }
+    try {
+      const headers = {};
+      if (NINEROUTER_API_KEY) headers.Authorization = `Bearer ${NINEROUTER_API_KEY}`;
+      const url = NINEROUTER_MODELS_URL || NINEROUTER_CHAT_COMPLETIONS_URL.replace(/\/chat\/completions$/, '/models');
+      const response = await axios.get(url, { headers, timeout: 5000 });
+      const models = Array.isArray(response?.data?.data) ? response.data.data : [];
+      nineRouterHealth.ok = !NINEROUTER_MODEL || models.length === 0 || models.some((m) => m?.id === NINEROUTER_MODEL);
+      nineRouterHealth.checkedAt = Date.now();
+      nineRouterHealth.lastError = nineRouterHealth.ok ? null : new Error(`Model ${NINEROUTER_MODEL} not found in 9Router`);
+      return nineRouterHealth.ok;
+    } catch (error) {
+      nineRouterHealth.ok = false;
+      nineRouterHealth.checkedAt = Date.now();
+      nineRouterHealth.lastError = error;
+      log.child('9Router').warn(`Health check failed: ${sanitizeSecrets(error.message)}`);
+      return false;
+    }
+  }
+
+  function orderProvidersForFallback(primary, availableProviders = []) {
+    const ordered = [];
+    const add = (id) => {
+      const normalized = normalizeAiProvider(id);
+      if (availableProviders.includes(normalized) && !ordered.includes(normalized)) ordered.push(normalized);
+    };
+    add(primary);
+    ['9router', 'google', 'openai', 'groq'].forEach(add);
+    return ordered;
+  }
+
   async function handleAiCommand(msg) {
     const lang = await getLang(msg);
     const textOrCaption = (msg.text || msg.caption || '').trim();
@@ -1261,6 +1305,11 @@ function createAiHandlers(deps) {
       .filter((entry) => normalizeAiProvider(entry.provider) === 'openai')
       .map((entry) => entry.apiKey)
       .filter(Boolean);
+    const nineRouterUserKeys = userApiKeys
+      .filter((entry) => normalizeAiProvider(entry.provider) === '9router')
+      .map((entry) => entry.apiKey)
+      .filter(Boolean);
+
     const availableProviders = [];
     if (GEMINI_API_KEYS.length || googleUserKeys.length) {
       availableProviders.push('google');
@@ -1270,6 +1319,9 @@ function createAiHandlers(deps) {
     }
     if (OPENAI_API_KEYS.length || openAiUserKeys.length) {
       availableProviders.push('openai');
+    }
+    if (NINEROUTER_CHAT_COMPLETIONS_URL && (NINEROUTER_API_KEY || nineRouterUserKeys.length || process.env.NINEROUTER_ALLOW_NO_KEY !== 'false')) {
+      availableProviders.push('9router');
     }
     // Remember last image sent by user
     if (hasPhoto && userId) {
@@ -1341,8 +1393,14 @@ function createAiHandlers(deps) {
     }
     const promptText = userPrompt || t(lang, 'ai_default_prompt');
     const preferredProvider = userId ? await db.getUserAiProvider(userId) : null;
+    const nineRouterReady = availableProviders.includes('9router') && await isNineRouterAvailable();
     let provider = null;
-    if (preferredProvider && availableProviders.includes(preferredProvider)) {
+    if (nineRouterReady) {
+      provider = '9router';
+      if (userId && preferredProvider !== '9router') {
+        db.setUserAiProvider(userId, '9router').catch((err) => log.child('9Router').warn(`Failed to save default provider: ${err.message}`));
+      }
+    } else if (preferredProvider && availableProviders.includes(preferredProvider)) {
       provider = preferredProvider;
     } else if (availableProviders.length === 1) {
       provider = availableProviders[0];
@@ -1364,6 +1422,8 @@ function createAiHandlers(deps) {
         audioSource,
         hasAudio,
         deviceTargetId,
+        nineRouterUserKeys,
+
         usageDate,
         googleUserKeys,
         groqUserKeys,
@@ -1391,21 +1451,44 @@ function createAiHandlers(deps) {
       });
       return;
     }
-    await runAiRequestWithProvider({
-      msg,
-      lang,
-      provider,
-      promptText,
-      photos,
-      hasPhoto,
-      audioSource,
-      hasAudio,
-      userId,
-      deviceTargetId,
-      usageDate,
-      googleUserKeys,
-      groqUserKeys,
-      openAiUserKeys
+    const providerOrder = orderProvidersForFallback(provider, availableProviders);
+    let lastProviderError = null;
+    for (const candidateProvider of providerOrder) {
+      if (candidateProvider === '9router' && !await isNineRouterAvailable(candidateProvider === provider)) {
+        continue;
+      }
+      try {
+        await runAiRequestWithProvider({
+          msg,
+          lang,
+          provider: candidateProvider,
+          promptText,
+          photos,
+          hasPhoto,
+          audioSource,
+          hasAudio,
+          userId,
+          deviceTargetId,
+          usageDate,
+          googleUserKeys,
+          groqUserKeys,
+          openAiUserKeys,
+          nineRouterUserKeys,
+          throwOnError: true
+        });
+        return;
+      } catch (error) {
+        lastProviderError = error;
+        if (candidateProvider === '9router') {
+          nineRouterHealth.ok = false;
+          nineRouterHealth.checkedAt = Date.now();
+        }
+        log.child('Request').warn(`Provider ${candidateProvider} failed, trying fallback: ${sanitizeSecrets(error.message)}`);
+      }
+    }
+    await sendReply(msg, t(lang, 'ai_error'), {
+      parse_mode: 'HTML',
+      reply_markup: buildCloseKeyboard(lang)
     });
   }
   async function handleAiTtsCommand({ msg, lang, payload = '', audioSource = null }) {
@@ -1583,7 +1666,9 @@ function createAiHandlers(deps) {
     usageDate,
     googleUserKeys = [],
     groqUserKeys = [],
-    openAiUserKeys = []
+    openAiUserKeys = [],
+    nineRouterUserKeys = [],
+    throwOnError = false
   }) {
     log.child('Request').info('Entry:', { provider, hasAudio, hasPhoto, hasAudioSource: !!audioSource });
     const normalizedProvider = normalizeAiProvider(provider);
@@ -1592,12 +1677,16 @@ function createAiHandlers(deps) {
       ? googleUserKeys
       : normalizedProvider === 'openai'
         ? openAiUserKeys
-        : groqUserKeys;
+        : normalizedProvider === '9router'
+          ? nineRouterUserKeys
+          : groqUserKeys;
     const serverKeys = normalizedProvider === 'google'
       ? GEMINI_API_KEYS
       : normalizedProvider === 'openai'
         ? OPENAI_API_KEYS
-        : GROQ_API_KEYS;
+        : normalizedProvider === '9router'
+          ? (NINEROUTER_API_KEY ? [NINEROUTER_API_KEY] : (process.env.NINEROUTER_ALLOW_NO_KEY === 'false' ? [] : ['9router-local']))
+          : GROQ_API_KEYS;
     if (!serverKeys.length && !personalKeys.length) {
       await sendReply(msg, t(lang, 'ai_missing_api_key'), {
         parse_mode: 'Markdown',
@@ -1866,6 +1955,21 @@ function createAiHandlers(deps) {
           serverKeys,
           providerMeta
         });
+      } else if (normalizedProvider === '9router') {
+        await runNineRouterCompletion({
+          msg,
+          lang,
+          promptText,
+          parts,
+          keySource,
+          limitNotice,
+          personalKeys,
+          serverLimitState,
+          userId,
+          serverKeys,
+          providerMeta
+        });
+
       } else {
         await runGroqCompletion({
           msg,
@@ -1882,6 +1986,10 @@ function createAiHandlers(deps) {
         });
       }
     } catch (error) {
+      if (throwOnError) {
+        throw error;
+      }
+
       log.error(`Failed to generate content: ${error.message}`);
       const isQuotaError = isQuotaOrRateLimitError(error);
       const isTimeoutError = error?.code === 'ECONNABORTED' || /timeout/i.test(error?.message || '');
@@ -3572,6 +3680,8 @@ function createAiHandlers(deps) {
     noticePrefix.push(escapeMarkdownV2('📌 Model: ' + (openAiModelFamily ? openAiModelFamily.label : OPENAI_MODEL)));
     if (limitNotice && keySource === 'server') {
       noticePrefix.push(escapeMarkdownV2(limitNotice));
+
+
     }
     const header = `🤖 *${escapeMarkdownV2(t(lang, 'ai_response_title'))}*`;
     const decoratedBody = decorateWithContextualIcons(body);
@@ -3587,6 +3697,124 @@ function createAiHandlers(deps) {
       await sendMessageRespectingThread(msg.chat.id, msg, chunk, options);
     }
   }
+
+  async function runNineRouterCompletion({ msg, lang, promptText, parts, keySource, limitNotice, personalKeys, serverLimitState, userId, serverKeys, providerMeta }) {
+    if (!NINEROUTER_CHAT_COMPLETIONS_URL) {
+      throw new Error('NINEROUTER_BASE_URL is not configured');
+    }
+
+    const responsePools = [];
+    if (personalKeys.length) {
+      responsePools.push({ type: 'user', keys: personalKeys });
+    } else if (!serverLimitState.blocked && serverKeys.length) {
+      responsePools.push({ type: 'server', keys: serverKeys });
+    }
+
+    const content = buildGroqMessageContent(parts, promptText);
+    const model = NINEROUTER_MODEL || 'plan';
+    let response = null;
+    let lastError = null;
+    let activeSource = keySource;
+
+    for (const pool of responsePools) {
+      if (!pool.keys.length) continue;
+      for (let keyIndex = 0; keyIndex < pool.keys.length && !response; keyIndex += 1) {
+        const apiKey = pool.keys[keyIndex] || '';
+        try {
+          const headers = { 'Content-Type': 'application/json' };
+          if (apiKey && apiKey !== '9router-local') {
+            headers.Authorization = `Bearer ${apiKey}`;
+          }
+
+          const nineRouterResponse = await axios.post(
+            NINEROUTER_CHAT_COMPLETIONS_URL,
+            {
+              model,
+              messages: [{ role: 'user', content }]
+            },
+            {
+              headers,
+              timeout: AI_IMAGE_DOWNLOAD_TIMEOUT_MS
+            }
+          );
+
+          const rawData = nineRouterResponse?.data;
+          if (typeof rawData === 'string' && rawData.includes('data:')) {
+            const text = rawData
+              .split(/\r?\n/)
+              .map((line) => line.trim())
+              .filter((line) => line.startsWith('data:'))
+              .map((line) => line.slice(5).trim())
+              .filter((line) => line && line !== '[DONE]')
+              .map((line) => {
+                try {
+                  const parsed = JSON.parse(line);
+                  return parsed?.choices?.[0]?.delta?.content || parsed?.choices?.[0]?.message?.content || '';
+                } catch (_) {
+                  return '';
+                }
+              })
+              .join('')
+              .trim();
+            response = { choices: [{ message: { content: text } }] };
+          } else {
+            response = rawData;
+          }
+          activeSource = pool.type;
+          break;
+        } catch (error) {
+          lastError = error;
+          if (error?.response?.status === 429) {
+            log.warn('9Router rate limit hit, trying next key if available');
+          }
+          log.error(`Failed to generate 9Router content with ${pool.type} key index ${keyIndex}: ${sanitizeSecrets(error.message)}`);
+        }
+      }
+      if (response) break;
+    }
+
+    if (!response) {
+      throw lastError || new Error('No 9Router response');
+    }
+
+    const message = response?.choices?.[0]?.message || {};
+    const messageContent = message.content;
+    let aiResponse = '';
+    if (typeof messageContent === 'string') {
+      aiResponse = messageContent;
+    } else if (Array.isArray(messageContent)) {
+      aiResponse = messageContent
+        .map((part) => (part?.text ? part.text : typeof part === 'string' ? part : ''))
+        .join('')
+        .trim();
+    }
+
+    if (userId && promptText && aiResponse) {
+      await addToSessionHistory(userId, 'user', promptText);
+      await addToSessionHistory(userId, 'model', aiResponse);
+    }
+
+    const body = (aiResponse || '').trim() || t(lang, 'ai_error');
+    const noticePrefix = [];
+    noticePrefix.push(escapeMarkdownV2(t(lang, 'ai_provider_active', { provider: providerMeta.label })));
+    noticePrefix.push(escapeMarkdownV2('📌 Model: ' + model));
+    if (limitNotice && activeSource === 'server') {
+      noticePrefix.push(escapeMarkdownV2(limitNotice));
+    }
+    const header = `🤖 *${escapeMarkdownV2(t(lang, 'ai_response_title'))}*`;
+    const decoratedBody = decorateWithContextualIcons(body);
+    const replyText = `${noticePrefix.length ? `${noticePrefix.join('\n')}\n\n` : ''}${header}\n\n${convertMarkdownToTelegram(decoratedBody)}`;
+    const replyMarkup = buildCloseKeyboard(lang);
+    const chunks = splitTelegramMarkdownV2Text(replyText);
+    const options = applyThreadId(msg, { reply_markup: replyMarkup, parse_mode: 'MarkdownV2', disable_web_page_preview: true });
+    for (let i = 0; i < chunks.length; i += 1) {
+      const chunk = chunks[i];
+      if (!chunk || !chunk.trim()) continue;
+      await sendMessageRespectingThread(msg.chat.id, msg, chunk, options);
+    }
+  }
+
+
   // Function Tools — extracted to aiHandlers/aiFunctionTools.js
   const createFunctionTools = require('./aiHandlers/aiFunctionTools');
   const { getAvailableFunctions, executeFunctionCall, toolFunctionImplementations, hasExplicitHelpIntent, shouldExecuteFunction } = createFunctionTools({

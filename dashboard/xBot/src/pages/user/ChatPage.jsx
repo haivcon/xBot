@@ -829,7 +829,8 @@ function TypingIndicator() {
 // Token autocomplete data (outside component to avoid re-creation)
 const KNOWN_TOKEN_LIST = ['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'OKB', 'BANMAO', 'PEPE', 'DOGE', 'SHIB', 'ARB', 'OP', 'AVAX', 'MATIC', 'DOT', 'ADA', 'XRP', 'LINK', 'UNI', 'AAVE'];
 const FALLBACK_MODELS = [
-    { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash', desc: 'Powerful multimodal & agentic', icon: '🚀' },
+    { id: 'xbot', label: 'xbot', desc: '9Router default combo with auto fallback', icon: '🧭', provider: '9router' },
+    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', desc: 'Stable multimodal fallback', icon: '⚡', provider: 'google' },
 ];
 
 const PERSONA_OPTIONS = [
@@ -891,9 +892,10 @@ const PERSONA_PREVIEWS = {
 };
 
 const PROVIDER_OPTIONS = [
-    { value: 'google', label: 'Google (Gemini)', icon: '✨', desc: 'Multimodal, best for complex tasks' },
-    { value: 'openai', label: 'OpenAI (GPT)', icon: '🧠', desc: 'Strong reasoning & code' },
-    { value: 'groq', label: 'Groq (LLaMA)', icon: '⚡', desc: 'Ultra-fast inference' },
+    { value: '9router', label: '9Router', icon: '🧭', desc: 'Default smart router, combo + auto fallback' },
+    { value: 'google', label: 'Google (Gemini)', icon: '✨', desc: 'Direct Gemini fallback, multimodal' },
+    { value: 'openai', label: 'OpenAI (GPT)', icon: '🧠', desc: 'Direct OpenAI fallback, reasoning & code' },
+    { value: 'groq', label: 'Groq', icon: '⚡', desc: 'Direct Groq fallback, ultra-fast inference' },
 ];
 
 const THINKING_OPTIONS = [
@@ -909,14 +911,13 @@ const REASONING_BY_PROVIDER = {
     openai: {
         supported: true,
         byModel: {
-            'gpt-5.4': ['none', 'low', 'medium', 'high'],
-            'gpt-5-mini': ['medium'],
             'gpt-4o': [],
             'gpt-4o-mini': [],
         },
         defaultLevels: [],
     },
     groq: { supported: false, levels: [] },
+    '9router': { supported: false, levels: [] },
 };
 
 const SETTINGS_TABS = [
@@ -927,20 +928,22 @@ const SETTINGS_TABS = [
 
 // Model options per provider (fallback when backend doesn't return provider-specific models)
 const MODEL_OPTIONS_BY_PROVIDER = {
+    '9router': [
+        { id: 'xbot', label: 'xbot', desc: '9Router xBot combo, recommended default', icon: '🧭' },
+        { id: 'plan', label: 'plan', desc: '9Router planning/reasoning combo', icon: '🧠' },
+        { id: 'action', label: 'action', desc: '9Router action/tool combo', icon: '⚙️' },
+    ],
     google: [
-        { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', desc: 'Best reasoning & complex tasks', icon: '🟠' },
-        { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash', desc: 'Powerful multimodal & agentic', icon: '🚀' },
-        { id: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Lite', desc: 'Fastest, lowest cost', icon: '⚡' },
+        { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', desc: 'Stable multimodal default', icon: '⚡' },
+        { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', desc: 'Best direct Gemini reasoning', icon: '🧠' },
+        { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview', desc: 'Preview/experimental', icon: '🧪' },
     ],
     openai: [
-        { id: 'gpt-5.4', label: 'GPT-5.4', desc: 'Flagship, best intelligence', icon: '🧠' },
-        { id: 'gpt-5-mini', label: 'GPT-5 Mini', desc: 'Fast & affordable', icon: '⚡' },
-        { id: 'gpt-4o', label: 'GPT-4o', desc: 'Reliable multimodal', icon: '🌟' },
-        { id: 'gpt-4o-mini', label: 'GPT-4o Mini', desc: 'Budget-friendly', icon: '💡' },
+        { id: 'gpt-4o-mini', label: 'GPT-4o Mini', desc: 'Reliable cost-efficient default', icon: '💡' },
+        { id: 'gpt-4o', label: 'GPT-4o', desc: 'Reliable multimodal flagship', icon: '🌟' },
     ],
     groq: [
-        { id: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B', desc: 'OpenAI flagship, reasoning', icon: '🧠' },
-        { id: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B', desc: 'Fastest, 1000 t/s', icon: '🚀' },
+        { id: 'qwen/qwen3-32b', label: 'Qwen3 32B', desc: 'Strong current Groq model', icon: '🐉' },
         { id: 'llama-3.3-70b-versatile', label: 'LLaMA 3.3 70B', desc: 'Best quality, versatile', icon: '🦙' },
         { id: 'llama-3.1-8b-instant', label: 'LLaMA 3.1 8B', desc: 'Ultra-fast, 560 t/s', icon: '⚡' },
         { id: 'meta-llama/llama-4-scout-17b-16e-instruct', label: 'LLaMA 4 Scout', desc: 'Vision-capable', icon: '🔭' },
@@ -973,7 +976,7 @@ export default function ChatPage() {
     const [imagePreview, setImagePreview] = useState(null);
     const [messageFeedback, setMessageFeedback] = useState({});
     const [selectedModel, setSelectedModel] = useState(() => {
-        try { return localStorage.getItem('xbot_ai_model') || 'gemini-3-flash-preview'; } catch { return 'gemini-3-flash-preview'; }
+        try { return localStorage.getItem('xbot_ai_model') || 'xbot'; } catch { return 'xbot'; }
     });
     const [showModelPicker, setShowModelPicker] = useState(false);
     const [modelOptions, setModelOptions] = useState(FALLBACK_MODELS);
@@ -989,7 +992,7 @@ export default function ChatPage() {
         try { return localStorage.getItem('xbot_ai_persona') || 'default'; } catch { return 'default'; }
     });
     const [selectedProvider, setSelectedProvider] = useState(() => {
-        try { return localStorage.getItem('xbot_ai_provider') || 'google'; } catch { return 'google'; }
+        try { return localStorage.getItem('xbot_ai_provider') || '9router'; } catch { return '9router'; }
     });
     const [selectedThinking, setSelectedThinking] = useState(() => {
         try { return localStorage.getItem('xbot_ai_thinking') || 'medium'; } catch { return 'medium'; }
@@ -1117,6 +1120,8 @@ export default function ChatPage() {
                     hasServerOpenAiKey: data.hasServerOpenAiKey,
                     hasGroqKey: data.hasGroqKey,
                     hasServerGroqKey: data.hasServerGroqKey,
+                    hasNineRouterKey: data.hasNineRouterKey,
+                    hasServerNineRouterKey: data.hasServerNineRouterKey,
                     defaultModel: data.defaultModel,
                 });
                 // Only reset model if the current model doesn't exist in ANY provider's model list
@@ -1124,6 +1129,9 @@ export default function ChatPage() {
                 const savedProvider = localStorage.getItem('xbot_ai_provider') || 'google';
                 const allKnownModels = Object.values(MODEL_OPTIONS_BY_PROVIDER).flat().map(m => m.id);
                 const currentModel = savedModel || selectedModel;
+                if (data.defaultProvider && !localStorage.getItem('xbot_ai_provider')) {
+                    setSelectedProvider(data.defaultProvider);
+                }
                 if (data.defaultModel && !allKnownModels.includes(currentModel) && !data.models.find(m => m.id === currentModel)) {
                     setSelectedModel(data.defaultModel);
                 }
@@ -1237,6 +1245,7 @@ export default function ChatPage() {
         if (provider === 'google') return modelMeta.hasPersonalKey;
         if (provider === 'openai') return modelMeta.hasOpenAiKey;
         if (provider === 'groq') return modelMeta.hasGroqKey;
+        if (provider === '9router') return modelMeta.hasNineRouterKey;
         return false;
     }, [modelMeta, userApiKeys]);
 
@@ -2927,7 +2936,7 @@ export default function ChatPage() {
                                     <div>
                                         <p className="text-[10px] text-surface-200/40 uppercase tracking-widest font-semibold mb-2">{t('dashboard.chatPage.modelLabel', 'Model')}</p>
                                         <div className="space-y-1">
-                                            {(MODEL_OPTIONS_BY_PROVIDER[selectedProvider] || modelOptions).map(m => {
+                                            {(modelOptions.filter(m => m.provider === selectedProvider).length > 0 ? modelOptions.filter(m => m.provider === selectedProvider) : (MODEL_OPTIONS_BY_PROVIDER[selectedProvider] || modelOptions)).map(m => {
                                                 const canChange = canChangeForProvider(selectedProvider);
                                                 // Default model for each provider (first in list)
                                                 const providerModels = MODEL_OPTIONS_BY_PROVIDER[selectedProvider] || modelOptions;
@@ -3095,7 +3104,7 @@ export default function ChatPage() {
                                                             ? 'bg-brand-500/15 text-brand-400 border border-brand-500/20'
                                                             : 'text-surface-200/50 hover:bg-white/5 border border-transparent'
                                                     }`}>
-                                                    {p.icon} {p.value === 'google' ? 'Google' : p.value === 'openai' ? 'OpenAI' : 'Groq'}
+                                                    {p.icon} {p.value === 'google' ? 'Google' : p.value === 'openai' ? 'OpenAI' : p.value === '9router' ? '9Router' : 'Groq'}
                                                 </button>
                                             ))}
                                         </div>
@@ -3132,7 +3141,7 @@ export default function ChatPage() {
                                                 type="password"
                                                 value={apiKeyInput}
                                                 onChange={e => { setApiKeyInput(e.target.value); setApiKeyError(''); }}
-                                                placeholder={apiKeyProvider === 'google' ? 'AIzaSy...' : apiKeyProvider === 'openai' ? 'sk-...' : 'gsk_...'}
+                                                placeholder={apiKeyProvider === 'google' ? 'AIzaSy...' : apiKeyProvider === 'openai' ? 'sk-...' : apiKeyProvider === '9router' ? '9Router API key' : 'gsk_...'}
                                                 className="flex-1 bg-surface-800/60 border border-white/10 rounded-lg px-3 py-2.5 text-xs text-surface-100 placeholder-surface-200/30 focus:outline-none focus:border-brand-400/50 font-mono"
                                                 onKeyDown={e => { if (e.key === 'Enter') addApiKey(); }}
                                             />

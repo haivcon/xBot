@@ -2296,5 +2296,12 @@
   "price_alert_prompt_website": "Vui lòng phản hồi tin nhắn này bằng link Website của token:\\n\\n💡 Mẹo: Bạn có thể đổi tên nút bằng cách dùng dấu | (VD: Mua Ngay | https://...)",
   "price_alert_prompt_twitter": "Vui lòng phản hồi tin nhắn này bằng link Twitter/X của token:\\n\\n💡 Mẹo: Bạn có thể đổi tên nút bằng cách dùng dấu | (VD: Mua Ngay | https://...)",
   "price_alert_url_saved": "✅ Đã lưu URL thành công!",
-  "price_alert_url_invalid": "❌ Định dạng URL không hợp lệ. Vui lòng bắt đầu bằng http:// hoặc https://"
+  "price_alert_url_invalid": "❌ Định dạng URL không hợp lệ. Vui lòng bắt đầu bằng http:// hoặc https://",
+  "ai_provider_9router": "9Router",
+  "ai_api_menu_hint_9router": "Dùng các model AI được định tuyến qua 9Router, bao gồm combo, fallback và provider OpenAI-compatible.",
+  "ai_api_add_hint_9router": "Thêm API key 9Router nếu instance 9Router của bạn yêu cầu Bearer authentication.",
+  "ai_api_add_prompt_9router": "Gửi API key 9Router của bạn.",
+  "ai_api_add_placeholder_9router": "API key 9Router",
+  "ai_api_get_key_9router": "Mở dashboard 9Router",
+  "ai_api_usecases_9router": "Định tuyến request qua 9Router tại {url}. Model mặc định: {model}."
 }

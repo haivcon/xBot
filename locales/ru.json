@@ -2161,5 +2161,12 @@
   "price_alert_prompt_website": "Пожалуйста, отправьте URL-адрес веб-сайта для этого токена:\\n\\n💡 Подсказка: Вы можете переименовать кнопку, используя символ | (например: Купить | https://...)",
   "price_alert_prompt_twitter": "Пожалуйста, отправьте URL-адрес Twitter/X для этого токена:\\n\\n💡 Подсказка: Вы можете переименовать кнопку, используя символ | (например: Купить | https://...)",
   "price_alert_url_saved": "✅ URL-адрес успешно сохранен!",
-  "price_alert_url_invalid": "❌ Неверный формат URL. Убедитесь, что он начинается с http:// или https://"
+  "price_alert_url_invalid": "❌ Неверный формат URL. Убедитесь, что он начинается с http:// или https://",
+  "ai_provider_9router": "9Router",
+  "ai_api_menu_hint_9router": "Use AI models routed by 9Router. This can use 9Router combos, fallbacks and OpenAI-compatible providers.",
+  "ai_api_add_hint_9router": "Add a 9Router API key if your 9Router instance requires Bearer authentication.",
+  "ai_api_add_prompt_9router": "Send your 9Router API key.",
+  "ai_api_add_placeholder_9router": "9Router API key",
+  "ai_api_get_key_9router": "Open 9Router dashboard",
+  "ai_api_usecases_9router": "Routes requests through 9Router at {url}. Default model: {model}."
 }

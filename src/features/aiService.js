@@ -82,6 +82,10 @@ const {
 
     OPENAI_AUDIO_MODEL,
 
+    NINEROUTER_BASE_URL,
+
+    NINEROUTER_MODEL,
+
     AI_IMAGE_MAX_BYTES,
 
     AI_IMAGE_DOWNLOAD_TIMEOUT_MS,
@@ -155,6 +159,12 @@ function normalizeAiProvider(provider) {
     if (normalized === 'openai' || normalized === 'chatgpt') {
 
         return 'openai';
+
+    }
+
+    if (normalized === '9router' || normalized === 'ninerouter' || normalized === 'nine-router' || normalized === 'router') {
+
+        return '9router';
 
     }
 
@@ -243,6 +253,43 @@ function buildAiProviderMeta(lang, provider) {
         };
 
     }
+
+
+
+    if (normalized === '9router') {
+
+        const baseUrl = NINEROUTER_BASE_URL || 'http://localhost:20128';
+
+        return {
+
+            id: '9router',
+
+            icon: '🧭',
+
+            label: t(lang, 'ai_provider_9router') || '9Router',
+
+            menuTitle: t(lang, 'ai_api_menu_title_provider', { provider: t(lang, 'ai_provider_9router') || '9Router' }),
+
+            menuHint: t(lang, 'ai_api_menu_hint_9router') || 'Use models routed by 9Router.',
+
+            addHint: t(lang, 'ai_api_add_hint_9router') || 'Add a 9Router API key if your 9Router instance requires one.',
+
+            addPrompt: t(lang, 'ai_api_add_prompt_9router') || 'Send your 9Router API key.',
+
+            addPlaceholder: t(lang, 'ai_api_add_placeholder_9router') || '9Router API key',
+
+            getKeyLabel: t(lang, 'ai_api_get_key_9router') || 'Open 9Router dashboard',
+
+            getKeyUrl: baseUrl,
+
+            infoTitle: t(lang, 'ai_api_info_title'),
+
+            infoText: t(lang, 'ai_api_usecases_9router', { url: baseUrl, model: NINEROUTER_MODEL || 'plan' }) || `Routes AI requests through 9Router at ${baseUrl}. Model: ${NINEROUTER_MODEL || 'plan'}`
+
+        };
+
+    }
+
 
 
 
