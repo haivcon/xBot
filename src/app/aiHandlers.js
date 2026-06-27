@@ -1335,20 +1335,23 @@ function createAiHandlers(deps) {
     }
     if (!userPrompt && !hasPhoto && !hasAudio) {
       const preferredProvider = userId ? await db.getUserAiProvider(userId) : null;
-      const preferredLabel = preferredProvider
+      const escapeLegacyMarkdown = (value) => String(value || '').replace(/([_*`\[])/g, '\\$1');
+      const preferredLabelRaw = preferredProvider
         ? buildAiProviderMeta(lang, preferredProvider).label
         : availableProviders.length
           ? buildAiProviderMeta(lang, availableProviders[0]).label
           : 'Google AI';
+      const preferredLabel = escapeLegacyMarkdown(preferredLabelRaw);
 
       // Get API key count and model info
       const userApiKeys = userId ? await db.listUserAiKeys(userId) : [];
       const googleKeyCount = userApiKeys.filter(k => normalizeAiProvider(k.provider) === 'google').length;
       const modelConfig = getUserGeminiModelConfig(userId);
-      const modelLabel = modelConfig?.modelConfig?.label || 'Gemini 2.5 Flash';
-      const keyNote = googleKeyCount > 0
+      const modelLabel = escapeLegacyMarkdown(modelConfig?.modelConfig?.label || 'Gemini 2.5 Flash');
+      const keyNoteRaw = googleKeyCount > 0
         ? `${googleKeyCount} key`
         : t(lang, 'ai_usage_add_key_note') || 'mua key pro/ultra để không giới hạn';
+      const keyNote = escapeLegacyMarkdown(keyNoteRaw);
 
       const introLines = [t(lang, 'ai_usage_with_api')];
 
@@ -1366,7 +1369,7 @@ function createAiHandlers(deps) {
       const donateTitle = t(lang, 'ai_donate_title') || (lang === 'vi' ? 'Ủng hộ' : lang === 'zh' ? '支持' : lang === 'ko' ? '지원' : lang === 'ru' ? 'Поддержка' : lang === 'id' ? 'Dukung' : 'Support');
       const donateLabel = lang === 'vi' ? 'Ủng hộ phát triển' : lang === 'zh' ? '支持开发' : lang === 'ko' ? '개발 지원' : lang === 'ru' ? 'Поддержать разработку' : lang === 'id' ? 'Dukung pengembangan' : 'Support development';
       introLines.push(`\n━━━ 💝 ${donateTitle} ━━━`);
-      introLines.push(`${donateLabel}: https://x.com/haivcon_X`);
+      introLines.push(`${donateLabel}: https://x.com/haivcon\_X`);
       const addressLabel = lang === 'vi' ? 'Địa chỉ' : lang === 'zh' ? '地址' : lang === 'ko' ? '주소' : lang === 'ru' ? 'Адрес' : lang === 'id' ? 'Alamat' : 'Address';
       introLines.push(`${addressLabel}: \`0x92809f2837f708163d375960063c8a3156fceacb\``);
 
