@@ -1444,6 +1444,7 @@ export default function ChatPage() {
                 signal: controller.signal,
                 image: currentImage,
                 model: selectedModel,
+                provider: selectedProvider,
                 persona: selectedPersona,
                 // U5: Pass custom persona text
                 customPersonaText: selectedPersona === 'custom' ? customPersonaInput : undefined,

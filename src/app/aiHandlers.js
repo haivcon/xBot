@@ -1847,7 +1847,7 @@ function createAiHandlers(deps) {
     if (intentCacheKey) {
       intentCache.set(intentCacheKey, { action: imageAction, at: Date.now() });
     }
-    if (imageAction) {
+    if (imageAction && ['google', 'openai'].includes(normalizedProvider)) {
       try {
         await bot.sendChatAction(msg.chat.id, 'upload_photo');
       } catch (error) {
@@ -3714,6 +3714,35 @@ function createAiHandlers(deps) {
     }
 
     const content = buildGroqMessageContent(parts, promptText);
+    const systemPromptParts = [
+      `You are ${providerMeta?.label || '9Router'} inside a Telegram bot. Answer in the user's language (${lang || 'auto'}).`,
+      'Keep the configured assistant personality, memory, and bot rules. Use Telegram-friendly formatting and never truncate wallet addresses, contract addresses, or transaction hashes.'
+    ];
+    try {
+      const personaPrompt = await getPersonaPrompt(userId);
+      if (personaPrompt) {
+        systemPromptParts.unshift(`PERSONALITY (CRITICAL — you MUST adopt this in every response): ${personaPrompt}`);
+        systemPromptParts.push(`REMINDER — stay in character: ${personaPrompt}`);
+      }
+    } catch (_) {}
+    try {
+      const userMemory = userId ? await db.getAiMemory(userId) : null;
+      const memoryParts = [];
+      if (userMemory?.userName) memoryParts.push(`User name: ${userMemory.userName}`);
+      if (userMemory?.conversationSummary) memoryParts.push(`Previous context: ${userMemory.conversationSummary}`);
+      if (userMemory?.userPreferences?.identity) memoryParts.push(`Identity: ${JSON.stringify(userMemory.userPreferences.identity)}`);
+      if (memoryParts.length) systemPromptParts.push(`USER MEMORY: ${memoryParts.join('. ')}`);
+      if (db.formatPreferencesForPrompt && userId) {
+        const prefs = await db.getUserPreferences(userId).catch(() => null);
+        const prefsCtx = prefs ? db.formatPreferencesForPrompt(prefs) : '';
+        if (prefsCtx) systemPromptParts.push(prefsCtx);
+      }
+    } catch (_) {}
+    const messages = [
+      { role: 'system', content: systemPromptParts.filter(Boolean).join('\n\n') },
+      { role: 'user', content }
+    ];
+
     const model = NINEROUTER_MODEL || 'plan';
     let response = null;
     let lastError = null;
@@ -3733,7 +3762,7 @@ function createAiHandlers(deps) {
             NINEROUTER_CHAT_COMPLETIONS_URL,
             {
               model,
-              messages: [{ role: 'user', content }]
+              messages
             },
             {
               headers,

@@ -671,18 +671,20 @@ function registerAutoDetection(context) {
                 const hasPhoto = Array.isArray(msg.photo) && msg.photo.length > 0;
                 const hasAudio = msg.voice || msg.audio || msg.video_note;
 
-                if (hasPhoto || hasAudio) {
-                    // Route to native /ai command which handles images/audio properly
-                    log.child('AutoDetection').info('✓ Media detected, routing to handleAiCommand');
+                if (hasPhoto || hasAudio || !intentDetected) {
+                    // Media/audio and general text questions should use native /ai.
+                    // This allows configured chat providers such as 9Router to be used.
+                    log.child('AutoDetection').info(hasPhoto || hasAudio
+                        ? '✓ Media detected, routing to handleAiCommand'
+                        : '✓ General query detected, routing to handleAiCommand');
 
                     if (!handleAiCommand) {
-                        log.child('AutoDetection').warn('handleAiCommand not available for media');
+                        log.child('AutoDetection').warn('handleAiCommand not available for AI chat');
                         return;
                     }
 
-                    // Create synthetic message with proper text/caption for AI
-                    // For photos: caption is used. For text: text is used.
-                    // Set both to ensure /ai prefix is recognized
+                    // Create synthetic message with proper text/caption for AI.
+                    // For photos: caption is used. For text/audio: text is used.
                     const aiCommandText = `/ai ${extractedText}`;
                     const syntheticMsg = {
                         ...msg,
@@ -692,7 +694,7 @@ function registerAutoDetection(context) {
 
                     await handleAiCommand(syntheticMsg);
                 } else {
-                    // Text-only messages go to function calling
+                    // Action/gaming intents go to function calling.
                     const syntheticMsg = {
                         ...msg,
                         text: `/aib ${extractedText}`,

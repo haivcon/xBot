@@ -328,7 +328,7 @@ class ApiClient {
     }
 
     // SSE streaming chat
-    async streamChatMessage(message, conversationId, { onTextDelta, onToolStart, onToolResult, onDone, onError, image, model, persona, userApiKey, customPersonaText, signal } = {}) {
+    async streamChatMessage(message, conversationId, { onTextDelta, onToolStart, onToolResult, onDone, onError, image, model, provider, persona, userApiKey, customPersonaText, signal } = {}) {
         const headers = {
             'Content-Type': 'application/json',
             ...useAuthStore.getState().getHeaders(),
@@ -336,6 +336,7 @@ class ApiClient {
         const body = { message, conversationId };
         if (image) body.image = image;
         if (model) body.model = model;
+        if (provider) body.provider = provider;
         if (persona) body.persona = persona;
         if (userApiKey) body.userApiKey = userApiKey;
         if (customPersonaText) body.customPersonaText = customPersonaText;

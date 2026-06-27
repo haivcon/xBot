@@ -697,7 +697,7 @@ function createChatRoutes() {
         const userId = req.dashboardUser?.userId?.toString();
         if (!userId) return res.status(401).json({ error: 'Auth required' });
 
-        const { message, conversationId, image, model: requestedModel, userApiKey, persona, customPersonaText } = req.body;
+        const { message, conversationId, image, model: requestedModel, provider: requestedProvider, userApiKey, persona, customPersonaText } = req.body;
         // Validate input BEFORE rate limiting
         if (!message?.trim()) return res.status(400).json({ error: 'Message required' });
         if (message.length > 10000) return res.status(400).json({ error: 'Message too long' });
@@ -714,7 +714,11 @@ function createChatRoutes() {
         const ALLOWED_GROQ_MODELS = Object.keys(GROQ_MODEL_FAMILIES);
         const ALLOWED_NINEROUTER_MODELS = ['xbot', 'plan', 'action', NINEROUTER_MODEL].filter(Boolean);
         const ALLOWED_MODELS = [...ALLOWED_GEMINI_MODELS, ...ALLOWED_OPENAI_MODELS, ...ALLOWED_GROQ_MODELS, ...ALLOWED_NINEROUTER_MODELS];
-        let useModel = ALLOWED_MODELS.includes(requestedModel) ? requestedModel : (GEMINI_MODEL || 'gemini-2.5-flash');
+        const normalizedRequestedProvider = String(requestedProvider || '').trim().toLowerCase();
+        const requestedProviderIsNineRouter = ['9router', 'ninerouter', 'nine-router', 'router'].includes(normalizedRequestedProvider);
+        let useModel = ALLOWED_MODELS.includes(requestedModel)
+            ? requestedModel
+            : (requestedProviderIsNineRouter ? (requestedModel || NINEROUTER_MODEL || 'xbot') : (GEMINI_MODEL || 'gemini-2.5-flash'));
 
         // ── Enforce default model for users without personal API key ──
         // Only owners and users with their own API key can change models
@@ -723,7 +727,7 @@ function createChatRoutes() {
             const viewMode = req.query?.viewMode;
             const isOwner = jwtRole === 'owner' && viewMode !== 'user';
             if (!isOwner) {
-                const provider = detectProviderFromModel(useModel);
+                const provider = requestedProviderIsNineRouter ? '9router' : detectProviderFromModel(useModel);
                 const userKeys = await db.listUserAiKeys(userId);
                 const hasPersonalGoogleKey = userKeys.some(k => ['google', 'gemini'].includes((k.provider || '').toLowerCase()) && k.apiKey);
                 const hasPersonalOpenAiKey = userKeys.some(k => (k.provider || '').toLowerCase() === 'openai' && k.apiKey);
@@ -762,7 +766,7 @@ function createChatRoutes() {
         res.on('close', () => { aborted = true; });
 
         try {
-            const provider = detectProviderFromModel(useModel);
+            const provider = requestedProviderIsNineRouter ? '9router' : detectProviderFromModel(useModel);
             const sessionKey = conversationId || `web_${userId}_${Date.now()}`;
             let session = await getSession(sessionKey, userId);
 
@@ -848,10 +852,10 @@ function createChatRoutes() {
                 nMsgs.push({ role: 'user', content: message.trim() });
 
                 let nFinal = '';
-                const useModel = model || NINEROUTER_MODEL || 'xbot';
-                log.info(`[Stream] 9Router: model=${useModel}, msgs=${nMsgs.length}`);
+                const nineRouterModel = useModel || NINEROUTER_MODEL || 'xbot';
+                log.info(`[Stream] 9Router: model=${nineRouterModel}, msgs=${nMsgs.length}`);
                 try {
-                    const stream = await nClient.chat.completions.create({ model: useModel, messages: nMsgs, stream: true, temperature: 0.7, max_tokens: 4096 });
+                    const stream = await nClient.chat.completions.create({ model: nineRouterModel, messages: nMsgs, stream: true, temperature: 0.7, max_tokens: 4096 });
                     for await (const chunk of stream) {
                         const d = chunk.choices?.[0]?.delta;
                         if (d?.content) { nFinal += d.content; sendEvent('text-delta', { text: d.content }); }
@@ -863,7 +867,7 @@ function createChatRoutes() {
                 session.updatedAt = Date.now(); await saveSession(session);
                 sendEvent('done', { conversationId: sessionKey, title: session.title }); res.end();
                 if (session.messages.length <= 2 && session.title === message.trim().substring(0, 60)) {
-                    (async () => { try { const r = await nClient.chat.completions.create({ model: useModel, messages: [{ role: 'user', content: `Summarize in max 5 words as title. No quotes.\nUser: ${message}\nAI: ${(nFinal||'').substring(0,300)}` }], max_tokens: 30, temperature: 0.3 }); const t = r?.choices?.[0]?.message?.content?.trim(); if (t && t.length > 2 && t.length < 80) { session.title = t; await saveSession(session); } } catch {} })();
+                    (async () => { try { const r = await nClient.chat.completions.create({ model: nineRouterModel, messages: [{ role: 'user', content: `Summarize in max 5 words as title. No quotes.\nUser: ${message}\nAI: ${(nFinal||'').substring(0,300)}` }], max_tokens: 30, temperature: 0.3 }); const t = r?.choices?.[0]?.message?.content?.trim(); if (t && t.length > 2 && t.length < 80) { session.title = t; await saveSession(session); } } catch {} })();
                 }
 
             // ══════════ GEMINI ══════════

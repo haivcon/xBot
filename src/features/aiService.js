@@ -2437,9 +2437,13 @@ function buildAiUsageKeyboard(lang) {
         inline_keyboard: [
             // Row 1: 3 providers
             [
+                { text: `🧭 9Router`, callback_data: 'apihub|ai|9router|0' },
                 { text: `✨ Google`, callback_data: 'apihub|ai|google|0' },
-                { text: `⚡ Groq`, callback_data: 'apihub|ai|groq|0' },
                 { text: `💬 GPT`, callback_data: 'apihub|ai|openai|0' }
+            ],
+            [
+                { text: `⚡ Groq`, callback_data: 'apihub|ai|groq|0' },
+                { text: `🎯 ${t(lang, 'ai_model_settings_button') || 'Select AI Model'}`, callback_data: 'geminimodel|select' }
             ],
             // Row 2: API Hub
             [{ text: `🧭 ${t(lang, 'api_hub_open') || 'Trung tâm API'}`, callback_data: 'apihub|home' }],
