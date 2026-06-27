@@ -1397,7 +1397,7 @@
   "ai_provider_source_user": "personal key",
   "ai_provider_source_server": "bot key",
   "ai_provider_active": "🔑 API {provider}",
-  "ai_support_reminder": "💙 Support /ai improvements: https://x.com/haivcon_X\n   XBOT Official: https://x.com/XlayerAi_bot",
+  "ai_support_reminder": "💙 Support /ai improvements: https://x.com/haivcon\\_X\n   XBOT Official: https://x.com/XlayerAi\\_bot",
   "ai_support_reminder_html": "💙 Support /ai improvements: <a href=\"https://x.com/haivcon\">x.com/haivcon</a>",
   "ai_provider_media_hint": "Groq mode is text-only. Use Google Ai for images or switch providers in /api.",
   "owner_group_member_count": "Members: {count}",

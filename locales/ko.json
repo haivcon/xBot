@@ -1395,7 +1395,7 @@
   "ai_provider_source_user": "개인 키",
   "ai_provider_source_server": "봇 키",
   "ai_provider_active": "🔑 API {provider}",
-  "ai_support_reminder": "💙 /ai 개발을 후원하기: https://x.com/haivcon_X\n   XBOT 공식: https://x.com/XlayerAi_bot",
+  "ai_support_reminder": "💙 /ai 개발을 후원하기: https://x.com/haivcon\\_X\n   XBOT 공식: https://x.com/XlayerAi\\_bot",
   "ai_support_reminder_html": "💙 /ai 개발을 후원하기: <a href=\"https://x.com/haivcon\">x.com/haivcon</a>",
   "ai_provider_media_hint": "Groq 모드는 텍스트만 지원합니다. 이미지는 Google Ai를 사용하거나 /api에서 공급자를 변경하세요.",
   "owner_group_member_count": "멤버 수: {count}",

@@ -1395,7 +1395,7 @@
   "ai_provider_source_user": "个人密钥",
   "ai_provider_source_server": "机器人密钥",
   "ai_provider_active": "🔑 API {provider}",
-  "ai_support_reminder": "💙 支持 /ai 开发：https://x.com/haivcon_X\n   XBOT 官方: https://x.com/XlayerAi_bot",
+  "ai_support_reminder": "💙 支持 /ai 开发：https://x.com/haivcon\\_X\n   XBOT 官方: https://x.com/XlayerAi\\_bot",
   "ai_support_reminder_html": "💙 支持 /ai 开发：<a href=\"https://x.com/haivcon\">x.com/haivcon</a>",
   "ai_provider_media_hint": "Groq 模式仅支持文本。请使用 Google Ai 处理图片，或在 /api 切换供应商。",
   "owner_group_member_count": "成员数：{count}",

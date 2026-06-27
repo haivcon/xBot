@@ -1395,7 +1395,7 @@
   "ai_provider_source_user": "kunci pribadi",
   "ai_provider_source_server": "kunci bot",
   "ai_provider_active": "🔑 API {provider}",
-  "ai_support_reminder": "💙 Dukung pengembangan /ai: https://x.com/haivcon_X\n   Resmi XBOT: https://x.com/XlayerAi_bot",
+  "ai_support_reminder": "💙 Dukung pengembangan /ai: https://x.com/haivcon\\_X\n   Resmi XBOT: https://x.com/XlayerAi\\_bot",
   "ai_support_reminder_html": "💙 Dukung pengembangan /ai: <a href=\"https://x.com/haivcon\">x.com/haivcon</a>",
   "ai_provider_media_hint": "Mode Groq hanya teks. Gunakan Google Ai untuk gambar atau ganti penyedia di /api.",
   "owner_group_member_count": "Jumlah anggota: {count}",

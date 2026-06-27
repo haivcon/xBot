@@ -1395,7 +1395,7 @@
   "ai_provider_source_user": "личный ключ",
   "ai_provider_source_server": "ключ бота",
   "ai_provider_active": "🔑 API {provider}",
-  "ai_support_reminder": "💙 Поддержите разработку /ai: https://x.com/haivcon_X\n   Официальный XBOT: https://x.com/XlayerAi_bot",
+  "ai_support_reminder": "💙 Поддержите разработку /ai: https://x.com/haivcon\\_X\n   Официальный XBOT: https://x.com/XlayerAi\\_bot",
   "ai_support_reminder_html": "💙 Поддержите разработку /ai: <a href=\"https://x.com/haivcon\">x.com/haivcon</a>",
   "ai_provider_media_hint": "Режим Groq только для текста. Для изображений используйте Google Ai или переключитесь в /api.",
   "owner_group_member_count": "Участников: {count}",

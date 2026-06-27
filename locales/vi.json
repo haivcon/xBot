@@ -1358,7 +1358,7 @@
   "ai_provider_source_user": "khóa cá nhân",
   "ai_provider_source_server": "khóa của bot",
   "ai_provider_active": "🔑 API {provider}",
-  "ai_support_reminder": "💙 Ủng hộ phát triển /ai: https://x.com/haivcon_X\n   XBOT Chính thức: https://x.com/XlayerAi_bot",
+  "ai_support_reminder": "💙 Ủng hộ phát triển /ai: https://x.com/haivcon\\_X\n   XBOT Chính thức: https://x.com/XlayerAi\\_bot",
   "ai_support_reminder_html": "💙 Ủng hộ phát triển /ai: <a href=\"https://x.com/haivcon\">x.com/haivcon</a>",
   "ai_provider_media_hint": "Chế độ Groq chỉ hỗ trợ văn bản. Dùng Google Ai cho ảnh hoặc đổi nhà cung cấp trong /api.",
   "owner_command_limit_menu": "⚙️ <b>Giới hạn lệnh</b>\nChọn thao tác để quản lý số lệnh dùng mỗi ngày.",

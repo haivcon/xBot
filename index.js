@@ -1922,8 +1922,28 @@ function startTelegramBot() {
             await p;
             return true;
         } catch (error) {
-            log.child('AI').error(`Failed to send intro media: ${error.message}`);
-            disableStartVideo(startVideo, error);
+            const description = error?.response?.body?.description || error?.message || '';
+            const isParseError = /parse entities|can't parse entities|find end of the entity/i.test(description);
+
+            if (isParseError) {
+                log.child('AI').warn(`Failed to parse intro media caption (${description}). Retrying without parse mode.`);
+                try {
+                    const plainOptions = buildThreadedOptions(msg, {
+                        caption,
+                        reply_markup: replyMarkup || undefined
+                    });
+                    const retry = bot.sendVideo(msg.chat.id, startVideo, plainOptions);
+                    retry.catch(() => { }); // suppress request-promise duplicate rejection
+                    await retry;
+                    return true;
+                } catch (retryError) {
+                    log.child('AI').error(`Failed to send intro media after plain retry: ${retryError.message}`);
+                    disableStartVideo(startVideo, retryError);
+                }
+            } else {
+                log.child('AI').error(`Failed to send intro media: ${error.message}`);
+                disableStartVideo(startVideo, error);
+            }
         }
 
         return false;
