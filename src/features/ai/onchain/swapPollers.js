@@ -3,6 +3,7 @@
  * Runs every 5 minutes via setInterval
  */
 const log = require('../../../core/logger');
+const onchainos = require('../../../services/onchainos');
 
 let _pollerStarted = false;
 
@@ -32,12 +33,11 @@ async function checkLimitOrders() {
     const orders = await dbAll("SELECT * FROM swap_limit_orders WHERE status = 'active'");
     if (!orders || orders.length === 0) return;
 
-    const onchainos = require('onchainos');
     let bot; try { bot = require('../../../core/bot').bot; } catch(_) { return; }
 
     for (const order of orders) {
         try {
-            const priceData = await onchainos.getTokenPrice([{ chainIndex: order.chainIndex || '196', tokenContractAddress: order.toToken }]);
+            const priceData = await onchainos.getTokenPriceInfo([{ chainIndex: order.chainIndex || '196', tokenContractAddress: order.toToken }]);
             const currentPrice = Number(priceData?.[0]?.price || priceData?.[0]?.tokenUnitPrice || 0);
             if (currentPrice <= 0) continue;
 
@@ -89,13 +89,12 @@ async function checkPriceCompares() {
     const checks = await dbAll("SELECT * FROM swap_price_checks WHERE status = 'pending' AND checkAfter <= ?", [now]);
     if (!checks || checks.length === 0) return;
 
-    const onchainos = require('onchainos');
     let bot; try { bot = require('../../../core/bot').bot; } catch(_) { return; }
 
     for (const check of checks) {
         try {
             await dbRun("UPDATE swap_price_checks SET status = 'done' WHERE id = ?", [check.id]);
-            const priceData = await onchainos.getTokenPrice([{ chainIndex: check.chainIndex || '196', tokenContractAddress: check.tokenAddress }]);
+            const priceData = await onchainos.getTokenPriceInfo([{ chainIndex: check.chainIndex || '196', tokenContractAddress: check.tokenAddress }]);
             const newPrice = Number(priceData?.[0]?.price || priceData?.[0]?.tokenUnitPrice || 0);
             const oldPrice = Number(check.priceAtSwap || 0);
             if (newPrice <= 0 || oldPrice <= 0) continue;
@@ -104,7 +103,7 @@ async function checkPriceCompares() {
             const arrow = change >= 0 ? '📈' : '📉';
 
             let lang = 'en';
-            try { const { getUserLanguage: gP } = require('../../../db/users'); const dp = await gP(String(check.userId)); if (dp) lang = dp; } catch(_) {}
+            try { const { getUserLanguage: gP } = require('../../../../db/users'); const dp = await gP(String(check.userId)); if (dp) lang = dp; } catch(_) {}
             const lk = ['zh-Hans','zh-cn'].includes(lang) ? 'zh' : (['en','vi','zh','ko','ru','id'].includes(lang) ? lang : 'en');
             const msgs = {
                 en: `${arrow} <b>Price Update</b> (1h after swap)\n${check.tokenSymbol}: $${newPrice < 0.01 ? newPrice.toFixed(8) : newPrice.toFixed(4)} (${change >= 0 ? '+' : ''}${change}%)`,
