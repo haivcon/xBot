@@ -37,6 +37,7 @@ const DiscoveryPage = lazy(() => import('@/pages/user/DiscoveryPage'));
 const AiTraderPage = lazy(() => import('@/pages/user/AiTraderPage'));
 const UserGroupsPage = lazy(() => import('@/pages/user/UserGroupsPage'));
 const SmartCopyPage = lazy(() => import('@/pages/user/SmartCopyPage'));
+const OKXAIPage = lazy(() => import('@/pages/user/OKXAIPage'));
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 const SharedChatPage = lazy(() => import('@/pages/SharedChatPage'));
@@ -143,6 +144,7 @@ export default function App() {
 
                     <Route path="ai-memory" element={<Navigate to="/chat" />} />
                     <Route path="ai-trader" element={<SuspenseWrapper><AiTraderPage /></SuspenseWrapper>} />
+                    <Route path="okx-ai" element={<SuspenseWrapper><OKXAIPage /></SuspenseWrapper>} />
                     <Route path="meme-scanner" element={<Navigate to="/trading" />} />
                     <Route path="discovery" element={<SuspenseWrapper><DiscoveryPage /></SuspenseWrapper>} />
                     <Route path="my-groups" element={<SuspenseWrapper><UserGroupsPage /></SuspenseWrapper>} />

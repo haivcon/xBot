@@ -1225,28 +1225,19 @@ function createAiHandlers(deps) {
   const nineRouterHealth = { ok: false, checkedAt: 0, lastError: null };
 
   async function isNineRouterAvailable(force = false) {
-    if (!NINEROUTER_CHAT_COMPLETIONS_URL) return false;
+    if (!NINEROUTER_CHAT_COMPLETIONS_URL || !NINEROUTER_MODEL) return false;
     const ttlMs = 60 * 1000;
     if (!force && Date.now() - nineRouterHealth.checkedAt < ttlMs) {
       return nineRouterHealth.ok;
     }
-    try {
-      const headers = {};
-      if (NINEROUTER_API_KEY) headers.Authorization = `Bearer ${NINEROUTER_API_KEY}`;
-      const url = NINEROUTER_MODELS_URL || NINEROUTER_CHAT_COMPLETIONS_URL.replace(/\/chat\/completions$/, '/models');
-      const response = await axios.get(url, { headers, timeout: 5000 });
-      const models = Array.isArray(response?.data?.data) ? response.data.data : [];
-      nineRouterHealth.ok = !NINEROUTER_MODEL || models.length === 0 || models.some((m) => m?.id === NINEROUTER_MODEL);
-      nineRouterHealth.checkedAt = Date.now();
-      nineRouterHealth.lastError = nineRouterHealth.ok ? null : new Error(`Model ${NINEROUTER_MODEL} not found in 9Router`);
-      return nineRouterHealth.ok;
-    } catch (error) {
-      nineRouterHealth.ok = false;
-      nineRouterHealth.checkedAt = Date.now();
-      nineRouterHealth.lastError = error;
-      log.child('9Router').warn(`Health check failed: ${sanitizeSecrets(error.message)}`);
-      return false;
-    }
+
+    // 9Router is restricted to the single model configured in .env.
+    // Do not depend on /models here because routers can hide route/combo models
+    // or return a broader catalog than this bot is allowed to use.
+    nineRouterHealth.ok = true;
+    nineRouterHealth.checkedAt = Date.now();
+    nineRouterHealth.lastError = null;
+    return true;
   }
 
   function orderProvidersForFallback(primary, availableProviders = []) {
@@ -1320,7 +1311,7 @@ function createAiHandlers(deps) {
     if (OPENAI_API_KEYS.length || openAiUserKeys.length) {
       availableProviders.push('openai');
     }
-    if (NINEROUTER_CHAT_COMPLETIONS_URL && (NINEROUTER_API_KEY || nineRouterUserKeys.length || process.env.NINEROUTER_ALLOW_NO_KEY !== 'false')) {
+    if (NINEROUTER_CHAT_COMPLETIONS_URL && NINEROUTER_MODEL && (NINEROUTER_API_KEY || nineRouterUserKeys.length || process.env.NINEROUTER_ALLOW_NO_KEY !== 'false')) {
       availableProviders.push('9router');
     }
     // Remember last image sent by user
@@ -3743,7 +3734,10 @@ function createAiHandlers(deps) {
       { role: 'user', content }
     ];
 
-    const model = NINEROUTER_MODEL || 'plan';
+    const model = NINEROUTER_MODEL;
+    if (!model) {
+      throw new Error('NINEROUTER_MODEL is not configured in .env');
+    }
     let response = null;
     let lastError = null;
     let activeSource = keySource;

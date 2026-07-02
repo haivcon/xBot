@@ -535,6 +535,99 @@ function createDashboardRoutes() {
     const { createChatRoutes } = require('./chatRoutes');
     router.use('/ai', createChatRoutes());
 
+    // --- AI Router bridge routes (server/user API keys for OKX.AI bridge) ---
+    router.get('/ai-router/status', async (req, res) => {
+        try {
+            const aiRouter = require('../services/aiRouter');
+            const status = await aiRouter.getStatus(req.dashboardUser.userId);
+            res.json(status);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.get('/ai-router/keys', async (req, res) => {
+        try {
+            const aiRouter = require('../services/aiRouter');
+            const provider = req.query.provider || null;
+            const keys = await aiRouter.listUserProviderKeys(req.dashboardUser.userId, provider);
+            res.json({ keys });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/ai-router/keys', async (req, res) => {
+        try {
+            const aiRouter = require('../services/aiRouter');
+            const { provider, apiKey, name } = req.body || {};
+            if (!provider || !apiKey) {
+                return res.status(400).json({ error: 'provider and apiKey are required' });
+            }
+            const normalizedProvider = aiRouter.normalizeProvider(provider);
+            if (!aiRouter.PROVIDERS[normalizedProvider]) {
+                return res.status(400).json({ error: `Unsupported provider: ${provider}` });
+            }
+            const result = await aiRouter.addUserProviderKey(req.dashboardUser.userId, normalizedProvider, apiKey, name);
+            res.json({ success: Boolean(result.added || result.updated || result.id), result });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.delete('/ai-router/keys/:keyId', async (req, res) => {
+        try {
+            const aiRouter = require('../services/aiRouter');
+            const result = await aiRouter.deleteUserProviderKey(req.dashboardUser.userId, req.params.keyId);
+            res.json({ success: Boolean(result.deleted), result });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.put('/ai-router/preference', async (req, res) => {
+        try {
+            const aiRouter = require('../services/aiRouter');
+            const { provider } = req.body || {};
+            const normalizedProvider = aiRouter.normalizeProvider(provider);
+            if (!aiRouter.PROVIDERS[normalizedProvider]) {
+                return res.status(400).json({ error: `Unsupported provider: ${provider}` });
+            }
+            const result = await aiRouter.setUserPreferredProvider(req.dashboardUser.userId, normalizedProvider);
+            res.json({ success: Boolean(result.saved), result });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/ai-router/chat', async (req, res) => {
+        try {
+            const aiRouter = require('../services/aiRouter');
+            const { provider, model, messages, temperature, tools } = req.body || {};
+            if (!Array.isArray(messages) || messages.length === 0) {
+                return res.status(400).json({ error: 'messages array is required' });
+            }
+            const result = await aiRouter.chat({
+                userId: req.dashboardUser.userId,
+                provider,
+                model,
+                messages,
+                temperature,
+                tools
+            });
+            res.json({
+                provider: result.provider,
+                model: result.model,
+                source: result.source,
+                text: result.text,
+                message: result.message,
+                toolCalls: result.toolCalls
+            });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
     // --- Market & Onchain Routes ---
     const { createMarketRoutes } = require('./marketRoutes');
     router.use('/market', createMarketRoutes());
@@ -2543,6 +2636,247 @@ function createDashboardRoutes() {
             const smartCopy = require('../features/smartCopyEngine');
             const leaders = await smartCopy.discoverLeaders(req.body.chainIndex || '196');
             res.json({ leaders });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // --- OKX.AI Bridge ---
+    router.get('/okxai/status', async (req, res) => {
+        try {
+            const okxai = require('../services/okxai');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const agent = await okxai.agent.getLocalAgent(userId) || await okxai.agent.getLocalAgent('server');
+            const tasks = await okxai.taskManager.listLocalTasks(userId, 20);
+            res.json({
+                configured: Boolean(process.env.OKXAI_API_URL || process.env.OKXAI_A2A_URL),
+                dryRun: String(process.env.OKXAI_DRY_RUN || 'true').toLowerCase() !== 'false',
+                agent,
+                tasks
+            });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/okxai/agents/register', async (req, res) => {
+        try {
+            const okxai = require('../services/okxai');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const agent = await okxai.agent.registerAgent({
+                localUserId: userId,
+                role: req.body.role || process.env.OKXAI_AGENT_ROLE || 'user',
+                name: req.body.name || `xBot Agent ${userId}`,
+                endpoint: req.body.endpoint || process.env.OKXAI_AGENT_ENDPOINT || process.env.PUBLIC_BASE_URL,
+                description: req.body.description,
+                avatar: req.body.avatar,
+                metadata: { source: 'dashboard', ...(req.body.metadata || {}) }
+            }, {
+                dryRun: req.body.dryRun ?? (String(process.env.OKXAI_DRY_RUN || 'true').toLowerCase() !== 'false')
+            });
+            res.json({ agent });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.get('/okxai/agents/search', async (req, res) => {
+        try {
+            const okxai = require('../services/okxai');
+            const agents = await okxai.agent.searchAgents({
+                query: req.query.query || req.query.q,
+                role: req.query.role,
+                limit: Number(req.query.limit || 20)
+            });
+            res.json({ agents });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.get('/okxai/tasks', async (req, res) => {
+        try {
+            const okxai = require('../services/okxai');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const tasks = await okxai.taskManager.listLocalTasks(userId, Number(req.query.limit || 50));
+            res.json({ tasks });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/okxai/tasks', async (req, res) => {
+        try {
+            const okxai = require('../services/okxai');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const task = await okxai.taskManager.publishTask({
+                localUserId: userId,
+                aspAgentId: req.body.aspAgentId,
+                title: req.body.title,
+                prompt: req.body.prompt || req.body.description,
+                budget: req.body.budget,
+                currency: req.body.currency || 'USDT',
+                metadata: { source: 'dashboard', ...(req.body.metadata || {}) }
+            });
+            res.json({ task });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.get('/okxai/tasks/:taskId', async (req, res) => {
+        try {
+            const okxai = require('../services/okxai');
+            const task = await okxai.taskManager.syncTask(req.params.taskId);
+            res.json({ task });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/okxai/tools/execute', async (req, res) => {
+        try {
+            const { executeOkxAiTool } = require('../features/ai/okxaiTools');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const result = await executeOkxAiTool(req.body.name, req.body.arguments || {}, {
+                userId,
+                okxaiOptions: req.body.options
+            });
+            res.json({ result });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // --- Agent Runtime Bridge (OpenClaw/Hermes replacement layer) ---
+    router.get('/agent-runtime/status', async (req, res) => {
+        try {
+            const runtime = require('../services/agentRuntime');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const status = await runtime.status(userId);
+            res.json(status);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/agent-runtime/chat', async (req, res) => {
+        try {
+            const runtime = require('../services/agentRuntime');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const result = await runtime.chat(req.body || {}, {
+                userId,
+                confirmed: req.body?.confirmed === true
+            });
+            res.json({ result });
+        } catch (err) {
+            const status = err.code === 'CONFIRMATION_REQUIRED' ? 409 : 500;
+            res.status(status).json({ error: err.message, code: err.code, action: err.action, mode: err.mode });
+        }
+    });
+
+    router.get('/agent-runtime/tools', async (req, res) => {
+        try {
+            const runtime = require('../services/agentRuntime');
+            res.json({ tools: runtime.toolRegistry.listTools() });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.post('/agent-runtime/tools/execute', async (req, res) => {
+        try {
+            const runtime = require('../services/agentRuntime');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const result = await runtime.executeTool(req.body || {}, {
+                userId,
+                confirmed: req.body?.confirmed === true
+            });
+            res.json({ result });
+        } catch (err) {
+            const status = err.code === 'CONFIRMATION_REQUIRED' ? 409 : 500;
+            res.status(status).json({
+                error: err.message,
+                code: err.code,
+                action: err.action,
+                mode: err.mode,
+                toolCall: err.toolCall
+            });
+        }
+    });
+
+    router.post('/agent-runtime/decisions', async (req, res) => {
+        try {
+            const runtime = require('../services/agentRuntime');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const result = await runtime.decide(req.body || {}, { userId });
+            res.json({ result });
+        } catch (err) {
+            res.status(500).json({ error: err.message, code: err.code });
+        }
+    });
+
+    router.post('/agent-runtime/a2a/inbound', async (req, res) => {
+        try {
+            const runtime = require('../services/agentRuntime');
+            const userId = req.dashboardUser?.userId?.toString() || req.body?.userId || null;
+            const envelope = req.body?.envelope || req.body;
+            const inboundSecret = req.get('x-agent-runtime-secret') || req.get('x-okxai-webhook-secret') || req.body?.secret;
+            const saved = await runtime.handleEnvelope(envelope, { userId, inboundSecret });
+            res.json({ success: true, envelope: saved });
+        } catch (err) {
+            const status = err.code === 'UNAUTHORIZED_INBOUND' ? 401 : 500;
+            res.status(status).json({ error: err.message, code: err.code });
+        }
+    });
+
+    router.get('/agent-runtime/inbox', async (req, res) => {
+        try {
+            const runtime = require('../services/agentRuntime');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const items = await runtime.inbox.listInbox({
+                userId,
+                status: req.query.status,
+                decisionsOnly: req.query.decisionsOnly === 'true',
+                limit: Number(req.query.limit || 100)
+            });
+            res.json({ items });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.get('/agent-runtime/decisions', async (req, res) => {
+        try {
+            const runtime = require('../services/agentRuntime');
+            const userId = req.dashboardUser?.userId?.toString() || 'server';
+            const decisions = await runtime.inbox.listDecisions({
+                userId,
+                status: req.query.status || 'unread',
+                limit: Number(req.query.limit || 100)
+            });
+            res.json({ decisions });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.put('/agent-runtime/inbox/:id/status', async (req, res) => {
+        try {
+            const runtime = require('../services/agentRuntime');
+            const result = await runtime.inbox.updateInboxStatus(req.params.id, req.body?.status || 'read');
+            res.json({ success: true, ...result });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    router.get('/agent-runtime/audit', ownerGuard, async (req, res) => {
+        try {
+            const runtime = require('../services/agentRuntime');
+            const userId = req.query.userId || null;
+            const audit = await runtime.audit.listAudit({ userId, limit: Number(req.query.limit || 100) });
+            res.json({ audit });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }

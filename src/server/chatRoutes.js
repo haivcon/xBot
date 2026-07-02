@@ -13,6 +13,7 @@ const log = logger.child('WebChat');
 const { GEMINI_API_KEYS, GEMINI_MODEL, GEMINI_MODEL_FAMILIES, OPENAI_API_KEYS, OPENAI_MODEL, OPENAI_MODEL_FAMILIES, GROQ_API_KEYS, GROQ_MODEL_FAMILIES, GROQ_API_URL, NINEROUTER_API_KEY, NINEROUTER_MODEL, NINEROUTER_MODELS_URL, NINEROUTER_CHAT_COMPLETIONS_URL } = require('../config/env');
 const { ONCHAIN_TOOLS, executeToolCall, buildSystemInstruction } = require('../features/ai/ai-onchain');
 const { WEB_TOOL_DECLARATIONS, executeWebToolCall } = require('./webToolExecutor');
+const { toGeminiFunctionDeclarations: getOkxAiGeminiDeclarations, executeOkxAiTool, isOkxAiToolName } = require('../features/ai/okxaiTools');
 const { buildAIAPrompt } = require('../config/prompts');
 const { t } = require('../core/i18n');
 const db = require('../../db.js');
@@ -152,7 +153,7 @@ async function resolveGeminiKey(userId) {
 /** Detect AI provider from model ID */
 function detectProviderFromModel(modelId) {
     if (!modelId) return 'google';
-    if (['xbot', 'plan', 'action'].includes(modelId)) return '9router';
+    if (NINEROUTER_MODEL && modelId === NINEROUTER_MODEL) return '9router';
     if (modelId.startsWith('gemini')) return 'google';
     if (OPENAI_MODEL_FAMILIES && OPENAI_MODEL_FAMILIES[modelId]) return 'openai';
     if (GROQ_MODEL_FAMILIES && GROQ_MODEL_FAMILIES[modelId]) return 'groq';
@@ -254,8 +255,12 @@ function getToolDeclarations() {
     for (const decl of onchainDecls) {
         if (decl?.name && !seen.has(decl.name)) { seen.add(decl.name); merged.push(decl); }
     }
+    const okxaiDecls = getOkxAiGeminiDeclarations();
+    for (const decl of okxaiDecls) {
+        if (decl?.name && !seen.has(decl.name)) { seen.add(decl.name); merged.push(decl); }
+    }
     _cachedToolDeclarations = [{ functionDeclarations: merged }];
-    log.info(`[Tools] Merged: ${merged.length} declarations (${WEB_TOOL_DECLARATIONS.length} web + ${onchainDecls.length} onchain, deduped)`);
+    log.info(`[Tools] Merged: ${merged.length} declarations (${WEB_TOOL_DECLARATIONS.length} web + ${onchainDecls.length} onchain + ${okxaiDecls.length} okxai, deduped)`);
     return _cachedToolDeclarations;
 }
 
@@ -427,8 +432,11 @@ function createChatRoutes() {
 
                     let result;
                     try {
-                        // Try web tools first, then fall back to onchain tools
+                        // Try web tools first, then OKX.AI bridge tools, then fall back to onchain tools
                         result = await executeWebToolCall(fc, context);
+                        if (result === undefined && isOkxAiToolName(fc.name)) {
+                            result = await executeOkxAiTool(fc.name, fc.args || {}, context);
+                        }
                         if (result === undefined) {
                             result = await executeToolCall(fc, context);
                         }
@@ -712,13 +720,13 @@ function createChatRoutes() {
         const ALLOWED_GEMINI_MODELS = ['gemini-3.1-pro-preview', 'gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash'];
         const ALLOWED_OPENAI_MODELS = Object.keys(OPENAI_MODEL_FAMILIES);
         const ALLOWED_GROQ_MODELS = Object.keys(GROQ_MODEL_FAMILIES);
-        const ALLOWED_NINEROUTER_MODELS = ['xbot', 'plan', 'action', NINEROUTER_MODEL].filter(Boolean);
+        const ALLOWED_NINEROUTER_MODELS = [NINEROUTER_MODEL].filter(Boolean);
         const ALLOWED_MODELS = [...ALLOWED_GEMINI_MODELS, ...ALLOWED_OPENAI_MODELS, ...ALLOWED_GROQ_MODELS, ...ALLOWED_NINEROUTER_MODELS];
         const normalizedRequestedProvider = String(requestedProvider || '').trim().toLowerCase();
         const requestedProviderIsNineRouter = ['9router', 'ninerouter', 'nine-router', 'router'].includes(normalizedRequestedProvider);
         let useModel = ALLOWED_MODELS.includes(requestedModel)
             ? requestedModel
-            : (requestedProviderIsNineRouter ? (requestedModel || NINEROUTER_MODEL || 'xbot') : (GEMINI_MODEL || 'gemini-2.5-flash'));
+            : (requestedProviderIsNineRouter ? NINEROUTER_MODEL : (GEMINI_MODEL || 'gemini-2.5-flash'));
 
         // ── Enforce default model for users without personal API key ──
         // Only owners and users with their own API key can change models
@@ -852,20 +860,124 @@ function createChatRoutes() {
                 nMsgs.push({ role: 'user', content: message.trim() });
 
                 let nFinal = '';
-                const nineRouterModel = useModel || NINEROUTER_MODEL || 'xbot';
-                log.info(`[Stream] 9Router: model=${nineRouterModel}, msgs=${nMsgs.length}`);
-                try {
-                    const stream = await nClient.chat.completions.create({ model: nineRouterModel, messages: nMsgs, stream: true, temperature: 0.7, max_tokens: 4096 });
-                    for await (const chunk of stream) {
-                        const d = chunk.choices?.[0]?.delta;
-                        if (d?.content) { nFinal += d.content; sendEvent('text-delta', { text: d.content }); }
-                    }
-                } catch (apiErr) { log.error(`[Stream][9Router] ${apiErr?.message}`); sendEvent('error', { error: apiErr?.message || '9Router API failed' }); res.end(); return; }
+                const nToolCalls = [];
+                const nTools = convertToolsToOpenAI(getToolDeclarations());
+                let nRound = 0;
+                const nineRouterModel = NINEROUTER_MODEL;
+                if (!nineRouterModel) {
+                    sendEvent('error', { error: 'NINEROUTER_MODEL is not configured in .env' });
+                    res.end();
+                    return;
+                }
+                log.info(`[Stream] 9Router: model=${nineRouterModel}, msgs=${nMsgs.length}, tools=${nTools.length}`);
 
-                if (nFinal.trim()) nMsgs.push({ role: 'assistant', content: nFinal.trim() });
-                session.messages = nMsgs.filter(m => m.role === 'user' || m.role === 'assistant').map(m => ({ role: m.role, content: m.content || '' })).slice(-SESSION_MAX_MESSAGES);
-                session.updatedAt = Date.now(); await saveSession(session);
-                sendEvent('done', { conversationId: sessionKey, title: session.title }); res.end();
+                while (nRound < MAX_TOOL_ROUNDS) {
+                    if (aborted) break;
+                    nRound++;
+
+                    let stream;
+                    try {
+                        stream = await nClient.chat.completions.create({
+                            model: nineRouterModel,
+                            messages: nMsgs,
+                            tools: nTools.length > 0 ? nTools : undefined,
+                            stream: true,
+                            temperature: 0.7,
+                            max_tokens: 8192
+                        });
+                    } catch (apiErr) {
+                        log.error(`[Stream][9Router][R${nRound}] ${apiErr?.message}`);
+                        sendEvent('error', { error: apiErr?.message || '9Router API failed' });
+                        res.end();
+                        return;
+                    }
+
+                    let rText = '';
+                    const pending = [];
+                    try {
+                        for await (const chunk of stream) {
+                            const d = chunk.choices?.[0]?.delta;
+                            if (!d) continue;
+                            if (d.content) {
+                                rText += d.content;
+                                sendEvent('text-delta', { text: d.content });
+                            }
+                            if (d.tool_calls) for (const tc of d.tool_calls) {
+                                if (!pending[tc.index]) pending[tc.index] = { id: '', name: '', args: '' };
+                                if (tc.id) pending[tc.index].id = tc.id;
+                                if (tc.function?.name) pending[tc.index].name = tc.function.name;
+                                if (tc.function?.arguments) pending[tc.index].args += tc.function.arguments;
+                            }
+                        }
+                    } catch (sErr) {
+                        log.error(`[Stream][9Router] ${sErr?.message}`);
+                        sendEvent('error', { error: sErr?.message || '9Router stream failed' });
+                        res.end();
+                        return;
+                    }
+
+                    const valid = pending.filter(t => t && t.name);
+                    if (valid.length === 0) {
+                        nFinal = rText.trim();
+                        if (rText) nMsgs.push({ role: 'assistant', content: nFinal });
+                        break;
+                    }
+
+                    nMsgs.push({
+                        role: 'assistant',
+                        content: rText || null,
+                        tool_calls: valid.map(t => ({
+                            id: t.id,
+                            type: 'function',
+                            function: { name: t.name, arguments: t.args }
+                        }))
+                    });
+
+                    const ctx = {
+                        userId,
+                        lang: req.dashboardUser?.lang || 'en',
+                        isGroup: false,
+                        isAdmin: false,
+                        chatId: userId,
+                        isWeb: true,
+                        isTelegramContext: false
+                    };
+
+                    for (const tc of valid) {
+                        let args = {};
+                        try { args = JSON.parse(tc.args || '{}'); } catch {}
+                        sendEvent('tool-start', { name: tc.name, args });
+
+                        let res2;
+                        try { res2 = await executeWebToolCall({ functionCall: { name: tc.name, args } }, ctx); } catch {}
+                        if (res2 === undefined && isOkxAiToolName(tc.name)) {
+                            try { res2 = await executeOkxAiTool(tc.name, args, ctx); } catch (e) { res2 = { error: e.message }; }
+                        }
+                        if (res2 === undefined) {
+                            try { res2 = await executeToolCall({ functionCall: { name: tc.name, args } }, ctx); } catch {}
+                        }
+                        if (res2 === undefined) res2 = { error: `Tool ${tc.name} not available.` };
+                        if (res2?.displayMessage) res2.displayMessage = htmlToMarkdown(res2.displayMessage);
+
+                        const rs = typeof res2 === 'string' ? res2 : JSON.stringify(res2)?.substring(0, 500);
+                        nToolCalls.push({ name: tc.name, args, result: rs });
+                        sendEvent('tool-result', { name: tc.name, result: rs });
+                        nMsgs.push({
+                            role: 'tool',
+                            tool_call_id: tc.id,
+                            content: typeof res2 === 'string' ? res2 : JSON.stringify(res2)
+                        });
+                    }
+                }
+
+                session.messages = nMsgs
+                    .filter(m => m.role === 'user' || m.role === 'assistant')
+                    .map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : (m.content?.[0]?.text || '') }))
+                    .slice(-SESSION_MAX_MESSAGES);
+                session.updatedAt = Date.now();
+                await saveSession(session);
+                sendEvent('done', { conversationId: sessionKey, title: session.title, toolCalls: nToolCalls.length > 0 ? nToolCalls : undefined });
+                res.end();
                 if (session.messages.length <= 2 && session.title === message.trim().substring(0, 60)) {
                     (async () => { try { const r = await nClient.chat.completions.create({ model: nineRouterModel, messages: [{ role: 'user', content: `Summarize in max 5 words as title. No quotes.\nUser: ${message}\nAI: ${(nFinal||'').substring(0,300)}` }], max_tokens: 30, temperature: 0.3 }); const t = r?.choices?.[0]?.message?.content?.trim(); if (t && t.length > 2 && t.length < 80) { session.title = t; await saveSession(session); } } catch {} })();
                 }
@@ -974,6 +1086,9 @@ function createChatRoutes() {
 
                     let result;
                     result = await executeWebToolCall(fc, context);
+                    if (!result && isOkxAiToolName(fc.name)) {
+                        try { result = await executeOkxAiTool(fc.name, fc.args || {}, context); } catch {}
+                    }
                     if (!result) {
                         // Fallback to onchain tools safely (same as main endpoint)
                         try { result = await executeToolCall(fc, context); } catch {}
@@ -1098,6 +1213,7 @@ function createChatRoutes() {
                         let args = {}; try { args = JSON.parse(tc.args || '{}'); } catch {}
                         sendEvent('tool-start', { name: tc.name, args });
                         let res2; try { res2 = await executeWebToolCall(tc.name, args, ctx); } catch {}
+                        if (!res2 && isOkxAiToolName(tc.name)) try { res2 = await executeOkxAiTool(tc.name, args, ctx); } catch {}
                         if (!res2) try { res2 = await executeToolCall({ functionCall: { name: tc.name, args } }, ctx); } catch {}
                         if (!res2) res2 = { error: `Tool ${tc.name} not available.` };
                         if (res2?.displayMessage) res2.displayMessage = htmlToMarkdown(res2.displayMessage);
@@ -1220,27 +1336,19 @@ function createChatRoutes() {
             const hasNineRouterKey = userKeys.some(k =>
                 ['9router', 'ninerouter', 'nine-router'].includes((k.provider || '').toLowerCase()) && k.apiKey
             );
-            const hasServerNineRouterKey = Boolean(NINEROUTER_CHAT_COMPLETIONS_URL && (NINEROUTER_API_KEY || process.env.NINEROUTER_ALLOW_NO_KEY !== 'false'));
-            let nineRouterModels = [];
-            if (NINEROUTER_MODELS_URL) {
-                try {
-                    const axios = require('axios');
-                    const headers = NINEROUTER_API_KEY ? { Authorization: `Bearer ${NINEROUTER_API_KEY}` } : {};
-                    const resp = await axios.get(NINEROUTER_MODELS_URL, { headers, timeout: 5000 });
-                    const live = Array.isArray(resp?.data?.data) ? resp.data.data : [];
-                    nineRouterModels = live.slice(0, 80).map(m => ({
-                        id: m.id,
-                        label: m.id,
-                        desc: m.owned_by ? `9Router route/combo from ${m.owned_by}` : '9Router route/combo',
-                        icon: m.owned_by === 'combo' ? '??' : '??',
-                        tier: m.owned_by === 'combo' ? 'pro' : 'free',
-                        provider: '9router',
-                        owner: m.owned_by,
-                    }));
-                } catch (e) {
-                    nineRouterModels = NINEROUTER_MODEL ? [{ id: NINEROUTER_MODEL, label: NINEROUTER_MODEL, desc: '9Router configured model/combo', icon: '??', tier: 'pro', provider: '9router' }] : [];
-                }
-            }
+            const hasServerNineRouterKey = Boolean(NINEROUTER_CHAT_COMPLETIONS_URL && NINEROUTER_MODEL && (NINEROUTER_API_KEY || process.env.NINEROUTER_ALLOW_NO_KEY !== 'false'));
+            // 9Router is intentionally restricted to the single model configured in .env.
+            // Do not fetch /v1/models here: 9Router may expose many route/combo models,
+            // but this bot must only advertise and use NINEROUTER_MODEL.
+            const nineRouterModels = NINEROUTER_MODEL ? [{
+                id: NINEROUTER_MODEL,
+                label: NINEROUTER_MODEL,
+                desc: '9Router configured model from .env',
+                icon: '🧭',
+                tier: 'pro',
+                provider: '9router',
+                owner: 'env',
+            }] : [];
 
             const defaultGemini = GEMINI_MODEL || 'gemini-2.5-flash';
             const defaultOpenAi = OPENAI_MODEL || openaiModels[0]?.id || 'gpt-4o-mini';
@@ -1298,8 +1406,9 @@ function createChatRoutes() {
                     if (providerFilter === 'openai') return p === 'openai';
                     if (providerFilter === 'google') return ['google', 'gemini'].includes(p);
                     if (providerFilter === 'groq') return p === 'groq';
+                    if (providerFilter === '9router') return ['9router', 'ninerouter', 'nine-router'].includes(p);
                     // No filter — return all
-                    return ['google', 'gemini', 'openai', 'groq'].includes(p);
+                    return ['google', 'gemini', 'openai', 'groq', '9router', 'ninerouter', 'nine-router'].includes(p);
                 })
                 .map(k => ({
                     id: k.id || k.rowid,
@@ -1371,14 +1480,24 @@ function createChatRoutes() {
                     }
                 }
             } else if (normalizedProvider === '9router') {
+                if (!NINEROUTER_CHAT_COMPLETIONS_URL || !NINEROUTER_MODEL) {
+                    return res.status(400).json({ error: '9Router is missing NINEROUTER_BASE_URL or NINEROUTER_MODEL in .env' });
+                }
                 try {
                     const axios = require('axios');
-                    const url = NINEROUTER_MODELS_URL || 'https://xlayerbot.fun/v1/models';
-                    const resp = await axios.get(url, {
-                        headers: { Authorization: `Bearer ${apiKey.trim()}` },
-                        timeout: 8000,
-                    });
-                    if (!resp.data?.data?.length) throw new Error('No models returned');
+                    await axios.post(
+                        NINEROUTER_CHAT_COMPLETIONS_URL,
+                        {
+                            model: NINEROUTER_MODEL,
+                            messages: [{ role: 'user', content: 'ping' }],
+                            max_tokens: 1,
+                            temperature: 0,
+                        },
+                        {
+                            headers: { Authorization: `Bearer ${apiKey.trim()}`, 'Content-Type': 'application/json' },
+                            timeout: 8000,
+                        }
+                    );
                 } catch (testErr) {
                     const msg = testErr?.response?.status === 401 ? 'Invalid 9Router API key'
                         : testErr?.response?.status === 429 ? 'Rate limited, but key is valid'

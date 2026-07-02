@@ -501,7 +501,7 @@ const OPENAI_TTS_FORMAT = process.env.OPENAI_TTS_FORMAT || 'mp3';
 const OPENAI_AUDIO_MODEL = process.env.OPENAI_AUDIO_MODEL || '';
 const NINEROUTER_BASE_URL = (process.env.NINEROUTER_BASE_URL || process.env.NINE_ROUTER_BASE_URL || '').replace(/\/$/, '');
 const NINEROUTER_API_KEY = (process.env.NINEROUTER_API_KEY || process.env.NINE_ROUTER_API_KEY || '').trim();
-const NINEROUTER_MODEL = (process.env.NINEROUTER_MODEL || process.env.NINE_ROUTER_MODEL || 'plan').trim();
+const NINEROUTER_MODEL = (process.env.NINEROUTER_MODEL || process.env.NINE_ROUTER_MODEL || '').trim();
 const NINEROUTER_API_ROOT = NINEROUTER_BASE_URL
     ? (NINEROUTER_BASE_URL.endsWith('/v1') ? NINEROUTER_BASE_URL : `${NINEROUTER_BASE_URL}/v1`)
     : '';

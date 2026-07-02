@@ -284,7 +284,7 @@ function buildAiProviderMeta(lang, provider) {
 
             infoTitle: t(lang, 'ai_api_info_title'),
 
-            infoText: t(lang, 'ai_api_usecases_9router', { url: baseUrl, model: NINEROUTER_MODEL || 'plan' }) || `Routes AI requests through 9Router at ${baseUrl}. Model: ${NINEROUTER_MODEL || 'plan'}`
+            infoText: t(lang, 'ai_api_usecases_9router', { url: baseUrl, model: NINEROUTER_MODEL || 'not configured' }) || `Routes AI requests through 9Router at ${baseUrl}. Model: ${NINEROUTER_MODEL || 'not configured'}`
 
         };
 

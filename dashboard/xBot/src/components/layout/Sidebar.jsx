@@ -226,6 +226,7 @@ export default function Sidebar({ open, onClose }) {
             items: [
                 { to: '/chat', icon: Bot, label: t('dashboard.sidebar.aiChat') || 'AI Chat' },
                 { to: '/ai-trader', icon: TrendingUp, label: t('dashboard.sidebar.aiTrader') || 'AI Trader', badge: 'β' },
+                { to: '/okx-ai', icon: Brain, label: t('dashboard.sidebar.okxai') || 'OKX.AI Bridge', badge: 'AI' },
                 { to: '/smart-copy', icon: Copy, label: 'Smart Copy', badge: '★' },
             ],
         },
