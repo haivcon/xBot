@@ -20,14 +20,17 @@ node_modules/
 dashboard/node_modules/
 onchainos-skills-main
 tests
-# ─── Database ───
+# ─── Database & Runtime Data ───
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
+data/audit-logs/
 
 # ─── Build Output & Separated Projects ───
 dashboard/dist/
+dashboard/.deploy-dist-*/
+dashboard/.deploy-dist-previous-*/
 dashboard/*.local
 /xKey/
 xbot-check/
@@ -50,8 +53,12 @@ Thumbs.db
 code.txt
 cleanup_history.js
 
-# ─── PM2 ───
+# ─── Private VPS Deployment ───
+DEPLOY VPS.md
 ecosystem.config.js
+ecosystem.config.cjs
+scripts/deploy.sh
+scripts/backup-sqlite.js
 
 # ─── Scripts ───
 *.cjs

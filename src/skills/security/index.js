@@ -115,6 +115,20 @@ const SECURITY_TOOLS = [{
                 },
                 required: ['address']
             }
+        },
+        {
+            name: 'sig_scan_safety',
+            description: 'Check if an EIP-712 or personal_sign message signature request is safe. Detects phishing signatures, permit approvals to malicious spenders, and deceptive typed data. Use before signing any message.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    chain_index: { type: 'string', description: 'Chain ID (e.g., 1 for ETH)' },
+                    signer_address: { type: 'string', description: 'Address that will sign the message' },
+                    sign_type: { type: 'string', description: 'Signature type: "personal_sign" or "eip712"' },
+                    data: { type: 'string', description: 'The message or typed data to be signed (JSON string for EIP-712)' }
+                },
+                required: ['chain_index', 'signer_address', 'data']
+            }
         }
     ]
 }];
@@ -298,6 +312,49 @@ const securityHandlers = {
             return parts.join('\n');
         } catch (err) {
             return `⚠️ Transaction scan failed: ${err.message}. DO NOT proceed — scan failure is NOT a pass.`;
+        }
+    },
+
+    async sig_scan_safety(args, context) {
+        const userId = context?.userId;
+        if (userId) {
+            const limit = checkRateLimit(userId);
+            if (!limit.allowed) return `⚠️ Rate limited. Please wait ${limit.resetsIn}s.`;
+        }
+
+        try {
+            const onchainos = require('../../services/onchainos');
+            const result = await onchainos.sigScan({
+                chainIndex: args.chain_index || '1',
+                signerAddress: args.signer_address,
+                signType: args.sign_type || 'eip712',
+                data: args.data
+            });
+            const data = result?.data || result;
+
+            const parts = [`🛡️ Signature Safety Scan\n📋 Type: ${args.sign_type || 'eip712'} | Chain: ${args.chain_index || '1'}`];
+
+            const action = data?.action || '';
+            if (action === 'block') {
+                parts.push('\n🔴 DANGEROUS — DO NOT SIGN');
+                parts.push('🚨 This signature request is malicious. Signing could drain your wallet.');
+            } else if (action === 'warn') {
+                parts.push('\n🟡 SUSPICIOUS — Verify carefully');
+            } else {
+                parts.push('\n🟢 SAFE — No threats detected');
+            }
+
+            if (data?.riskItemDetail?.length > 0) {
+                parts.push('\n⚠️ Risk Details:');
+                for (const item of data.riskItemDetail) {
+                    const desc = item.description?.en || item.description?.zh || item.name;
+                    parts.push(`  • [${item.action?.toUpperCase() || 'WARN'}] ${desc}`);
+                }
+            }
+
+            return parts.join('\n');
+        } catch (err) {
+            return `⚠️ Signature scan failed: ${err.message}. DO NOT sign — scan failure is NOT a pass.`;
         }
     },
 

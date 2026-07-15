@@ -149,6 +149,16 @@ body {
   transform: translateY(-2px);
 }
 
+.btn-xmusic {
+  background: linear-gradient(135deg, #8b5cf6, #c026d3);
+  color: white;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+}
+.btn-xmusic:hover {
+  box-shadow: 0 8px 30px rgba(192, 38, 211, 0.4);
+  transform: translateY(-2px);
+}
+
 .btn-outline {
   display: inline-flex;
   align-items: center;

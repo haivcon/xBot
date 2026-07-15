@@ -10,8 +10,11 @@ function swVersionPlugin() {
     const hash = crypto.randomBytes(4).toString('hex');
     return {
         name: 'sw-version',
-        writeBundle() {
-            const swPath = path.resolve(__dirname, 'dist/sw.js');
+        writeBundle(outputOptions) {
+            const outputDir = outputOptions.dir
+                ? path.resolve(__dirname, outputOptions.dir)
+                : path.resolve(__dirname, 'dist');
+            const swPath = path.join(outputDir, 'sw.js');
             if (fs.existsSync(swPath)) {
                 let content = fs.readFileSync(swPath, 'utf8');
                 content = content.replace('__BUILD_HASH__', hash);
