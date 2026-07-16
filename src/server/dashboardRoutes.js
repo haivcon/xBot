@@ -10,6 +10,14 @@ const db = require('../../db.js');
 const logger = require('../core/logger');
 const { createJWT, decodeAndVerifyJWT, verifyJWT } = require('./dashboardAuth');
 const log = logger.child('Dashboard');
+const { BOT_ID } = require('../config/env');
+
+function hasWelcomeBotPermissions(member) {
+    return member?.status === 'creator'
+        || (member?.status === 'administrator'
+            && member.can_delete_messages === true
+            && member.can_restrict_members === true);
+}
 
 const BOT_TOKEN = process.env.TELEGRAM_TOKEN;
 const OWNER_IDS = [
@@ -2073,7 +2081,24 @@ function createDashboardRoutes() {
             const chatId = req.groupChatId;
             const { enabled, timeLimitSeconds, maxAttempts, action, questionWeights, titleTemplate } = req.body;
             const welcomeSettings = {};
-            if (enabled !== undefined) welcomeSettings.enabled = !!enabled;
+            if (enabled === true) {
+                if (!BOT_ID) return res.status(503).json({ error: 'Bot identity is unavailable' });
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember`, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatId, user_id: BOT_ID })
+                });
+                const payload = await response.json();
+                if (!payload.ok || !hasWelcomeBotPermissions(payload.result)) {
+                    return res.status(409).json({
+                        error: 'Bot requires delete-messages and restrict-members permissions for Reactive verification'
+                    });
+                }
+            }
+            if (enabled !== undefined) {
+                welcomeSettings.enabled = !!enabled;
+                welcomeSettings.mode = 'reactive';
+            }
             if (timeLimitSeconds !== undefined) welcomeSettings.timeLimitSeconds = Math.max(15, Math.min(300, Number(timeLimitSeconds) || 60));
             if (maxAttempts !== undefined) welcomeSettings.maxAttempts = Math.max(1, Math.min(10, Number(maxAttempts) || 3));
             if (action !== undefined && ['kick', 'ban', 'mute'].includes(action)) welcomeSettings.action = action;

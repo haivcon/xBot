@@ -1503,6 +1503,7 @@
   "welcome_admin_menu_closed": "✅ Đã đóng bảng cài đặt chào mừng.",
   "welcome_admin_menu_opening": "Đang mở bảng kiểm duyệt thành viên mới...",
   "welcome_admin_no_permission": "❌ Chỉ quản trị viên mới được quản lý xác minh.",
+  "welcome_admin_bot_permissions_required": "❌ Hãy cấp cho bot quyền xóa tin nhắn và hạn chế thành viên trước khi bật xác minh Reactive.",
   "welcome_admin_rates": "Tỷ lệ câu hỏi: {math} toán • {physics} lý • {chemistry} hóa • {okx} OKX • {crypto} crypto",
   "welcome_admin_refreshing": "Đang cập nhật...",
   "welcome_admin_title_default": "Xác minh thành viên mới",

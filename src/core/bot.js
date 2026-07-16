@@ -21,7 +21,13 @@ const https = require('https');
 const ipv4Agent = new https.Agent({ family: 4, keepAlive: true });
 
 const bot = new TelegramBot(TELEGRAM_TOKEN, {
-    polling: !USE_WEBHOOK,
+    // Transport starts only after DB migrations and all ingress guards/handlers are ready.
+    polling: USE_WEBHOOK ? false : {
+        autoStart: false,
+        params: {
+            allowed_updates: ['message', 'edited_message', 'callback_query', 'chat_member', 'my_chat_member']
+        }
+    },
     webHook: USE_WEBHOOK ? false : undefined, // webhook set up separately via Express
     request: {
         agentClass: https.Agent,
@@ -31,6 +37,37 @@ const bot = new TelegramBot(TELEGRAM_TOKEN, {
         family: 4
     }
 });
+
+const dispatchTelegramUpdate = bot.processUpdate.bind(bot);
+let updateIngress = null;
+let pollingStarted = false;
+bot.processUpdate = (update) => {
+    const processing = Promise.resolve().then(() => {
+        if (updateIngress) return updateIngress(update, dispatchTelegramUpdate);
+        return dispatchTelegramUpdate(update);
+    });
+    // Polling does not await processUpdate(); observe rejection to avoid an
+    // unhandled promise while preserving the rejecting Promise for webhook HTTP 500.
+    processing.catch((error) => {
+        log.child('Ingress').error(`Telegram update failed: ${sanitizeSecrets(error?.message || String(error))}`);
+    });
+    return processing;
+};
+
+function installUpdateIngress(handler) {
+    updateIngress = typeof handler === 'function' ? handler : null;
+}
+
+async function startTelegramTransport() {
+    if (USE_WEBHOOK || pollingStarted) return;
+    pollingStarted = true;
+    // Keep polling params (including allowed_updates) in the constructor and
+    // observe startup failure without delaying the remaining schedulers.
+    bot.startPolling().catch((error) => {
+        pollingStarted = false;
+        log.child('Polling').error(`Polling stopped: ${sanitizeSecrets(error?.message || String(error))}`);
+    });
+}
 
 if (USE_WEBHOOK) {
     log.info(`🌐 Webhook mode enabled (${PUBLIC_BASE_URL})`);
@@ -138,5 +175,7 @@ module.exports = {
     sendEphemeralMessage,
     rememberRmchatMessage,
     purgeRmchatMessages,
-    getConnectionMode
+    getConnectionMode,
+    installUpdateIngress,
+    startTelegramTransport
 };

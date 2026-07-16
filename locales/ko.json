@@ -1467,6 +1467,7 @@
   "welcome_admin_menu_closed": "✅ 환영 패널을 닫았습니다.",
   "welcome_admin_menu_opening": "신규 회원 인증 패널을 여는 중...",
   "welcome_admin_no_permission": "❌ 그룹 관리자만 인증을 관리할 수 있습니다.",
+  "welcome_admin_bot_permissions_required": "❌ Reactive 인증을 켜기 전에 봇에 메시지 삭제 및 멤버 제한 권한을 부여하세요.",
   "welcome_admin_rates": "문제 비율: {math} 수학 • {physics} 물리 • {chemistry} 화학 • {okx} OKX • {crypto} 크립토",
   "welcome_admin_refreshing": "업데이트 중...",
   "welcome_admin_title_default": "가입 인증",

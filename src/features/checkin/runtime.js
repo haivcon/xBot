@@ -1,5 +1,54 @@
 ﻿const logger = require('../../core/logger');
+const { withWelcomeMemberLock } = require('../welcomeMemberLock');
 const log = logger.child('Checkin');
+
+async function retryWelcomeViolationEnforcement({ row, db, bot, retryLog = log.child('WelcomeVerify') }) {
+    return withWelcomeMemberLock(row.chatId, row.userId, async () => {
+        const claimed = await db.claimWelcomeViolation({
+            chatId: row.chatId,
+            userId: row.userId,
+            generation: row.generation,
+            updateId: row.violationUpdateId,
+            messageId: row.violationMessageId
+        });
+        if (!claimed?.claimed) return false;
+
+        if (row.violationMessageId) {
+            try {
+                await bot.deleteMessage(row.chatId, row.violationMessageId);
+            } catch (error) {
+                // Deletion is best-effort; the kick must still run.
+                retryLog.warn(`Unable to delete recovered violation ${row.violationMessageId}: ${error.message}`);
+            }
+        }
+
+        let enforcementError = null;
+        let banned = false;
+        try {
+            await bot.banChatMember(row.chatId, row.userId, { revoke_messages: true });
+            banned = true;
+        } catch (error) {
+            enforcementError = error;
+            retryLog.error(`Failed to kick recovered violation for ${row.userId}: ${error.message}`);
+        }
+        if (banned) {
+            try {
+                await bot.unbanChatMember(row.chatId, row.userId, { only_if_banned: true });
+            } catch (error) {
+                enforcementError = enforcementError || error;
+                retryLog.error(`Failed to unban recovered violation for ${row.userId}: ${error.message}`);
+            }
+        }
+
+        await db.finishWelcomeEnforcement({
+            chatId: row.chatId,
+            userId: row.userId,
+            generation: row.generation,
+            error: enforcementError?.message || null
+        });
+        return true;
+    });
+}
 
 function createCheckinRuntime(deps) {
     const {
@@ -431,16 +480,36 @@ function createCheckinRuntime(deps) {
         return { inline_keyboard };
     }
 
-    function clearWelcomeChallenge(token) {
-        const challenge = pendingWelcomeChallenges.get(token);
-        if (!challenge) {
-            return;
-        }
-        if (challenge.timer) {
-            clearTimeout(challenge.timer);
-        }
+    function clearWelcomeChallenge(token, fallback = null) {
+        const challenge = pendingWelcomeChallenges.get(token) || fallback;
+        if (challenge?.timer) clearTimeout(challenge.timer);
         pendingWelcomeChallenges.delete(token);
-        welcomeUserIndex.delete(`${challenge.chatId}:${challenge.userId}`);
+        if (challenge) welcomeUserIndex.delete(`${challenge.chatId}:${challenge.userId}`);
+    }
+
+    function cacheWelcomeChallenge(row) {
+        if (!row?.token) return null;
+        clearWelcomeChallenge(row.token, row);
+        const delayMs = Math.max(Number(row.expiresAt) - Date.now(), 0);
+        const timer = setTimeout(() => handleWelcomeTimeout(row.token, 'timeout'), delayMs);
+        if (typeof timer.unref === 'function') timer.unref();
+        const challenge = {
+            chatId: row.chatId,
+            userId: row.userId,
+            messageId: row.challengeMessageId || null,
+            correctIndex: Number(row.correctIndex),
+            attempts: Number(row.attempts) || 0,
+            maxAttempts: Number(row.maxAttempts) || 1,
+            expiresAt: Number(row.expiresAt),
+            action: row.action || 'kick',
+            lang: row.lang || defaultLang,
+            displayName: row.displayName || 'member',
+            generation: row.generation,
+            timer
+        };
+        pendingWelcomeChallenges.set(row.token, challenge);
+        welcomeUserIndex.set(`${row.chatId}:${row.userId}`, row.token);
+        return challenge;
     }
 
     async function applyWelcomeEnforcement(challenge, reason = 'timeout') {
@@ -450,8 +519,8 @@ function createCheckinRuntime(deps) {
             ? t(lang, 'welcome_verify_reason_attempts')
             : t(lang, 'welcome_verify_reason_timeout');
         const actionLabel = formatWelcomeActionLabel(action, lang);
-
         let notice = null;
+        let enforcementError = null;
 
         try {
             if (action === 'ban') {
@@ -462,10 +531,11 @@ function createCheckinRuntime(deps) {
                     until_date: Math.floor(Date.now() / 1000) + 3600
                 });
             } else {
-                await bot.banChatMember(challenge.chatId, challenge.userId, { until_date: Math.floor(Date.now() / 1000) + 60 });
+                await bot.banChatMember(challenge.chatId, challenge.userId, { revoke_messages: true });
                 await bot.unbanChatMember(challenge.chatId, challenge.userId, { only_if_banned: true });
             }
         } catch (error) {
+            enforcementError = error;
             log.child('WelcomeVerify').error(`Failed to enforce ${action} for ${challenge.userId} in ${challenge.chatId}: ${error.message}`);
         }
 
@@ -478,79 +548,76 @@ function createCheckinRuntime(deps) {
         } catch (error) {
             log.child('WelcomeVerify').warn(`Unable to send enforcement notice: ${error.message}`);
         }
-
-        return notice;
+        return { notice, enforcementError };
     }
 
     async function handleWelcomeTimeout(token, reason = 'timeout') {
-        const challenge = pendingWelcomeChallenges.get(token);
-        if (!challenge) {
-            return;
-        }
-        const notice = await applyWelcomeEnforcement(challenge, reason);
-        clearWelcomeChallenge(token);
-
-        if (challenge.messageId) {
-            scheduleMessageDeletion(challenge.chatId, challenge.messageId, 10000);
-        }
-        if (notice?.chat?.id && notice?.message_id) {
-            scheduleMessageDeletion(notice.chat.id, notice.message_id, 10000);
-        }
+        const admission = await db.getWelcomeAdmissionByToken(token);
+        if (!admission) return;
+        return withWelcomeMemberLock(admission.chatId, admission.userId, async () => {
+            const claimed = await db.claimWelcomeEnforcementByToken(token, reason);
+            if (!claimed) return;
+            const cached = pendingWelcomeChallenges.get(token);
+            const challenge = { ...claimed, messageId: claimed.challengeMessageId || cached?.messageId };
+            const { notice, enforcementError } = await applyWelcomeEnforcement(challenge, reason);
+            await db.finishWelcomeEnforcement({
+                chatId: challenge.chatId,
+                userId: challenge.userId,
+                generation: challenge.generation,
+                error: enforcementError?.message || null
+            });
+            clearWelcomeChallenge(token, challenge);
+            if (challenge.messageId) scheduleMessageDeletion(challenge.chatId, challenge.messageId, 10000);
+            if (notice?.chat?.id && notice?.message_id) scheduleMessageDeletion(notice.chat.id, notice.message_id, 10000);
+        });
     }
 
     async function handleWelcomeAnswer(query, token, answerIndex) {
         const callbackLang = await resolveNotificationLanguage(query.from.id, query.from.language_code);
-        const challenge = pendingWelcomeChallenges.get(token);
-
-        if (!challenge) {
+        const challenge = await db.getWelcomeAdmissionByToken(token);
+        if (!challenge || challenge.state !== 'PENDING') {
             await bot.answerCallbackQuery(query.id, { text: t(callbackLang, 'welcome_verify_error_expired'), show_alert: true });
             return;
         }
-
         if (challenge.userId !== query.from.id.toString()) {
             await bot.answerCallbackQuery(query.id, { text: t(callbackLang, 'welcome_verify_error_wrong_user'), show_alert: true });
             return;
         }
-
-        if (Date.now() >= challenge.expiresAt) {
+        if (Date.now() >= Number(challenge.expiresAt)) {
             await bot.answerCallbackQuery(query.id, { text: t(callbackLang, 'welcome_verify_error_expired'), show_alert: true });
             await handleWelcomeTimeout(token, 'timeout');
             return;
         }
 
         if (Number(answerIndex) === Number(challenge.correctIndex)) {
-            clearWelcomeChallenge(token);
-            let successMessage = null;
-            try {
-                await bot.answerCallbackQuery(query.id, { text: t(callbackLang, 'welcome_verify_correct') });
-            } catch (_) {
-                // ignore
+            const verified = await db.verifyWelcomeAdmissionByToken(token, query.from.id);
+            if (!verified) {
+                await bot.answerCallbackQuery(query.id, { text: t(callbackLang, 'welcome_verify_error_expired'), show_alert: true });
+                return;
             }
+            clearWelcomeChallenge(token, challenge);
+            await bot.answerCallbackQuery(query.id, { text: t(callbackLang, 'welcome_verify_correct') });
+            let successMessage = null;
             try {
                 successMessage = await bot.sendMessage(challenge.chatId, t(challenge.lang, 'welcome_verify_success', { user: challenge.displayName }));
             } catch (error) {
                 log.child('WelcomeVerify').warn(`Unable to send success message: ${error.message}`);
             }
-
-            if (challenge.messageId) {
-                scheduleMessageDeletion(challenge.chatId, challenge.messageId, 10000);
-            }
-            if (successMessage?.chat?.id && successMessage?.message_id) {
-                scheduleMessageDeletion(successMessage.chat.id, successMessage.message_id, 10000);
-            }
+            if (challenge.challengeMessageId) scheduleMessageDeletion(challenge.chatId, challenge.challengeMessageId, 10000);
+            if (successMessage?.chat?.id && successMessage?.message_id) scheduleMessageDeletion(successMessage.chat.id, successMessage.message_id, 10000);
             return;
         }
 
-        challenge.attempts += 1;
-        pendingWelcomeChallenges.set(token, challenge);
-
-        const remaining = Math.max(challenge.maxAttempts - challenge.attempts, 0);
+        const updated = await db.incrementWelcomeAttempts(token, query.from.id);
+        if (!updated) return;
+        const remaining = Math.max(Number(updated.maxAttempts) - Number(updated.attempts), 0);
         if (remaining <= 0) {
             await bot.answerCallbackQuery(query.id, { text: t(callbackLang, 'welcome_verify_attempt_limit'), show_alert: true });
             await handleWelcomeTimeout(token, 'attempts');
             return;
         }
-
+        const cached = pendingWelcomeChallenges.get(token);
+        if (cached) cached.attempts = Number(updated.attempts);
         await bot.answerCallbackQuery(query.id, {
             text: t(callbackLang, 'welcome_verify_incorrect', { remaining }),
             show_alert: true
@@ -559,18 +626,16 @@ function createCheckinRuntime(deps) {
 
     async function sendWelcomeVerificationChallenge(task) {
         const chatId = task.chatId.toString();
-        const settings = task.settings || await getWelcomeVerificationSettings(chatId);
-        if (!settings.enabled) {
-            return;
-        }
-
         const userId = task.member?.id?.toString();
-        if (!userId) {
-            return;
-        }
+        const generation = task.generation;
+        if (!userId || !generation) return;
 
-        const userKey = `${chatId}:${userId}`;
-        if (welcomeUserIndex.has(userKey)) {
+        const active = await db.getActiveWelcomeAdmission(chatId, userId);
+        if (!active || active.generation !== generation || active.state !== 'CREATING') return;
+
+        const settings = task.settings || active.settings || await getWelcomeVerificationSettings(chatId);
+        if (!settings.enabled || (settings.mode && settings.mode !== 'reactive')) {
+            await db.markWelcomeAdmissionLeft({ chatId, userId });
             return;
         }
 
@@ -593,19 +658,13 @@ function createCheckinRuntime(deps) {
             action: actionLabel
         });
         const lines = [
-            // Header (Tiêu đề bảo mật) -> 🛡️
             `🛡️ <b>${escapeHtml(headerLine)}</b>`,
-
-            // Thông tin: Thời gian ⏱️ • Lần thử 🔢 • Hành động ⚡
             `⏱️ ${escapeHtml(timerLabel)} • 🔢 ${escapeHtml(attemptLabel)} • ⚡ ${escapeHtml(actionLabel)}`,
             '',
-            // Câu hỏi (Question) -> 🧩
             `🧩 <b>${escapeHtml(challenge.question)}</b>`,
             '',
-            // Kêu gọi hành động (CTA) -> 👇
             `👇 ${escapeHtml(t(lang, 'welcome_verify_cta'))}`
         ];
-
         const options = {
             reply_markup: buildWelcomeQuestionKeyboard(token, challenge),
             disable_notification: true,
@@ -613,25 +672,59 @@ function createCheckinRuntime(deps) {
         };
 
         const sent = await sendMessageRespectingThread(chatId, task.sourceMessage, lines.join('\n'), options);
-        const timer = setTimeout(() => handleWelcomeTimeout(token, 'timeout'), settings.timeLimitSeconds * 1000);
-        if (typeof timer.unref === 'function') {
-            timer.unref();
-        }
-
-        pendingWelcomeChallenges.set(token, {
+        const pending = await db.markWelcomeAdmissionPending({
             chatId,
             userId,
-            messageId: sent?.message_id || null,
+            generation,
+            token,
             correctIndex: challenge.correctIndex,
-            attempts: 0,
             maxAttempts: settings.maxAttempts,
             expiresAt,
             action: settings.action,
             lang,
             displayName,
-            timer
+            challengeMessageId: sent?.message_id || null
         });
-        welcomeUserIndex.set(userKey, token);
+        if (!pending && sent?.message_id) {
+            scheduleMessageDeletion(chatId, sent.message_id, 1000);
+            return;
+        }
+        cacheWelcomeChallenge(pending);
+    }
+
+    async function retryWelcomeViolation(row) {
+        return retryWelcomeViolationEnforcement({ row, db, bot });
+    }
+
+    async function recoverWelcomeAdmissions() {
+        const rows = await db.listRecoverableWelcomeAdmissions();
+        for (const row of rows) {
+            if (['ENFORCING', 'ENFORCEMENT_FAILED'].includes(row.state) && row.violationUpdateId) {
+                // Covers a crash after the durable violation claim, including one
+                // claimed while no challenge token existed yet. The repository lease
+                // prevents retrying an enforcement that may still be in flight.
+                await retryWelcomeViolation(row);
+            } else if (row.state === 'CREATING') {
+                enqueueWelcomeVerification({
+                    chatId: row.chatId,
+                    member: row.member,
+                    sourceMessage: row.sourceMessage,
+                    settings: row.settings,
+                    generation: row.generation
+                });
+            } else if (row.state === 'PENDING') {
+                if (Date.now() >= Number(row.expiresAt)) await handleWelcomeTimeout(row.token, 'timeout');
+                else cacheWelcomeChallenge(row);
+            } else if (row.token) {
+                await handleWelcomeTimeout(row.token, row.lastError || 'timeout');
+            }
+        }
+        return rows.length;
+    }
+
+    async function sweepWelcomeAdmissions() {
+        await recoverWelcomeAdmissions();
+        await db.deleteOldWelcomeProcessedUpdates(Date.now() - (24 * 60 * 60 * 1000));
     }
 
     function startWelcomeQueueProcessor() {
@@ -3509,6 +3602,7 @@ function createCheckinRuntime(deps) {
         sendWelcomeAdminMenu,
         presentCheckinTopics,
         presentWelcomeTopics,
+        recoverWelcomeAdmissions,
         setWelcomeAdminPayloadBuilder,
         setAdminDailyPoints,
         setAdminScheduleSlots,
@@ -3522,6 +3616,7 @@ function createCheckinRuntime(deps) {
         setWelcomeTitleTemplate,
         startCheckinScheduler,
         startWelcomeQueueProcessor,
+        sweepWelcomeAdmissions,
         subtractDaysFromDate,
         syncAdminSummaryScheduleWithAuto,
         toggleWelcomeVerification,
@@ -3529,4 +3624,4 @@ function createCheckinRuntime(deps) {
     };
 }
 
-module.exports = { createCheckinRuntime };
+module.exports = { createCheckinRuntime, retryWelcomeViolationEnforcement };

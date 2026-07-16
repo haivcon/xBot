@@ -434,14 +434,19 @@ function startApiServer() {
     const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || require('crypto').randomBytes(32).toString('hex');
 
     if (getConnectionMode() === 'webhook') {
-        app.post('/webhook/telegram', express.json({ limit: '1mb' }), (req, res) => {
+        app.post('/webhook/telegram', express.json({ limit: '1mb' }), async (req, res) => {
             // Validate secret token
             const headerSecret = req.headers['x-telegram-bot-api-secret-token'];
-            if (headerSecret && headerSecret !== WEBHOOK_SECRET) {
+            if (headerSecret !== WEBHOOK_SECRET) {
                 return res.status(401).json({ error: 'Invalid secret' });
             }
-            bot.processUpdate(req.body);
-            res.sendStatus(200);
+            try {
+                await bot.processUpdate(req.body);
+                res.sendStatus(200);
+            } catch (error) {
+                log.child('Webhook').error(`Telegram update failed: ${error.message}`);
+                res.sendStatus(500);
+            }
         });
         log.child('Webhook').info('Telegram webhook endpoint mounted at /webhook/telegram');
     }
@@ -501,7 +506,10 @@ function startApiServer() {
                 const maxRetries = 3;
                 for (let attempt = 0; attempt < maxRetries; attempt++) {
                     try {
-                        await bot.setWebHook(webhookUrl, { secret_token: WEBHOOK_SECRET });
+                        await bot.setWebHook(webhookUrl, {
+                            secret_token: WEBHOOK_SECRET,
+                            allowed_updates: ['message', 'edited_message', 'callback_query', 'chat_member', 'my_chat_member']
+                        });
                         log.child('Webhook').info(`Webhook registered: ${webhookUrl}`);
                         break;
                     } catch (e) {

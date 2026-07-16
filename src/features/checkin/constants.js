@@ -72,6 +72,7 @@ const CHECKIN_ADMIN_PAGE_SIZE = 10;
 const CHECKIN_ADMIN_EXPORT_FORMATS = ['csv', 'json'];
 const WELCOME_VERIFICATION_DEFAULTS = {
     enabled: false,
+    mode: 'reactive',
     timeLimitSeconds: 60,
     maxAttempts: 3,
     action: 'kick',

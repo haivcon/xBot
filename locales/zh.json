@@ -1467,6 +1467,7 @@
   "welcome_admin_menu_closed": "✅ 欢迎面板已关闭。",
   "welcome_admin_menu_opening": "正在打开新人验证面板...",
   "welcome_admin_no_permission": "❌ 只有群管理员可以管理验证。",
+  "welcome_admin_bot_permissions_required": "❌ 启用 Reactive 验证前，请授予机器人删除消息和限制成员的权限。",
   "welcome_admin_rates": "题目比例：{math} 数学 • {physics} 物理 • {chemistry} 化学 • {okx} OKX • {crypto} 加密",
   "welcome_admin_refreshing": "正在更新...",
   "welcome_admin_title_default": "入群验证",

@@ -1467,6 +1467,7 @@
   "welcome_admin_menu_closed": "✅ Панель приветствия закрыта.",
   "welcome_admin_menu_opening": "Открываю панель проверки новичков...",
   "welcome_admin_no_permission": "❌ Только администраторы группы могут управлять проверкой.",
+  "welcome_admin_bot_permissions_required": "❌ Перед включением Reactive-проверки дайте боту права удалять сообщения и ограничивать участников.",
   "welcome_admin_rates": "Соотношение вопросов: {math} математика • {physics} физика • {chemistry} химия • {okx} OKX • {crypto} крипто",
   "welcome_admin_refreshing": "Обновление...",
   "welcome_admin_title_default": "Проверка новичков",

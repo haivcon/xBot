@@ -1469,6 +1469,7 @@
   "welcome_admin_menu_closed": "✅ Closed welcome panel.",
   "welcome_admin_menu_opening": "Opening welcome verification controls...",
   "welcome_admin_no_permission": "❌ Only group admins can manage verification.",
+  "welcome_admin_bot_permissions_required": "❌ Give the bot permission to delete messages and restrict members before enabling Reactive verification.",
   "welcome_admin_rates": "Question mix: {math} math • {physics} physics • {chemistry} chemistry • {okx} OKX • {crypto} crypto",
   "welcome_admin_refreshing": "Updating...",
   "welcome_admin_title_default": "Welcome verification",

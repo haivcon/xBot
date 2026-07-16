@@ -1467,6 +1467,7 @@
   "welcome_admin_menu_closed": "✅ Panel sambutan ditutup.",
   "welcome_admin_menu_opening": "Membuka kontrol verifikasi pendatang...",
   "welcome_admin_no_permission": "❌ Hanya admin grup yang bisa mengatur verifikasi.",
+  "welcome_admin_bot_permissions_required": "❌ Berikan bot izin menghapus pesan dan membatasi anggota sebelum mengaktifkan verifikasi Reactive.",
   "welcome_admin_rates": "Kombinasi pertanyaan: {math} matematika • {physics} fisika • {chemistry} kimia • {okx} OKX • {crypto} crypto",
   "welcome_admin_refreshing": "Memperbarui...",
   "welcome_admin_title_default": "Verifikasi anggota baru",

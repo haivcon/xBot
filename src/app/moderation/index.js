@@ -71,6 +71,7 @@ async function getWelcomeVerificationSettings(chatId) {
         ...merged,
         ...weights,
         action,
+        mode: merged.mode === 'strict' ? 'strict' : 'reactive',
         titleTemplate: typeof merged.titleTemplate === 'string' ? merged.titleTemplate : '',
         enabled: Boolean(merged.enabled),
         timeLimitSeconds: Number.isFinite(Number(merged.timeLimitSeconds))

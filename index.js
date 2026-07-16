@@ -30,6 +30,7 @@ const crypto = require('crypto');
 const axios = require('axios');
 const { randomFortunes, resolveFortuneLang, formatFortuneEntry } = require('./data/randomFortunes');
 const db = require('./db');
+const { createWelcomeReactiveController } = require('./src/features/welcomeReactive');
 const { SCIENCE_TEMPLATES, SCIENCE_ENTRIES } = require('./data/scienceQuestions.js');
 const {
     chunkInlineButtons,
@@ -98,7 +99,9 @@ const {
     scheduleMessageDeletion,
     sendEphemeralMessage,
     rememberRmchatMessage,
-    purgeRmchatMessages
+    purgeRmchatMessages,
+    installUpdateIngress,
+    startTelegramTransport
 } = require('./src/core/bot');
 const { t, resolveLangCode } = require('./src/core/i18n');
 const { sanitizeSecrets } = require('./src/core/sanitize');
@@ -1434,11 +1437,31 @@ const {
     setWelcomeTitleTemplate,
     startCheckinScheduler,
     startWelcomeQueueProcessor,
+    recoverWelcomeAdmissions,
+    sweepWelcomeAdmissions,
     subtractDaysFromDate,
     syncAdminSummaryScheduleWithAuto,
     toggleWelcomeVerification,
     truncateLabel
 } = checkinRuntime;
+
+const welcomeReactiveController = createWelcomeReactiveController({
+    bot,
+    repository: db,
+    getSettings: getWelcomeVerificationSettings,
+    onAdmissionsCreated: async (admissions) => {
+        for (const admission of admissions) {
+            enqueueWelcomeVerification({
+                chatId: admission.chatId,
+                member: admission.member,
+                sourceMessage: admission.sourceMessage,
+                settings: admission.settings,
+                generation: admission.generation
+            });
+        }
+    }
+});
+installUpdateIngress((update, dispatch) => welcomeReactiveController.processUpdate(update, dispatch));
 
 const featureTopics = createFeatureTopicsHandlers({
     t,
@@ -2371,7 +2394,8 @@ function startTelegramBot() {
                 sendWelcomeAdminMenu, presentWelcomeTopics,
                 setWelcomeQuestionWeights, showWelcomeWeightMenu,
                 resetWelcomeTitleTemplate, toggleWelcomeVerification,
-                setWelcomeAction, getWelcomeVerificationSettings
+                setWelcomeAction, getWelcomeVerificationSettings,
+                botId: BOT_ID
             });
             return;
         }
@@ -3262,16 +3286,7 @@ function startTelegramBot() {
             const settings = getGroupSettings(chatId);
 
             if (msg.new_chat_members?.length) {
-                const welcomeConfig = await getWelcomeVerificationSettings(chatId);
-                for (const member of msg.new_chat_members) {
-                    if (!member || member.is_bot || (BOT_ID && member.id.toString() === BOT_ID.toString())) {
-                        continue;
-                    }
-                    if (welcomeConfig.enabled) {
-                        enqueueWelcomeVerification({ chatId, member, sourceMessage: msg, settings: welcomeConfig });
-                    }
-                }
-
+                // Reactive verification admission is persisted by the pre-dispatch ingress.
                 const welcome = settings.welcomeMessage;
                 if (welcome) {
                     const member = msg.new_chat_members[0];
@@ -3608,11 +3623,20 @@ async function main() {
         startHotReload(commandDeps);
         logger.child('CommandSystem').info(`Loaded ${commandRegistry.size} modular commands`);
 
-        // Bước 2: Bật API
-        startApiServer();
-
-        // Bước 3: Bật Bot
+        // Bước 2: Đăng ký toàn bộ handler trước khi nhận Telegram updates.
         startTelegramBot();
+        startWelcomeQueueProcessor();
+        await recoverWelcomeAdmissions();
+        const welcomeSweepTimer = setInterval(() => {
+            sweepWelcomeAdmissions().catch((error) => {
+                log.child('WelcomeVerify').error(`Recovery sweep failed: ${error.message}`);
+            });
+        }, CHECKIN_SCHEDULER_INTERVAL);
+        if (typeof welcomeSweepTimer.unref === 'function') welcomeSweepTimer.unref();
+
+        // Bước 3: Bật transport sau migration, recovery và ingress guard.
+        startApiServer();
+        await startTelegramTransport();
         startCheckinScheduler();
         startPriceAlertScheduler();
 

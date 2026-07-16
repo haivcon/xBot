@@ -24,6 +24,7 @@ const scheduledPosts = require('./scheduledPosts');
 const preferences = require('./preferences');
 const tradeHistory = require('./tradeHistory');
 const scheduledReports = require('./scheduledReports');
+const welcomeAdmissions = require('./welcomeAdmissions');
 const schema = require('./schema');
 
 module.exports = {
@@ -72,6 +73,9 @@ module.exports = {
     // Scheduled Reports
     ...scheduledReports,
 
+    // Durable Reactive welcome verification
+    ...welcomeAdmissions,
+
     // Schema - init function
     ...schema,
 
@@ -92,6 +96,7 @@ module.exports = {
         preferences,
         tradeHistory,
         scheduledReports,
+        welcomeAdmissions,
         schema
     }
 };

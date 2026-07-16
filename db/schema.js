@@ -54,6 +54,50 @@ async function init() {
         updatedAt INTEGER
     )`);
 
+    // Durable Reactive welcome verification lifecycle.
+    await dbRun(`CREATE TABLE IF NOT EXISTS welcome_admissions (
+        chatId TEXT NOT NULL,
+        userId TEXT NOT NULL,
+        generation TEXT NOT NULL,
+        state TEXT NOT NULL,
+        token TEXT,
+        correctIndex INTEGER,
+        attempts INTEGER DEFAULT 0,
+        maxAttempts INTEGER,
+        expiresAt INTEGER,
+        action TEXT,
+        lang TEXT,
+        displayName TEXT,
+        challengeMessageId INTEGER,
+        joinUpdateId TEXT,
+        violationUpdateId TEXT,
+        violationMessageId INTEGER,
+        memberJson TEXT DEFAULT '{}',
+        sourceMessageJson TEXT,
+        settingsJson TEXT DEFAULT '{}',
+        lastError TEXT,
+        enforcementLeaseUntil INTEGER,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        PRIMARY KEY (chatId, userId)
+    )`);
+    await dbRun(`CREATE UNIQUE INDEX IF NOT EXISTS idx_welcome_admissions_token
+        ON welcome_admissions(token) WHERE token IS NOT NULL`);
+    await dbRun(`CREATE INDEX IF NOT EXISTS idx_welcome_admissions_state_expiry
+        ON welcome_admissions(state, expiresAt)`);
+    await dbRun(`CREATE TABLE IF NOT EXISTS welcome_processed_updates (
+        updateId TEXT PRIMARY KEY,
+        kind TEXT NOT NULL,
+        chatId TEXT,
+        userId TEXT,
+        createdAt INTEGER NOT NULL
+    )`);
+    await dbRun(`CREATE INDEX IF NOT EXISTS idx_welcome_processed_updates_created
+        ON welcome_processed_updates(createdAt)`);
+    try {
+        await dbRun(`ALTER TABLE welcome_admissions ADD COLUMN enforcementLeaseUntil INTEGER`);
+    } catch (e) { /* Column likely exists already */ }
+
     // Group profiles
     await dbRun(`CREATE TABLE IF NOT EXISTS group_profiles (
         chatId TEXT PRIMARY KEY,

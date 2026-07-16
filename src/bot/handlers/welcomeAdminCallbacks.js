@@ -5,6 +5,13 @@
 const logger = require('../../core/logger');
 const log = logger.child('WelcomeAdmin');
 
+function hasWelcomeBotPermissions(member) {
+    return member?.status === 'creator'
+        || (member?.status === 'administrator'
+            && member.can_delete_messages === true
+            && member.can_restrict_members === true);
+}
+
 async function handleWelcomeAdminCallback(query, ctx, deps) {
     const { bot, t, isGroupAdmin, welcomeAdminStates, welcomeAdminMenus,
         sendWelcomeAdminMenu, presentWelcomeTopics,
@@ -92,7 +99,19 @@ async function handleWelcomeAdminCallback(query, ctx, deps) {
             return;
         }
         const settings = await getWelcomeVerificationSettings(targetChatId);
-        await toggleWelcomeVerification(targetChatId, query.from.id, !settings.enabled, { fallbackLang: callbackLang });
+        const nextEnabled = !settings.enabled;
+        if (nextEnabled) {
+            const resolvedBotId = deps.botId || (await bot.getMe()).id;
+            const botMember = await bot.getChatMember(targetChatId, resolvedBotId);
+            if (!hasWelcomeBotPermissions(botMember)) {
+                await bot.answerCallbackQuery(queryId, {
+                    text: t(callbackLang, 'welcome_admin_bot_permissions_required'),
+                    show_alert: true
+                });
+                return;
+            }
+        }
+        await toggleWelcomeVerification(targetChatId, query.from.id, nextEnabled, { fallbackLang: callbackLang });
         await bot.answerCallbackQuery(queryId, { text: t(callbackLang, 'welcome_admin_refreshing') });
         return;
     }
@@ -325,3 +344,4 @@ async function handleWelcomeAdminCallback(query, ctx, deps) {
 }
 
 module.exports = handleWelcomeAdminCallback;
+module.exports.hasWelcomeBotPermissions = hasWelcomeBotPermissions;
