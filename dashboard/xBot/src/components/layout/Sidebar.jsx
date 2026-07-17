@@ -29,16 +29,16 @@ import {
     Search,
     PieChart,
     Gamepad2,
-    Brain,
+
     CalendarCheck,
     Zap,
     Compass,
     ChevronRight,
     Sparkles,
-    TrendingUp,
+
     Building2,
     Cat,
-    Copy,
+
 } from 'lucide-react';
 import useThemeStore from '@/stores/themeStore';
 
@@ -225,9 +225,6 @@ export default function Sidebar({ open, onClose }) {
             icon: Bot,
             items: [
                 { to: '/chat', icon: Bot, label: t('dashboard.sidebar.aiChat') || 'AI Chat' },
-                { to: '/ai-trader', icon: TrendingUp, label: t('dashboard.sidebar.aiTrader') || 'AI Trader', badge: 'β' },
-                { to: '/okx-ai', icon: Brain, label: t('dashboard.sidebar.okxai') || 'OKX.AI Bridge', badge: 'AI' },
-                { to: '/smart-copy', icon: Copy, label: 'Smart Copy', badge: '★' },
             ],
         },
         {

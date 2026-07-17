@@ -34,10 +34,7 @@ const PortfolioPage = lazy(() => import('@/pages/user/PortfolioPage'));
 const CheckinAdminPage = lazy(() => import('@/pages/owner/CheckinAdminPage'));
 const MemeScannerPage = lazy(() => import('@/pages/user/MemeScannerPage'));
 const DiscoveryPage = lazy(() => import('@/pages/user/DiscoveryPage'));
-const AiTraderPage = lazy(() => import('@/pages/user/AiTraderPage'));
 const UserGroupsPage = lazy(() => import('@/pages/user/UserGroupsPage'));
-const SmartCopyPage = lazy(() => import('@/pages/user/SmartCopyPage'));
-const OKXAIPage = lazy(() => import('@/pages/user/OKXAIPage'));
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 const SharedChatPage = lazy(() => import('@/pages/SharedChatPage'));
@@ -143,12 +140,12 @@ export default function App() {
                     <Route path="portfolio" element={<SuspenseWrapper><PortfolioPage /></SuspenseWrapper>} />
 
                     <Route path="ai-memory" element={<Navigate to="/chat" />} />
-                    <Route path="ai-trader" element={<SuspenseWrapper><AiTraderPage /></SuspenseWrapper>} />
-                    <Route path="okx-ai" element={<SuspenseWrapper><OKXAIPage /></SuspenseWrapper>} />
+                    <Route path="ai-trader" element={<Navigate to="/chat" />} />
+                    <Route path="okx-ai" element={<Navigate to="/chat" />} />
                     <Route path="meme-scanner" element={<Navigate to="/trading" />} />
                     <Route path="discovery" element={<SuspenseWrapper><DiscoveryPage /></SuspenseWrapper>} />
                     <Route path="my-groups" element={<SuspenseWrapper><UserGroupsPage /></SuspenseWrapper>} />
-                    <Route path="smart-copy" element={<SuspenseWrapper><SmartCopyPage /></SuspenseWrapper>} />
+                    <Route path="smart-copy" element={<Navigate to="/chat" />} />
                     <Route path="checkin-admin" element={isOwnerView() ? <SuspenseWrapper><CheckinAdminPage /></SuspenseWrapper> : <Navigate to="/" />} />
                     <Route path="audit-log" element={isOwnerView() ? <SuspenseWrapper><AuditLogPage /></SuspenseWrapper> : <Navigate to="/" />} />
                     {/* 404 */}

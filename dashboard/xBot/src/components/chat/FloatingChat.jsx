@@ -80,6 +80,7 @@ export default function FloatingChat() {
                         return copy;
                     });
                 },
+                onApprovalRequired: data => api.confirmHermesApproval(data),
                 onDone: (data) => {
                     setConversationId(data.conversationId);
                     if (!open) setUnread(prev => prev + 1);

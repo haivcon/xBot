@@ -328,7 +328,22 @@ class ApiClient {
     }
 
     // SSE streaming chat
-    async streamChatMessage(message, conversationId, { onTextDelta, onToolStart, onToolResult, onDone, onError, image, model, provider, persona, userApiKey, customPersonaText, signal } = {}) {
+    approveHermesRun(runId, choice) {
+        return this.post(`/ai/chat/hermes/${encodeURIComponent(runId)}/approval`, { choice });
+    }
+
+    async confirmHermesApproval(data) {
+        const runId = typeof data?.runId === 'string' ? data.runId : '';
+        const choices = Array.isArray(data?.choices) ? data.choices : [];
+        if (!runId || !choices.includes('deny')) throw new Error('Invalid Hermes approval request');
+        const command = String(data?.command || 'Hermes requested an action').slice(0, 500);
+        const approved = choices.includes('once') && window.confirm(
+            `Hermes requests permission to run:\n\n${command}\n\nOK: approve once. Cancel: deny.`
+        );
+        return this.approveHermesRun(runId, approved ? 'once' : 'deny');
+    }
+
+    async streamChatMessage(message, conversationId, { onTextDelta, onToolStart, onToolResult, onApprovalRequired, onDone, onError, image, model, provider, persona, userApiKey, customPersonaText, signal } = {}) {
         const headers = {
             'Content-Type': 'application/json',
             ...useAuthStore.getState().getHeaders(),
@@ -362,14 +377,14 @@ class ApiClient {
                 if (trimmed.startsWith('event: ')) {
                     currentEvent = trimmed.slice(7).trim();
                 } else if (trimmed.startsWith('data: ') && currentEvent) {
-                    try {
-                        const data = JSON.parse(trimmed.slice(6));
-                        if (currentEvent === 'text-delta') onTextDelta?.(data.text);
-                        else if (currentEvent === 'tool-start') onToolStart?.(data);
-                        else if (currentEvent === 'tool-result') onToolResult?.(data);
-                        else if (currentEvent === 'done') onDone?.(data);
-                        else if (currentEvent === 'error') onError?.(data);
-                    } catch {}
+                    let data;
+                    try { data = JSON.parse(trimmed.slice(6)); } catch { currentEvent = ''; continue; }
+                    if (currentEvent === 'text-delta') onTextDelta?.(data.text);
+                    else if (currentEvent === 'tool-start') onToolStart?.(data);
+                    else if (currentEvent === 'tool-result') onToolResult?.(data);
+                    else if (currentEvent === 'approval-required') await onApprovalRequired?.(data);
+                    else if (currentEvent === 'done') onDone?.(data);
+                    else if (currentEvent === 'error') onError?.(data);
                     currentEvent = '';
                 } else if (trimmed === '') {
                     currentEvent = '';

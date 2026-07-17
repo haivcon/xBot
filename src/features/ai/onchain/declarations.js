@@ -730,19 +730,14 @@ module.exports.ONCHAIN_TOOLS = [
                 description: 'Run a comprehensive AI deep research analysis on a token. Calls 10+ APIs to produce a detailed report with Technical Score, Safety Score, Whale Interest, and AI Verdict. Vietnamese: "phân tích sâu", "research token", "đánh giá token". Use when user wants a thorough, multi-dimensional analysis beyond simple price/info.',
                 parameters: { type: 'object', properties: { chainIndex: { type: 'string', description: 'Chain ID. Default "196"' }, tokenContractAddress: { type: 'string', description: 'Token contract address OR symbol' } }, required: ['chainIndex', 'tokenContractAddress'] }
             },
-            // Auto Trading has been removed
+
             // ── Idea #9: Cross-Chain Arbitrage Scanner ──
             {
                 name: 'scan_arbitrage',
                 description: 'Scan for cross-chain price arbitrage opportunities. Compares the same token price across multiple chains and calculates net profit after gas. Vietnamese: "tìm chênh lệch giá", "arbitrage", "kiếm lời xuyên chuỗi".',
                 parameters: { type: 'object', properties: { tokenSymbol: { type: 'string', description: 'Token symbol to scan (e.g. "ETH", "USDT")' }, chains: { type: 'string', description: 'Comma-separated chain IDs. Default "1,56,196,137,42161,8453"' } }, required: ['tokenSymbol'] }
             },
-            // ── Idea #5: Copy Trading ──
-            {
-                name: 'manage_copy_trading',
-                description: 'Social copy trading — follow top traders and auto-copy their trades. Actions: register (become leader), follow, unfollow, leaderboard, my_followers. Vietnamese: "copy trade", "theo dõi trader", "bảng xếp hạng", "leader", "đăng ký copy".',
-                parameters: { type: 'object', properties: { action: { type: 'string', description: '"register", "follow", "unfollow", "leaderboard", "my_followers", "status"' }, leaderId: { type: 'string', description: 'Leader user ID (for follow/unfollow)' }, walletAddress: { type: 'string', description: 'Your wallet address (for register as leader)' }, maxCopyAmount: { type: 'string', description: 'Max USD to copy per trade. Default "10"' } }, required: ['action'] }
-            },
+
             // ── Idea #7: Agent Marketplace ──
             {
                 name: 'browse_marketplace',
@@ -1005,15 +1000,7 @@ module.exports.ONCHAIN_TOOLS = [
                 description: 'Quick check on AI Treasury Governor status — running state, last action, portfolio value. Vietnamese: "trạng thái quỹ", "treasury đang chạy không", "thủ quỹ thế nào". English: "treasury status", "fund status", "governor running?".',
                 parameters: { type: 'object', properties: {}, required: [] }
             },
-            // ══════════════════════════════════════════
-            // Smart Copy Engine (Intent-based Copy-Trading)
-            // ══════════════════════════════════════════
-            {
-                name: 'smart_copy',
-                description: 'AI Smart Copy-Trader — automatically copies whale and Smart Money trades on X Layer. Actions: start, stop, status, leaders, discover. Vietnamese: "copy trade", "copy cá mập", "sao chép giao dịch", "theo dõi whale", "copy trade X Layer". English: "copy trade", "smart copy", "copy whale", "follow traders".',
-                parameters: { type: 'object', properties: { action: { type: 'string', description: '"start", "stop", "status", "leaders", "discover"' }, budgetUsd: { type: 'number', description: 'Total budget in USD (default 50)' }, maxPerTradeUsd: { type: 'number', description: 'Max amount per copy trade (default 10)' }, maxLeaders: { type: 'number', description: 'Number of leaders to track (default 5)' }, chainIndex: { type: 'string', description: 'Chain ID (default 196 = X Layer)' } }, required: ['action'] }
-            },
-            // ══════════════════════════════════════════
+
             // Banmao Onchain Tamagotchi (AI Pet)
             // ══════════════════════════════════════════
             {

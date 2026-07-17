@@ -1,0 +1,22 @@
+{
+  "lockVersion": 1,
+  "repository": "https://github.com/okx/onchainos-skills",
+  "commit": "0000000000000000000000000000000000000000",
+  "artifact": {
+    "source": "https://github.com/okx/onchainos-skills/archive/0000000000000000000000000000000000000000.tar.gz",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "compatibility": {
+    "schemaVersion": 1,
+    "artifactVersion": "0.0.0-unconfigured",
+    "adapterVersion": "1.0.0"
+  },
+  "licenseReview": {
+    "approved": false,
+    "redistributionApproved": false,
+    "license": "UNREVIEWED",
+    "reviewer": "",
+    "reviewedAt": null,
+    "note": "Fail-closed placeholder: replace commit and artifact SHA-256, then record an authorized license and redistribution review before promotion."
+  }
+}

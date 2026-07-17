@@ -13,11 +13,100 @@ const log = logger.child('WebChat');
 const { GEMINI_API_KEYS, GEMINI_MODEL, GEMINI_MODEL_FAMILIES, OPENAI_API_KEYS, OPENAI_MODEL, OPENAI_MODEL_FAMILIES, GROQ_API_KEYS, GROQ_MODEL_FAMILIES, GROQ_API_URL, NINEROUTER_API_KEY, NINEROUTER_MODEL, NINEROUTER_MODELS_URL, NINEROUTER_CHAT_COMPLETIONS_URL } = require('../config/env');
 const { ONCHAIN_TOOLS, executeToolCall, buildSystemInstruction } = require('../features/ai/ai-onchain');
 const { WEB_TOOL_DECLARATIONS, executeWebToolCall } = require('./webToolExecutor');
-const { toGeminiFunctionDeclarations: getOkxAiGeminiDeclarations, executeOkxAiTool, isOkxAiToolName } = require('../features/ai/okxaiTools');
+
 const { buildAIAPrompt } = require('../config/prompts');
 const { t } = require('../core/i18n');
 const db = require('../../db.js');
 const crypto = require('crypto');
+const { createChatOrchestrator, parseCostOptions } = require('../services/chatOrchestrator');
+const { createToolPolicy } = require('../services/chatOrchestrator/policy');
+const { createHermesClient } = require('../services/hermes/client');
+
+const CHAT_V2_READ_ONLY_TOOLS = new Set([
+    'ai_portfolio_report', 'analyze_sentiment', 'analyze_token', 'aw_balance', 'aw_history',
+    'backtest_strategy', 'browse_marketplace', 'calculate_profit_roi', 'check_airdrop_eligibility',
+    'check_approval_safety', 'check_favorite_prices', 'check_multi_wallet_balances', 'check_scam',
+    'check_token_vesting', 'check_wallet_balance_direct', 'compare_cex_dex_price', 'compare_tokens',
+    'deep_research_token', 'defi_detail', 'defi_position_detail', 'defi_positions', 'defi_search',
+    'detect_narratives', 'estimate_gas_limit', 'filter_wallets_by_tag', 'generate_tax_report',
+    'get_address_tracker', 'get_gas_price', 'get_historical_candles', 'get_historical_index_price',
+    'get_holder_cluster', 'get_hot_tokens', 'get_index_price', 'get_liquidity', 'get_market_candles',
+    'get_meme_detail', 'get_meme_dev_info', 'get_meme_list', 'get_optimal_gas', 'get_order_status',
+    'get_portfolio_dex_history', 'get_portfolio_overview', 'get_portfolio_pnl', 'get_recent_trades',
+    'get_signal_chains', 'get_signal_list', 'get_similar_memes', 'get_smart_trades',
+    'get_specific_token_balances', 'get_swap_history', 'get_swap_quote', 'get_token_audit',
+    'get_token_holders', 'get_token_info', 'get_token_liquidity_pools', 'get_token_market_detail',
+    'get_token_price', 'get_token_security', 'get_top_tokens', 'get_top_traders',
+    'get_trader_leaderboard', 'get_trading_wallet_balance', 'get_tx_detail', 'get_tx_history',
+    'get_wallet_balance', 'get_wallet_pnl', 'get_weather', 'list_favorite_pairs', 'list_price_alerts',
+    'list_trading_wallets', 'lookup_contract', 'lookup_transaction', 'scan_arbitrage',
+    'scan_wallet_security', 'search_token', 'simulate_batch_swap', 'simulate_transaction',
+    'treasury_status'
+]);
+
+function createChatV2ToolPolicy(toolDeclarations) {
+    const tools = Object.fromEntries(toolDeclarations.map(tool => [
+        tool?.function?.name,
+        { risk: CHAT_V2_READ_ONLY_TOOLS.has(tool?.function?.name) ? 'low' : 'high' }
+    ]).filter(([name]) => Boolean(name)));
+    return createToolPolicy({ tools });
+}
+
+let chatOrchestratorV2;
+function getChatOrchestratorV2() {
+    if (chatOrchestratorV2) return chatOrchestratorV2;
+    const baseUrl = (NINEROUTER_CHAT_COMPLETIONS_URL || '').replace(/\/chat\/completions$/, '');
+    let hermesClient;
+    if (process.env.HERMES_ENABLED === 'true') {
+        hermesClient = createHermesClient({
+            baseUrl: process.env.HERMES_INTERNAL_URL,
+            serviceToken: process.env.HERMES_SERVICE_TOKEN,
+            contextSecret: process.env.HERMES_CONTEXT_SECRET,
+            timeoutMs: Number(process.env.HERMES_TIMEOUT_MS || 60000)
+        });
+    }
+    const toolDeclarations = convertToolsToOpenAI(getToolDeclarations());
+    const costOptions = parseCostOptions(
+        process.env.CHAT_ORCHESTRATOR_MAX_COST_USD,
+        process.env.CHAT_ORCHESTRATOR_MODEL_COSTS_JSON
+    );
+    chatOrchestratorV2 = createChatOrchestrator({
+        baseUrl,
+        serviceCredential: process.env.NINEROUTER_SERVICE_TOKEN || NINEROUTER_API_KEY,
+        allowedModels: (process.env.CHAT_ORCHESTRATOR_MODELS || NINEROUTER_MODEL || '').split(',').map(v => v.trim()).filter(Boolean),
+        timeoutMs: Number(process.env.CHAT_ORCHESTRATOR_TIMEOUT_MS || 60000),
+        maxConcurrentPerTenant: Number(process.env.CHAT_ORCHESTRATOR_TENANT_CONCURRENCY || 2),
+        rateLimitPerMinute: Number(process.env.CHAT_ORCHESTRATOR_TENANT_RATE_LIMIT || 15),
+        maxInputTokens: Number(process.env.CHAT_ORCHESTRATOR_MAX_INPUT_TOKENS || 25000),
+        maxOutputTokens: Number(process.env.CHAT_ORCHESTRATOR_MAX_OUTPUT_TOKENS || 8192),
+        ...costOptions,
+        circuitFailureThreshold: Number(process.env.CHAT_ORCHESTRATOR_CIRCUIT_FAILURES || 5),
+        circuitResetMs: Number(process.env.CHAT_ORCHESTRATOR_CIRCUIT_RESET_MS || 30000),
+        tools: toolDeclarations,
+        toolPolicy: createChatV2ToolPolicy(toolDeclarations),
+        maxToolRounds: MAX_TOOL_ROUNDS,
+        executeTool: async envelope => {
+            const ctx = {
+                userId: envelope.userId,
+                lang: 'en',
+                isGroup: false,
+                isAdmin: false,
+                chatId: envelope.userId,
+                isWeb: true,
+                isTelegramContext: false
+            };
+            const functionCall = { name: envelope.toolName, args: envelope.args };
+            let result = await executeWebToolCall(functionCall, ctx);
+            if (result === undefined) result = await executeToolCall(functionCall, ctx);
+            if (result === undefined) return { error: `Tool ${envelope.toolName} is not available.` };
+            if (result?.displayMessage) result.displayMessage = htmlToMarkdown(result.displayMessage);
+            return result;
+        },
+        hermesEnabled: process.env.HERMES_ENABLED === 'true',
+        hermesClient
+    });
+    return chatOrchestratorV2;
+}
 
 // Debug: verify tools loaded correctly
 log.info(`ONCHAIN_TOOLS loaded: ${Array.isArray(ONCHAIN_TOOLS) ? ONCHAIN_TOOLS.length + ' tool groups' : 'FAILED'}, total declarations: ${Array.isArray(ONCHAIN_TOOLS) ? ONCHAIN_TOOLS.reduce((sum, g) => sum + (g.functionDeclarations?.length || 0), 0) : 0}`);
@@ -255,12 +344,8 @@ function getToolDeclarations() {
     for (const decl of onchainDecls) {
         if (decl?.name && !seen.has(decl.name)) { seen.add(decl.name); merged.push(decl); }
     }
-    const okxaiDecls = getOkxAiGeminiDeclarations();
-    for (const decl of okxaiDecls) {
-        if (decl?.name && !seen.has(decl.name)) { seen.add(decl.name); merged.push(decl); }
-    }
     _cachedToolDeclarations = [{ functionDeclarations: merged }];
-    log.info(`[Tools] Merged: ${merged.length} declarations (${WEB_TOOL_DECLARATIONS.length} web + ${onchainDecls.length} onchain + ${okxaiDecls.length} okxai, deduped)`);
+    log.info(`[Tools] Merged: ${merged.length} declarations (${WEB_TOOL_DECLARATIONS.length} web + ${onchainDecls.length} onchain, deduped)`);
     return _cachedToolDeclarations;
 }
 
@@ -432,11 +517,8 @@ function createChatRoutes() {
 
                     let result;
                     try {
-                        // Try web tools first, then OKX.AI bridge tools, then fall back to onchain tools
+                        // Try web tools first, then fall back to onchain tools
                         result = await executeWebToolCall(fc, context);
-                        if (result === undefined && isOkxAiToolName(fc.name)) {
-                            result = await executeOkxAiTool(fc.name, fc.args || {}, context);
-                        }
                         if (result === undefined) {
                             result = await executeToolCall(fc, context);
                         }
@@ -698,6 +780,39 @@ function createChatRoutes() {
     });
 
     /**
+     * POST /chat/hermes/:runId/approval
+     * Resume a pending Hermes run. Identity always comes from dashboard auth;
+     * the orchestrator binds it to the exact pending run and offered choices.
+     */
+    router.post('/chat/hermes/:runId/approval', async (req, res) => {
+        const userId = req.dashboardUser?.userId?.toString();
+        if (!userId) return res.status(401).json({ error: 'Authentication required' });
+        if (process.env.CHAT_ORCHESTRATOR_V2 !== 'true' || process.env.HERMES_ENABLED !== 'true') {
+            return res.status(503).json({ error: 'Hermes is not enabled' });
+        }
+        const runId = String(req.params.runId || '').trim();
+        const choice = String(req.body?.choice || '').trim();
+        if (!runId || runId.length > 256) return res.status(400).json({ error: 'Invalid run ID' });
+        if (!['once', 'deny'].includes(choice)) return res.status(400).json({ error: 'Invalid approval choice' });
+        try {
+            const result = await getChatOrchestratorV2().approveHermesRun({
+                tenantId: String(req.dashboardUser?.tenantId || userId),
+                userId,
+                runId,
+                choice
+            });
+            return res.json({ ok: true, status: result?.status || 'running' });
+        } catch (error) {
+            const status = error?.code === 'RUN_TENANT_MISMATCH' ? 403 :
+                error?.code === 'APPROVAL_NOT_PENDING' ? 409 :
+                    error?.code === 'APPROVAL_IN_PROGRESS' ? 409 :
+                        error?.code === 'APPROVAL_CHOICE_INVALID' ? 400 : 502;
+            log.warn(`[Hermes Approval] Rejected (${error?.code || 'UNKNOWN'})`);
+            return res.status(status).json({ error: status === 502 ? 'Hermes approval failed' : error.message });
+        }
+    });
+
+    /**
      * POST /chat/stream
      * SSE streaming endpoint — sends text chunks in real-time
      */
@@ -771,7 +886,8 @@ function createChatRoutes() {
         // Handle client abort — use res.on('close'), NOT req.on('close')
         // req 'close' fires prematurely on Windows after POST body is received
         let aborted = false;
-        res.on('close', () => { aborted = true; });
+        const streamAbortController = new AbortController();
+        res.on('close', () => { aborted = true; streamAbortController.abort(); });
 
         try {
             const provider = requestedProviderIsNineRouter ? '9router' : detectProviderFromModel(useModel);
@@ -846,6 +962,61 @@ function createChatRoutes() {
                 ? `\n\n---\n🎭 REMINDER — STAY IN CHARACTER:\n${personaText}\nEvery response must reflect this personality in tone, word choice, and style. Never revert to generic assistant mode.`
                 : '';
             const fullSystemPrompt = personaHeader + sysInstr + '\n\n' + aiaPrompt + dashboardNote + prefsCtx + personaFooter;
+
+            // V2 owns only server-credential 9Router/Hermes traffic. BYOK, images, and
+            // other providers stay on the established Chat AI path below.
+            const useOrchestratorV2 = process.env.CHAT_ORCHESTRATOR_V2 === 'true' &&
+                provider === '9router' && !userApiKey && !image;
+            if (useOrchestratorV2) {
+                if (!session) session = { id: sessionKey, userId, title: message.trim().substring(0, 60), messages: [], createdAt: Date.now(), updatedAt: Date.now() };
+                const messages = [{ role: 'system', content: fullSystemPrompt }];
+                for (const item of (session.messages || [])) {
+                    messages.push({ role: item.role === 'model' ? 'assistant' : item.role, content: item.content || '' });
+                }
+                messages.push({ role: 'user', content: message.trim() });
+                let emitted = false;
+                try {
+                    const result = await getChatOrchestratorV2().streamChat({
+                        // Tenant identity is derived from the signed dashboard principal,
+                        // never from request input. Current single-user tenants use userId.
+                        tenantId: String(req.dashboardUser?.tenantId || userId),
+                        userId,
+                        model: NINEROUTER_MODEL,
+                        messages,
+                        requestId: crypto.createHash('sha256')
+                            .update(`${sessionKey}:${session.messages.length}:${message.trim()}`)
+                            .digest('hex')
+                    }, {
+                        signal: streamAbortController.signal,
+                        onEvent: event => {
+                            if (event.type === 'done') return;
+                            emitted = true;
+                            sendEvent(event.type, event.data);
+                        }
+                    });
+                    if (!result.completed) {
+                        res.end();
+                        return;
+                    }
+                    session.messages = messages
+                        .filter(item => item.role === 'user' || item.role === 'assistant')
+                        .concat(result.text ? [{ role: 'assistant', content: result.text }] : [])
+                        .slice(-SESSION_MAX_MESSAGES);
+                    session.updatedAt = Date.now();
+                    await saveSession(session);
+                    sendEvent('done', { conversationId: sessionKey, title: session.title, engine: result.engine });
+                    res.end();
+                    return;
+                } catch (error) {
+                    // Never continue through legacy after V2 was selected: that could
+                    // evade V2 policy or duplicate partial work. The feature flag is the
+                    // rollback; Hermes availability fallback happens inside V2.
+                    log.warn(`[Stream][V2] Request failed (${error?.code || 'UNKNOWN'}, emitted=${emitted})`);
+                    if (!aborted) sendEvent('error', { error: 'AI service unavailable. Please try again.' });
+                    res.end();
+                    return;
+                }
+            }
 
             // ══════════ 9ROUTER ══════════
             if (provider === '9router') {
@@ -948,13 +1119,11 @@ function createChatRoutes() {
                         try { args = JSON.parse(tc.args || '{}'); } catch {}
                         sendEvent('tool-start', { name: tc.name, args });
 
+                        const functionCall = { name: tc.name, args };
                         let res2;
-                        try { res2 = await executeWebToolCall({ functionCall: { name: tc.name, args } }, ctx); } catch {}
-                        if (res2 === undefined && isOkxAiToolName(tc.name)) {
-                            try { res2 = await executeOkxAiTool(tc.name, args, ctx); } catch (e) { res2 = { error: e.message }; }
-                        }
+                        try { res2 = await executeWebToolCall(functionCall, ctx); } catch {}
                         if (res2 === undefined) {
-                            try { res2 = await executeToolCall({ functionCall: { name: tc.name, args } }, ctx); } catch {}
+                            try { res2 = await executeToolCall(functionCall, ctx); } catch {}
                         }
                         if (res2 === undefined) res2 = { error: `Tool ${tc.name} not available.` };
                         if (res2?.displayMessage) res2.displayMessage = htmlToMarkdown(res2.displayMessage);
@@ -1086,9 +1255,6 @@ function createChatRoutes() {
 
                     let result;
                     result = await executeWebToolCall(fc, context);
-                    if (!result && isOkxAiToolName(fc.name)) {
-                        try { result = await executeOkxAiTool(fc.name, fc.args || {}, context); } catch {}
-                    }
                     if (!result) {
                         // Fallback to onchain tools safely (same as main endpoint)
                         try { result = await executeToolCall(fc, context); } catch {}
@@ -1212,9 +1378,8 @@ function createChatRoutes() {
                     for (const tc of valid) {
                         let args = {}; try { args = JSON.parse(tc.args || '{}'); } catch {}
                         sendEvent('tool-start', { name: tc.name, args });
-                        let res2; try { res2 = await executeWebToolCall(tc.name, args, ctx); } catch {}
-                        if (!res2 && isOkxAiToolName(tc.name)) try { res2 = await executeOkxAiTool(tc.name, args, ctx); } catch {}
-                        if (!res2) try { res2 = await executeToolCall({ functionCall: { name: tc.name, args } }, ctx); } catch {}
+                        let res2; try { res2 = await executeWebToolCall({ name: tc.name, args }, ctx); } catch {}
+                        if (res2 === undefined) try { res2 = await executeToolCall({ name: tc.name, args }, ctx); } catch {}
                         if (!res2) res2 = { error: `Tool ${tc.name} not available.` };
                         if (res2?.displayMessage) res2.displayMessage = htmlToMarkdown(res2.displayMessage);
                         const rs = typeof res2 === 'string' ? res2 : JSON.stringify(res2)?.substring(0, 500);
@@ -1602,7 +1767,6 @@ function createChatRoutes() {
         }
     });
 
-    // Auto Trading routes removed
 
     return router;
 }

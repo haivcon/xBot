@@ -1020,7 +1020,7 @@ function createMarketRoutes() {
     });
 
     // ════════════════════════════════════════
-    // Wallet Balance (AI Trader wallet selector)
+    // Wallet Balance (shared wallet selector)
     // ════════════════════════════════════════
     router.get('/wallet/balance', async (req, res) => {
         try {
@@ -1036,7 +1036,7 @@ function createMarketRoutes() {
     });
 
     // ════════════════════════════════════════
-    // Token Search & Info (AI Trader Step 2)
+    // Token Search & Info
     // ════════════════════════════════════════
 
     router.get('/wallet/tokens', async (req, res) => {

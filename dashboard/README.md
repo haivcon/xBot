@@ -55,7 +55,7 @@
 ### Dashboard Core
 - **Auth**: Telegram Login Widget + bot deep link one-time token
 - **Owner Pages**: Dashboard, Users, Groups, Analytics, Alerts, Posts, Config
-- **User Pages**: Profile, Wallets, Trading, Leaderboard, Settings, AI Trader, Chat
+- **User Pages**: Profile, Wallets, Trading, Leaderboard, Settings, Chat AI
 - **Real-time**: WebSocket auto-reconnect for live updates
 - **i18n**: 6 languages via react-i18next
 - **PWA**: Service worker, manifest.json, offline-capable

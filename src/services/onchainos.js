@@ -20,34 +20,28 @@ const {
 } = require('../config');
 const okxKeyManager = require('../utils/okxKeyManager');
 
-// ─── Shared test API key (fallback for development/testing only) ───
-const SANDBOX_API_KEY = '03f0b376-251c-4618-862e-ae92929e0416';
-const SANDBOX_SECRET_KEY = '652ECE8FF13210065B0851FFDA9191F7';
-const SANDBOX_PASSPHRASE = 'onchainOS#666';
-
 function getCredentials() {
-    if (hasOkxCredentials) {
-        try {
-            const creds = okxKeyManager.getCredentials();
-            if (creds) return creds;
-        } catch (e) {
-            if (e.message === 'ALL_OKX_KEYS_EXHAUSTED') {
-                e.retryable = false; // Fail fast, break the retry loop
-                throw e;
-            }
-        }
-        return {
-            apiKey: OKX_API_KEY,
-            secretKey: OKX_SECRET_KEY,
-            passphrase: OKX_API_PASSPHRASE
+    if (!hasOkxCredentials) {
+        throw {
+            code: 'ONCHAINOS_CREDENTIALS_REQUIRED',
+            msg: 'OnchainOS credentials are not configured',
+            retryable: false
         };
     }
-    log.child('OKXWARNING').warn('Using SANDBOX API keys! Set OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE in .env for production.');
-    return {
-        apiKey: SANDBOX_API_KEY,
-        secretKey: SANDBOX_SECRET_KEY,
-        passphrase: SANDBOX_PASSPHRASE
-    };
+    try {
+        const creds = okxKeyManager.getCredentials();
+        if (creds) return creds;
+    } catch (error) {
+        if (error.message === 'ALL_OKX_KEYS_EXHAUSTED') {
+            error.retryable = false;
+            throw error;
+        }
+        throw error;
+    }
+    const apiKey = OKX_API_KEY;
+    const secretKey = OKX_SECRET_KEY;
+    const passphrase = OKX_API_PASSPHRASE;
+    return { apiKey, secretKey, passphrase };
 }
 
 // ─── Core fetch with HMAC-SHA256 auth ───

@@ -60,7 +60,7 @@ async function handleSetOkxKeyCommand(msg, bot, t, lang) {
         const portalUrl = 'https://web3.okx.com/vi/onchainos/dev-portal/';
         return bot.sendMessage(chatId, 
             `<b>🔑 Thiết Lập OKX API Key Cá Nhân</b>\n\n` +
-            `Tính năng Auto Trading và Copy Trade yêu cầu bạn cung cấp OKX API Key cá nhân để hoạt động.\n\n` +
+            `Các tính năng giao dịch OKX yêu cầu bạn cung cấp OKX API Key cá nhân để hoạt động.\n\n` +
             `<b>Cách lấy Key:</b>\n` +
             `Truy cập <a href="${portalUrl}">OKX Web3 OnchainOS Dev Portal</a> để lấy bộ API Key miễn phí.\n\n` +
             `<b>Cách cấu hình:</b>\n` +
@@ -74,7 +74,7 @@ async function handleSetOkxKeyCommand(msg, bot, t, lang) {
 
     const success = await saveUserOkxCredentials(userId, apiKey, secretKey, passphrase);
     if (success) {
-        return bot.sendMessage(chatId, `✅ <b>Thành công!</b> OKX API Key của bạn đã được lưu lại an toàn.\nBây giờ bạn có thể sử dụng các tính năng Auto Trading và Copy Trade!`, { parse_mode: 'HTML' });
+        return bot.sendMessage(chatId, `✅ <b>Thành công!</b> OKX API Key của bạn đã được lưu lại an toàn.\nBây giờ bạn có thể sử dụng các tính năng giao dịch OKX!`, { parse_mode: 'HTML' });
     } else {
         return bot.sendMessage(chatId, `❌ Có lỗi xảy ra khi lưu API Key. Vui lòng thử lại sau.`, { parse_mode: 'HTML' });
     }

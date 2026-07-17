@@ -105,9 +105,7 @@ function ToolResultCard({ toolCalls }) {
         search_token: Search,
         get_token_security: Shield,
         deep_research_token: Brain,
-        manage_auto_trading: Repeat,
         scan_arbitrage: TrendingUp,
-        manage_copy_trading: Users,
         browse_marketplace: Store,
     };
     return (
@@ -223,8 +221,6 @@ const SUGGESTIONS = [
     { icon: '🐳', textKey: 'widget.suggestWhale', text: 'Whale signals' },
     { icon: '🔬', textKey: 'widget.suggestResearch', text: 'Deep research' },
     { icon: '📈', textKey: 'widget.suggestArbitrage', text: 'Scan arbitrage' },
-    { icon: '👥', textKey: 'widget.suggestCopy', text: 'Copy trading board' },
-    { icon: '🤖', textKey: 'widget.suggestAutoTrading', text: 'Auto trading status' },
 ];
 
 /* ─── History item with MoreVertical dropdown (synced with ChatPage.ConvItem) ─── */
@@ -405,6 +401,7 @@ export default function ChatWidget() {
                         return copy;
                     });
                 },
+                onApprovalRequired: data => api.confirmHermesApproval(data),
                 onDone: (data) => {
                     setConversationId(data.conversationId);
                     if (!open) setUnread(prev => prev + 1);

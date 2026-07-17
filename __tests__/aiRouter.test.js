@@ -100,7 +100,7 @@ describe('AI Router normalization', () => {
                         parts: [
                             {
                                 functionCall: {
-                                    name: 'okxai_search_agents',
+                                    name: 'search_token',
                                     args: { query: 'developer' }
                                 }
                             }
@@ -115,7 +115,7 @@ describe('AI Router normalization', () => {
                 id: 'gemini_call_0',
                 type: 'function',
                 function: {
-                    name: 'okxai_search_agents',
+                    name: 'search_token',
                     arguments: JSON.stringify({ query: 'developer' })
                 }
             }

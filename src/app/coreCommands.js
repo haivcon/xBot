@@ -987,63 +987,6 @@ function registerCoreCommands(deps = {}) {
     const registerOnchainCallbacks = require('../bot/handlers/onchainCallbacks');
     registerOnchainCallbacks({ bot, getLang, t });
 
-    // ═══════════════════════════════════════════════════════
-    // Gap #2: Callback handlers for auto trading + copy trading
-    // ═══════════════════════════════════════════════════════
-    bot.on('callback_query', async (query) => {
-        const data = query.data || '';
-        if (!data.startsWith('copy|')) return;
-
-        const chatId = query.message?.chat?.id;
-        const userId = String(query.from?.id);
-        const lang = await getLang(query.message);
-        const logger = require('../core/logger');
-        const log = logger.child('Callbacks');
-
-        try {
-            // ── Copy Trading buttons ──
-            if (data.startsWith('copy|yes|')) {
-                const confirmId = data.slice('copy|yes|'.length);
-                await bot.answerCallbackQuery(query.id, { text: '⏳ Copying trade...' }).catch(() => {});
-                try {
-                    const { dbGet, dbRun } = require('../../db/core');
-                    // Use actual copy_trades table
-                    const pending = await dbGet('SELECT * FROM copy_trades WHERE id = ? AND followerId = ? AND status = ?', [confirmId, userId, 'pending']);
-                    if (!pending) {
-                        return bot.answerCallbackQuery(query.id, { text: '❌ Expired', show_alert: true }).catch(() => {});
-                    }
-                    await dbRun('UPDATE copy_trades SET status = ? WHERE id = ?', ['confirmed', confirmId]);
-                } catch (dbErr) {
-                    log.warn('copy_trades DB error:', dbErr.message);
-                }
-                const labels = { vi: '✅ Đã copy trade!', en: '✅ Trade copied!' };
-                await bot.sendMessage(chatId, labels[lang] || labels.en, { parse_mode: 'HTML' }).catch(() => {});
-                return;
-            }
-
-            if (data.startsWith('copy|no|')) {
-                const confirmId = data.slice('copy|no|'.length);
-                try {
-                    const { dbRun } = require('../../db/core');
-                    await dbRun('UPDATE copy_trades SET status = ? WHERE id = ?', ['skipped', confirmId]);
-                } catch (e) { /* table may not exist */ }
-                await bot.answerCallbackQuery(query.id, { text: '⏭️ Skipped' }).catch(() => {});
-                return;
-            }
-
-            if (data.startsWith('copy|unfollow|')) {
-                const leaderId = data.slice('copy|unfollow|'.length);
-                const { unfollowLeader } = require('../features/copyTrading');
-                const result = await unfollowLeader(userId, leaderId, { bot, chatId, lang });
-                await bot.answerCallbackQuery(query.id, { text: result?.success ? '✅ Unfollowed' : '❌ Error' }).catch(() => {});
-                return;
-            }
-
-        } catch (err) {
-            log.error('Callback handler error:', err.message);
-            try { await bot.answerCallbackQuery(query.id, { text: '❌ Error' }); } catch (_) {}
-        }
-    });
 
     // ═══════════════════════════════════════════════════════
     // T2: Smart Reply Callbacks + T6: Trading Wizard

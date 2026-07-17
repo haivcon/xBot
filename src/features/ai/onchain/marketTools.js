@@ -1141,17 +1141,6 @@ module.exports = {
         }
     },
 
-    // ═══════════════════════════════════════════════════════
-    // Idea #1: AI Auto Trading Agent
-    // ═══════════════════════════════════════════════════════
-    async manage_auto_trading(args, context) {
-        try {
-            const { manageAutoTrading } = require('../../autoTrading');
-            return await manageAutoTrading(args, context);
-        } catch (error) {
-            return `❌ Error: ${error.msg || error.message}`;
-        }
-    },
 
     // ═══════════════════════════════════════════════════════
     // Idea #9: Cross-Chain Arbitrage Scanner
@@ -1165,33 +1154,6 @@ module.exports = {
         }
     },
 
-    // ═══════════════════════════════════════════════════════
-    // Idea #5: Copy Trading
-    // ═══════════════════════════════════════════════════════
-    async manage_copy_trading(args, context) {
-        try {
-            const copy = require('../../copyTrading');
-            const action = (args.action || 'status').toLowerCase();
-            switch (action) {
-                case 'register':
-                    return await copy.registerAsLeader(context.userId, args.walletAddress, context);
-                case 'follow':
-                    return await copy.followLeader(context.userId, args.leaderId, { maxCopyAmount: args.maxCopyAmount, ...context });
-                case 'unfollow':
-                    return await copy.unfollowLeader(context.userId, args.leaderId, context);
-                case 'leaderboard':
-                    return await copy.getLeaderboard(context);
-                case 'my_followers':
-                    return await copy.getFollowers(context.userId, context);
-                case 'status':
-                    return await copy.getFollowers(context.userId, context);
-                default:
-                    return `❌ Unknown action: ${action}. Use: register, follow, unfollow, leaderboard, my_followers, status`;
-            }
-        } catch (error) {
-            return `❌ Error: ${error.msg || error.message}`;
-        }
-    },
 
     // ═══════════════════════════════════════════════════════
     // Idea #7: Agent Marketplace

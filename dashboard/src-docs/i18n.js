@@ -8,8 +8,8 @@ export const DOCS_I18N = {
         body: "Hệ sinh thái xLayer được xây dựng để cung cấp bộ công cụ toàn diện và bảo mật nhất cho người dùng Web3. Sự kết hợp giữa tốc độ của giao dịch trên Telegram và độ an toàn tuyệt đối của ví ngoại tuyến mang đến một trải nghiệm không thỏa hiệp.\n\n### Mục tiêu cốt lõi\n- **Bảo mật tối đa**: Với triết lý Zero-Trust, private key của bạn không bao giờ rời khỏi thiết bị.\n- **Tốc độ vượt trội**: xBot sử dụng hạ tầng mạng lưới độc lập giúp khớp lệnh siêu tốc.\n- **Đa chuỗi**: Hỗ trợ EVM, Solana, TRON.\n\n### Luồng vận hành chuẩn\n1. Tải và cài đặt xKey Vault trên điện thoại.\n2. Khởi tạo ví hoặc import seed phrase hoàn toàn offline.\n3. Trích xuất mã Private Key đã được mã hóa.\n4. Mở ứng dụng xBot trên Telegram và dán khóa an toàn để bắt đầu giao dịch."
       },
       xbot: {
-        title: "xBot - Cỗ Máy AI Trading",
-        body: "xBot không chỉ là một Telegram bot thông thường. Đây là một cỗ máy giao dịch On-chain được tích hợp AI tiên tiến nhất.\n\n### Tính năng nổi bật\n- **Phân tích On-Chain & AI**: Tích hợp dữ liệu từ OKX Web3, xBot có khả năng lọc nhiễu, phát hiện Smart Money (Dòng tiền thông minh) và theo vết dòng tiền của Cá Mập.\n- **Copy Trading Thông Minh**: Dễ dàng cấu hình bot để theo dõi bất kỳ ví nào. Khi ví đó giao dịch, bot sẽ sao chép lập tức trên Base, BSC hoặc Ethereum.\n- **Thao tác hàng loạt (Batch Ops)**: Thay vì chuyển tiền thủ công, xBot cho phép phân bổ tài sản đến hàng chục ví con, thực hiện Batch Swap và tự động gom token về ví chính chỉ với một lệnh.\n- **Quản lý rủi ro tự động**: Tính năng Take-profit và Stop-loss nâng cao, chống MEV bot và tự động điều chỉnh trượt giá (Slippage) khi mạng nghẽn."
+        title: "xBot - AI Chat & On-Chain",
+        body: "xBot không chỉ là một Telegram bot thông thường. Đây là một cỗ máy giao dịch On-chain được tích hợp AI tiên tiến nhất.\n\n### Tính năng nổi bật\n- **Phân tích On-Chain & AI**: Tích hợp dữ liệu từ OKX Web3, xBot có khả năng lọc nhiễu, phát hiện Smart Money (Dòng tiền thông minh) và theo vết dòng tiền của Cá Mập.\n- **AI Chat**: Truy cập phân tích thị trường và các công cụ on-chain qua một giao diện hội thoại thống nhất.\n- **Thao tác hàng loạt (Batch Ops)**: Thay vì chuyển tiền thủ công, xBot cho phép phân bổ tài sản đến hàng chục ví con, thực hiện Batch Swap và tự động gom token về ví chính chỉ với một lệnh.\n- **Quản lý rủi ro tự động**: Tính năng Take-profit và Stop-loss nâng cao, chống MEV bot và tự động điều chỉnh trượt giá (Slippage) khi mạng nghẽn."
       },
       xkey: {
         title: "xKey - Kho Lưu Trữ Offline",
@@ -30,8 +30,8 @@ export const DOCS_I18N = {
         body: "The xLayer ecosystem provides the most comprehensive and secure toolset for Web3 users. The combination of Telegram's trading speed and the absolute safety of an offline vault offers an uncompromising experience.\n\n### Core Objectives\n- **Maximum Security**: With a Zero-Trust philosophy, your private keys never leave your device.\n- **Superior Speed**: xBot utilizes an independent network infrastructure for lightning-fast execution.\n- **Multi-chain**: Supports EVM, Solana, TRON.\n\n### Standard Flow\n1. Download and install xKey Vault on your phone.\n2. Initialize a wallet or import a seed phrase completely offline.\n3. Extract the encrypted Private Key securely.\n4. Open the xBot app on Telegram and paste the secure key to start trading."
       },
       xbot: {
-        title: "xBot - AI Trading Machine",
-        body: "xBot is not just a typical Telegram bot. It's an On-chain trading machine integrated with the most advanced AI.\n\n### Key Features\n- **On-Chain Analytics & AI**: Integrating data from OKX Web3, xBot filters noise, detects Smart Money, and tracks Whale money flows.\n- **Smart Copy Trading**: Easily configure the bot to track any wallet. When that wallet trades, the bot copies instantly on Base, BSC, or Ethereum.\n- **Batch Operations**: Instead of manual transfers, xBot allows allocating assets to dozens of sub-wallets, executing Batch Swaps, and auto-collecting tokens to the main wallet with one command.\n- **Auto Risk Management**: Advanced Take-profit and Stop-loss features, anti-MEV bot protection, and dynamic slippage adjustments during network congestion."
+        title: "xBot - AI Chat & On-Chain",
+        body: "xBot is not just a typical Telegram bot. It's an On-chain trading machine integrated with the most advanced AI.\n\n### Key Features\n- **On-Chain Analytics & AI**: Integrating data from OKX Web3, xBot filters noise, detects Smart Money, and tracks Whale money flows.\n- **AI Chat**: Access market analysis and on-chain tools through one conversational interface.\n- **Batch Operations**: Instead of manual transfers, xBot allows allocating assets to dozens of sub-wallets, executing Batch Swaps, and auto-collecting tokens to the main wallet with one command.\n- **Auto Risk Management**: Advanced Take-profit and Stop-loss features, anti-MEV bot protection, and dynamic slippage adjustments during network congestion."
       },
       xkey: {
         title: "xKey - Offline Vault",
@@ -52,8 +52,8 @@ export const DOCS_I18N = {
         body: "xLayer 生态系统为 Web3 用户提供了最全面、最安全的工具集。Telegram 交易速度与离线金库绝对安全性的结合，带来了不妥协的体验。\n\n### 核心目标\n- **最高安全性**：采用零信任理念，您的私钥永远不会离开您的设备。\n- **卓越速度**：xBot 利用独立的网络基础设施实现闪电般的执行速度。\n- **多链支持**：支持 EVM、Solana、TRON。\n\n### 标准流程\n1. 在您的手机上下载并安装 xKey Vault。\n2. 完全离线地初始化钱包或导入助记词。\n3. 安全地提取加密的私钥。\n4. 在 Telegram 上打开 xBot 应用程序并粘贴安全密钥即可开始交易。"
       },
       xbot: {
-        title: "xBot - AI 交易机器",
-        body: "xBot 不仅仅是一个典型的 Telegram 机器人。它是一个集成了最先进 AI 的链上交易机器。\n\n### 核心功能\n- **链上分析与 AI**：整合来自 OKX Web3 的数据，xBot 过滤噪音，检测聪明钱，追踪巨鲸资金流。\n- **智能跟单交易**：轻松配置机器人以追踪任何钱包。当该钱包交易时，机器人会在 Base、BSC 或 Ethereum 上立即复制。\n- **批量操作**：不同于手动转账，xBot 允许一键将资产分配到几十个子钱包、执行批量兑换以及自动将代币归集到主钱包。\n- **自动风险管理**：高级止盈止损功能、防 MEV 机器人保护以及网络拥堵时的动态滑点调整。"
+        title: "xBot - AI Chat 与链上工具",
+        body: "xBot 不仅仅是一个典型的 Telegram 机器人。它是一个集成了最先进 AI 的链上交易机器。\n\n### 核心功能\n- **链上分析与 AI**：整合来自 OKX Web3 的数据，xBot 过滤噪音，检测聪明钱，追踪巨鲸资金流。\n- **AI Chat**：通过统一的对话界面访问市场分析和链上工具。\n- **批量操作**：不同于手动转账，xBot 允许一键将资产分配到几十个子钱包、执行批量兑换以及自动将代币归集到主钱包。\n- **自动风险管理**：高级止盈止损功能、防 MEV 机器人保护以及网络拥堵时的动态滑点调整。"
       },
       xkey: {
         title: "xKey - 离线金库",
@@ -74,8 +74,8 @@ export const DOCS_I18N = {
         body: "xLayer 생태계는 Web3 사용자에게 가장 포괄적이고 안전한 툴셋을 제공합니다. 텔레그램 거래의 속도와 오프라인 금고의 절대적인 안전성을 결합하여 타협 없는 경험을 제공합니다.\n\n### 핵심 목표\n- **최대 보안**: 제로 트러스트 철학을 바탕으로, 프라이빗 키는 절대 기기를 벗어나지 않습니다.\n- **탁월한 속도**: xBot은 빛처럼 빠른 실행을 위해 독립적인 네트워크 인프라를 활용합니다.\n- **멀티체인**: EVM, Solana, TRON 지원.\n\n### 표준 흐름\n1. 휴대폰에 xKey Vault를 다운로드하고 설치합니다.\n2. 지갑을 초기화하거나 오프라인 상태에서 시드 구문을 가져옵니다.\n3. 암호화된 프라이빗 키를 안전하게 추출합니다.\n4. 텔레그램에서 xBot 앱을 열고 보안 키를 붙여넣어 거래를 시작합니다."
       },
       xbot: {
-        title: "xBot - AI 트레이딩 머신",
-        body: "xBot은 단순한 텔레그램 봇이 아닙니다. 가장 진보된 AI가 통합된 온체인 거래 머신입니다.\n\n### 주요 기능\n- **온체인 분석 및 AI**: OKX Web3의 데이터를 통합하여 xBot은 노이즈를 필터링하고 스마트 머니를 감지하며 고래 자금 흐름을 추적합니다.\n- **스마트 카피 트레이딩**: 봇이 모든 지갑을 추적하도록 쉽게 구성할 수 있습니다. 해당 지갑이 거래될 때 봇은 Base, BSC 또는 이더리움에서 즉시 복사합니다.\n- **일괄 작업**: 수동 이체 대신 xBot을 사용하면 자산을 수십 개의 하위 지갑에 할당하고, 일괄 스왑을 실행하며, 하나의 명령으로 토큰을 주 지갑으로 자동 수집할 수 있습니다.\n- **자동 위험 관리**: 고급 이익 실현 및 손절매 기능, 안티 MEV 봇 보호 및 네트워크 혼잡 시 동적 슬리피지 조정."
+        title: "xBot - AI Chat 및 온체인 도구",
+        body: "xBot은 단순한 텔레그램 봇이 아닙니다. 가장 진보된 AI가 통합된 온체인 거래 머신입니다.\n\n### 주요 기능\n- **온체인 분석 및 AI**: OKX Web3의 데이터를 통합하여 xBot은 노이즈를 필터링하고 스마트 머니를 감지하며 고래 자금 흐름을 추적합니다.\n- **AI Chat**: 하나의 대화형 인터페이스에서 시장 분석과 온체인 도구를 이용합니다.\n- **일괄 작업**: 수동 이체 대신 xBot을 사용하면 자산을 수십 개의 하위 지갑에 할당하고, 일괄 스왑을 실행하며, 하나의 명령으로 토큰을 주 지갑으로 자동 수집할 수 있습니다.\n- **자동 위험 관리**: 고급 이익 실현 및 손절매 기능, 안티 MEV 봇 보호 및 네트워크 혼잡 시 동적 슬리피지 조정."
       },
       xkey: {
         title: "xKey - 오프라인 금고",
@@ -96,8 +96,8 @@ export const DOCS_I18N = {
         body: "xLayerエコシステムは、Web3ユーザーに最も包括的で安全なツールセットを提供します。Telegram取引の利便性とオフラインボールトの絶対的な安全性を組み合わせ、妥協のない体験を提供します。\n\n### コアの目標\n- **最大限のセキュリティ**: ゼロトラストの哲学により、秘密鍵がデバイスから離れることはありません。\n- **卓越した速度**: xBotは独立したネットワークインフラストラクチャを利用し、超高速の約定を実現します。\n- **マルチチェーン**: EVM、Solana、TRONをサポート。\n\n### 標準フロー\n1. 携帯電話にxKey Vaultをダウンロードしてインストールします。\n2. ウォレットを初期化するか、完全にオフラインでシードフレーズをインポートします。\n3. 暗号化された秘密鍵を安全に抽出します。\n4. TelegramでxBotアプリを開き、安全な鍵を貼り付けて取引を開始します。"
       },
       xbot: {
-        title: "xBot - AIトレーディングマシン",
-        body: "xBotは単なる典型的なTelegramボットではありません。最先端のAIが統合されたオンチェーントレーディングマシンです。\n\n### 主な機能\n- **オンチェーン分析＆AI**: OKX Web3からのデータを統合し、xBotはノイズを除去し、スマートマネーを検出し、クジラの資金の流れを追跡します。\n- **スマートコピートレード**: 任意のウォレットを追跡するようにボットを簡単に設定できます。そのウォレットが取引されると、ボットはBase、BSC、またはEthereumですぐにコピーします。\n- **バッチ操作**: 手動の転送ではなく、xBotは資産を何十ものサブウォレットに割り当て、バッチスワップを実行し、1つのコマンドでトークンをメインウォレットに自動収集できます。\n- **自動リスク管理**: 高度な利食いおよび損切り機能、アンチMEVボット保護、ネットワーク混雑時の動的なスリッページ調整。"
+        title: "xBot - AI Chatとオンチェーンツール",
+        body: "xBotは単なる典型的なTelegramボットではありません。最先端のAIが統合されたオンチェーントレーディングマシンです。\n\n### 主な機能\n- **オンチェーン分析＆AI**: OKX Web3からのデータを統合し、xBotはノイズを除去し、スマートマネーを検出し、クジラの資金の流れを追跡します。\n- **AI Chat**: 統合された会話インターフェースから市場分析とオンチェーンツールを利用できます。\n- **バッチ操作**: 手動の転送ではなく、xBotは資産を何十ものサブウォレットに割り当て、バッチスワップを実行し、1つのコマンドでトークンをメインウォレットに自動収集できます。\n- **自動リスク管理**: 高度な利食いおよび損切り機能、アンチMEVボット保護、ネットワーク混雑時の動的なスリッページ調整。"
       },
       xkey: {
         title: "xKey - オフラインボールト",
@@ -118,8 +118,8 @@ export const DOCS_I18N = {
         body: "Экосистема xLayer предоставляет самый полный и безопасный набор инструментов для пользователей Web3. Комбинация скорости торговли в Telegram и абсолютной безопасности оффлайн-хранилища предлагает бескомпромиссный опыт.\n\n### Основные цели\n- **Максимальная безопасность**: С философией Zero-Trust ваши приватные ключи никогда не покидают ваше устройство.\n- **Превосходная скорость**: xBot использует независимую сетевую инфраструктуру для молниеносного исполнения.\n- **Мультичейн**: Поддержка EVM, Solana, TRON.\n\n### Стандартный процесс\n1. Загрузите и установите xKey Vault на свой телефон.\n2. Инициализируйте кошелек или импортируйте seed-фразу полностью оффлайн.\n3. Безопасно извлеките зашифрованный приватный ключ.\n4. Откройте приложение xBot в Telegram и вставьте безопасный ключ, чтобы начать торговлю."
       },
       xbot: {
-        title: "xBot - Машина для AI Трейдинга",
-        body: "xBot - это не просто типичный Telegram-бот. Это ончейн-машина для трейдинга, интегрированная с самым передовым AI.\n\n### Ключевые особенности\n- **Ончейн-аналитика и AI**: Интегрируя данные из OKX Web3, xBot фильтрует шум, обнаруживает Smart Money и отслеживает денежные потоки Китов.\n- **Умный Копи-трейдинг**: Легко настройте бота для отслеживания любого кошелька. Когда этот кошелек торгует, бот немедленно копирует сделки на Base, BSC или Ethereum.\n- **Пакетные операции**: Вместо ручных переводов xBot позволяет распределять активы по десяткам суб-кошельков, выполнять пакетные свопы и автоматически собирать токены на основной кошелек одной командой.\n- **Автоматическое управление рисками**: Продвинутые функции тейк-профита и стоп-лосса, защита от MEV-ботов и динамическая настройка проскальзывания при перегрузке сети."
+        title: "xBot - AI Chat и ончейн-инструменты",
+        body: "xBot - это не просто типичный Telegram-бот. Это ончейн-машина для трейдинга, интегрированная с самым передовым AI.\n\n### Ключевые особенности\n- **Ончейн-аналитика и AI**: Интегрируя данные из OKX Web3, xBot фильтрует шум, обнаруживает Smart Money и отслеживает денежные потоки Китов.\n- **AI Chat**: Доступ к анализу рынка и ончейн-инструментам через единый диалоговый интерфейс.\n- **Пакетные операции**: Вместо ручных переводов xBot позволяет распределять активы по десяткам суб-кошельков, выполнять пакетные свопы и автоматически собирать токены на основной кошелек одной командой.\n- **Автоматическое управление рисками**: Продвинутые функции тейк-профита и стоп-лосса, защита от MEV-ботов и динамическая настройка проскальзывания при перегрузке сети."
       },
       xkey: {
         title: "xKey - Оффлайн Хранилище",
@@ -140,8 +140,8 @@ export const DOCS_I18N = {
         body: "Ekosistem xLayer menyediakan setelan alat yang paling komprehensif dan aman untuk pengguna Web3. Kombinasi kecepatan perdagangan Telegram dan keamanan mutlak dari brankas offline menawarkan pengalaman tanpa kompromi.\n\n### Tujuan Utama\n- **Keamanan Maksimal**: Dengan filosofi Zero-Trust, private key Anda tidak pernah meninggalkan perangkat Anda.\n- **Kecepatan Unggul**: xBot menggunakan infrastruktur jaringan independen untuk eksekusi secepat kilat.\n- **Multi-chain**: Mendukung EVM, Solana, TRON.\n\n### Alur Standar\n1. Unduh dan instal xKey Vault di ponsel Anda.\n2. Inisialisasi dompet atau impor seed phrase sepenuhnya offline.\n3. Ekstrak Private Key yang terenkripsi dengan aman.\n4. Buka aplikasi xBot di Telegram dan rekatkan kunci aman untuk mulai trading."
       },
       xbot: {
-        title: "xBot - Mesin Trading AI",
-        body: "xBot bukan hanya sekadar bot Telegram biasa. Ini adalah mesin perdagangan On-chain yang terintegrasi dengan AI paling canggih.\n\n### Fitur Utama\n- **Analitik On-Chain & AI**: Mengintegrasikan data dari OKX Web3, xBot menyaring kebisingan, mendeteksi Smart Money, dan melacak aliran dana Whale.\n- **Smart Copy Trading**: Konfigurasi bot dengan mudah untuk melacak dompet mana pun. Saat dompet itu melakukan trading, bot menyalin secara instan di Base, BSC, atau Ethereum.\n- **Operasi Batch**: Alih-alih transfer manual, xBot memungkinkan alokasi aset ke puluhan sub-dompet, mengeksekusi Batch Swaps, dan mengumpulkan token otomatis ke dompet utama dengan satu perintah.\n- **Manajemen Risiko Otomatis**: Fitur Take-profit dan Stop-loss tingkat lanjut, perlindungan bot anti-MEV, dan penyesuaian slippage dinamis selama kemacetan jaringan."
+        title: "xBot - AI Chat & On-Chain",
+        body: "xBot bukan hanya sekadar bot Telegram biasa. Ini adalah mesin perdagangan On-chain yang terintegrasi dengan AI paling canggih.\n\n### Fitur Utama\n- **Analitik On-Chain & AI**: Mengintegrasikan data dari OKX Web3, xBot menyaring kebisingan, mendeteksi Smart Money, dan melacak aliran dana Whale.\n- **AI Chat**: Akses analisis pasar dan alat on-chain melalui satu antarmuka percakapan.\n- **Operasi Batch**: Alih-alih transfer manual, xBot memungkinkan alokasi aset ke puluhan sub-dompet, mengeksekusi Batch Swaps, dan mengumpulkan token otomatis ke dompet utama dengan satu perintah.\n- **Manajemen Risiko Otomatis**: Fitur Take-profit dan Stop-loss tingkat lanjut, perlindungan bot anti-MEV, dan penyesuaian slippage dinamis selama kemacetan jaringan."
       },
       xkey: {
         title: "xKey - Brankas Offline",
@@ -158,7 +158,7 @@ export const DOCS_I18N = {
     menu: { home: "บทนำ", xbot: "🤖 xBot AI", xkey: "🔑 xKey Vault", dev: "💻 นักพัฒนา" },
     content: {
       home: { title: "ยินดีต้อนรับ", body: "ระบบนิเวศ xLayer เป็นเครื่องมือ Web3 ที่ปลอดภัยที่สุด ผสมผสาน Telegram trading และกระเป๋าออฟไลน์\n\n### คุณสมบัติ\n- ปลอดภัยสูงสุดด้วย Offline Vault\n- รวดเร็วด้วย Network ของเราเอง\n- รองรับหลาย Chain" },
-      xbot: { title: "xBot - บอทเทรด AI", body: "เปลี่ยน Telegram เป็นสถานีเทรดด้วย AI\n\n- วิเคราะห์ On-chain และหาเงินอัจฉริยะ\n- ก๊อปปี้เทรดจากเซียน\n- จัดการหลายกระเป๋าและโอนแบทช์" },
+      xbot: { title: "xBot - บอทเทรด AI", body: "เปลี่ยน Telegram เป็นสถานีเทรดด้วย AI\n\n- วิเคราะห์ On-chain และหาเงินอัจฉริยะ\n- AI Chat และเครื่องมือ On-chain\n- จัดการหลายกระเป๋าและโอนแบทช์" },
       xkey: { title: "xKey - ออฟไลน์", body: "จัดการกระเป๋าปลอดภัยสุด\n\n- ออฟไลน์ 100% ไม่มีอินเตอร์เน็ต\n- เข้ารหัส AES-256 ระดับทหาร\n- สแกนใบหน้า/นิ้วมือเพื่อดู Private Key" },
       dev: { title: "โอเพนซอร์ส", body: "เราเปิดซอร์สเพื่อความโปร่งใส\n- xKey: github.com/haivcon/xkey\n- xBot: github.com/haivcon/xbot\nยินดีรับ Pull Request!" }
     }
@@ -168,7 +168,7 @@ export const DOCS_I18N = {
     menu: { home: "Inicio", xbot: "🤖 xBot AI", xkey: "🔑 xKey Vault", dev: "💻 Devs" },
     content: {
       home: { title: "Bienvenido a xLayer", body: "El ecosistema Web3 más seguro. Combina trading en Telegram y bóveda offline.\n\n### Características\n- Máxima Seguridad Offline\n- Velocidad Extrema\n- Multicadena" },
-      xbot: { title: "xBot - AI Bot", body: "Convierte Telegram en una estación On-chain.\n\n- Analítica OKX y Detección de Smart Money\n- Copy Trading Inteligente\n- Gestión Multibilletera y Batch Swap" },
+      xbot: { title: "xBot - AI Bot", body: "Convierte Telegram en una estación On-chain.\n\n- Analítica OKX y Detección de Smart Money\n- Chat de IA y herramientas On-chain\n- Gestión Multibilletera y Batch Swap" },
       xkey: { title: "xKey - Offline Vault", body: "Gestor ultraseguro.\n\n- 100% offline, sin acceso a internet\n- Cifrado AES-256\n- Biometría obligatoria" },
       dev: { title: "Código Abierto", body: "Proyectos open source para total transparencia.\n- xKey: github.com/haivcon/xkey\n- xBot: github.com/haivcon/xbot" }
     }
@@ -178,7 +178,7 @@ export const DOCS_I18N = {
     menu: { home: "Accueil", xbot: "🤖 xBot AI", xkey: "🔑 xKey Vault", dev: "💻 Devs" },
     content: {
       home: { title: "Bienvenue sur xLayer", body: "L'écosystème Web3 le plus sécurisé. Combine le trading Telegram et le coffre offline.\n\n### Fonctionnalités\n- Sécurité maximale\n- Vitesse exceptionnelle\n- Multi-chaîne" },
-      xbot: { title: "xBot - Trading IA", body: "Transforme Telegram en station de trading.\n\n- Analytique OKX\n- Copy Trading\n- Multi-portefeuilles et transferts groupés" },
+      xbot: { title: "xBot - Trading IA", body: "Transforme Telegram en station de trading.\n\n- Analytique OKX\n- Chat IA et outils On-chain\n- Multi-portefeuilles et transferts groupés" },
       xkey: { title: "xKey - Coffre Hors-ligne", body: "Gestion sécurisée.\n\n- 100% offline\n- Chiffrement AES-256\n- Biométrie" },
       dev: { title: "Open Source", body: "Transparence totale.\n- xKey: github.com/haivcon/xkey\n- xBot: github.com/haivcon/xbot" }
     }
@@ -188,7 +188,7 @@ export const DOCS_I18N = {
     menu: { home: "Start", xbot: "🤖 xBot AI", xkey: "🔑 xKey Vault", dev: "💻 Devs" },
     content: {
       home: { title: "Willkommen", body: "Das sichere Web3-Ökosystem. Kombiniert Telegram-Trading und Offline-Tresor.\n\n### Features\n- Maximale Sicherheit\n- Überlegene Geschwindigkeit\n- Multi-Chain" },
-      xbot: { title: "xBot - KI Trading", body: "Macht Telegram zur Trading-Station.\n\n- OKX Analytik\n- Smart Copy Trading\n- Multi-Wallet" },
+      xbot: { title: "xBot - KI Trading", body: "Macht Telegram zur Trading-Station.\n\n- OKX Analytik\n- KI-Chat und On-Chain-Werkzeuge\n- Multi-Wallet" },
       xkey: { title: "xKey - Offline Tresor", body: "Sicherste Verwaltung.\n\n- 100% offline\n- AES-256\n- Biometrie" },
       dev: { title: "Open Source", body: "Open Source für Transparenz.\n- xKey: github.com/haivcon/xkey\n- xBot: github.com/haivcon/xbot" }
     }
@@ -198,7 +198,7 @@ export const DOCS_I18N = {
     menu: { home: "Início", xbot: "🤖 xBot AI", xkey: "🔑 xKey Vault", dev: "💻 Devs" },
     content: {
       home: { title: "Bem-vindo", body: "O ecossistema Web3 seguro. Combina trading no Telegram e cofre offline.\n\n### Recursos\n- Segurança Máxima\n- Velocidade\n- Multi-chain" },
-      xbot: { title: "xBot - IA Trading", body: "Transforma o Telegram em estação de trading.\n\n- Análise OKX\n- Copy Trading\n- Multi-carteiras" },
+      xbot: { title: "xBot - IA Trading", body: "Transforma o Telegram em estação de trading.\n\n- Análise OKX\n- Chat IA et outils On-chain\n- Multi-carteiras" },
       xkey: { title: "xKey - Cofre Offline", body: "Gestão segura.\n\n- 100% offline\n- Criptografia AES-256\n- Biometria" },
       dev: { title: "Código Aberto", body: "Projetos de código aberto.\n- xKey: github.com/haivcon/xkey\n- xBot: github.com/haivcon/xbot" }
     }
@@ -208,7 +208,7 @@ export const DOCS_I18N = {
     menu: { home: "الرئيسية", xbot: "🤖 xBot AI", xkey: "🔑 xKey Vault", dev: "💻 مطورون" },
     content: {
       home: { title: "مرحباً بكم", body: "النظام البيئي Web3 الآمن. يجمع بين تداول تيليجرام والخزنة غير المتصلة.\n\n### الخصائص\n- أمان تام\n- سرعة فائقة\n- دعم سلاسل متعددة" },
-      xbot: { title: "xBot - بوت ذكي", body: "يحول تيليجرام لمحطة تداول.\n\n- تحليلات OKX\n- نسخ التداول الذكي\n- إدارة محافظ متعددة" },
+      xbot: { title: "xBot - بوت ذكي", body: "يحول تيليجرام لمحطة تداول.\n\n- تحليلات OKX\n- دردشة الذكاء الاصطناعي وأدوات السلسلة\n- إدارة محافظ متعددة" },
       xkey: { title: "xKey - غير متصل", body: "إدارة آمنة.\n\n- 100% غير متصل\n- تشفير AES-256\n- حماية بيومترية" },
       dev: { title: "مفتوح المصدر", body: "شفافية تامة.\n- xKey: github.com/haivcon/xkey\n- xBot: github.com/haivcon/xbot" }
     }
@@ -218,7 +218,7 @@ export const DOCS_I18N = {
     menu: { home: "होम", xbot: "🤖 xBot AI", xkey: "🔑 xKey Vault", dev: "💻 डेव" },
     content: {
       home: { title: "स्वागत है", body: "सुरक्षित Web3 इकोसिस्टम। टेलीग्राम ट्रेडिंग और ऑफलाइन वॉल्ट को जोड़ता है।\n\n### मुख्य विशेषताएं\n- अधिकतम सुरक्षा\n- तीव्र गति\n- मल्टी-चेन" },
-      xbot: { title: "xBot - AI बॉट", body: "टेलीग्राम को ट्रेडिंग स्टेशन बनाता है।\n\n- OKX एनालिटिक्स\n- कॉपी ट्रेडिंग\n- मल्टी-वॉलेट" },
+      xbot: { title: "xBot - AI बॉट", body: "टेलीग्राम को ट्रेडिंग स्टेशन बनाता है।\n\n- OKX एनालिटिक्स\n- AI चैट और ऑन-चेन टूल\n- मल्टी-वॉलेट" },
       xkey: { title: "xKey - ऑफलाइन", body: "सुरक्षित प्रबंधन।\n\n- 100% ऑफलाइन\n- AES-256 एन्क्रिप्शन\n- बायोमेट्रिक सुरक्षा" },
       dev: { title: "ओपन सोर्स", body: "सुरक्षा के लिए ओपन सोर्स।\n- xKey: github.com/haivcon/xkey\n- xBot: github.com/haivcon/xbot" }
     }
@@ -228,7 +228,7 @@ export const DOCS_I18N = {
     menu: { home: "Ana Sayfa", xbot: "🤖 xBot AI", xkey: "🔑 xKey Vault", dev: "💻 Geliştirici" },
     content: {
       home: { title: "Hoş Geldiniz", body: "Güvenli Web3 ekosistemi. Telegram ticareti ile çevrimdışı kasayı birleştirir.\n\n### Özellikler\n- Maksimum Güvenlik\n- Üstün Hız\n- Çoklu Zincir" },
-      xbot: { title: "xBot - AI Bot", body: "Telegram'ı bir ticaret istasyonuna dönüştürür.\n\n- OKX Analitiği\n- Kopya Ticaret\n- Çoklu Cüzdan" },
+      xbot: { title: "xBot - AI Bot", body: "Telegram'ı bir ticaret istasyonuna dönüştürür.\n\n- OKX Analitiği\n- AI Sohbet ve zincir üstü araçlar\n- Çoklu Cüzdan" },
       xkey: { title: "xKey - Çevrimdışı", body: "En güvenli yönetim.\n\n- %100 çevrimdışı\n- AES-256 şifreleme\n- Biyometrik Koruma" },
       dev: { title: "Açık Kaynak", body: "Şeffaflık için açık kaynak.\n- xKey: github.com/haivcon/xkey\n- xBot: github.com/haivcon/xbot" }
     }

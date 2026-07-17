@@ -151,9 +151,9 @@ async function getSupportedNetworks() {
 
 const PREMIUM_FEATURES = {
     'deep_research': { price: 0.1, description: 'Deep AI Research Report', freePerDay: 3 },
-    'auto_trading': { price: 1.0, description: 'AI Auto Trading Agent (daily)', freePerDay: 0 },
+
     'arbitrage_scan': { price: 0.05, description: 'Cross-Chain Arbitrage Scan', freePerDay: 5 },
-    'copy_trading': { price: 0.5, description: 'Copy Trading Subscription (daily)', freePerDay: 0 },
+
     'voice_trading': { price: 0.02, description: 'Voice Trading Command', freePerDay: 10 },
     'marketplace_plugin': { price: 0, description: 'Marketplace Plugin', freePerDay: 999 }
 };

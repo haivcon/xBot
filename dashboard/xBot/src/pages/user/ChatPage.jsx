@@ -13,7 +13,7 @@ import {
     Brain, Save, Tag, AlertCircle, ChevronUp
 } from 'lucide-react';
 import { hapticImpact, hapticNotification } from '@/utils/telegram';
-import AiTraderPanel from '@/components/AiTraderPanel';
+
 
 /* ─── Markdown renderer (lightweight, XSS-safe) ─── */
 function renderMarkdown(text) {
@@ -765,8 +765,7 @@ const SLASH_COMMANDS = [
     { cmd: '/wallet', icon: '🔑', label: 'Create wallet', template: 'Create a new wallet' },
     { cmd: '/compare', icon: '⚖️', label: 'Compare tokens', template: 'Compare OKB vs BNB vs ETH' },
     { cmd: '/research', icon: '🧠', label: 'Deep research', template: 'Deep research ETH' },
-    { cmd: '/copy-trade', icon: '👥', label: 'Copy trading', template: 'Show copy trading leaderboard' },
-    { cmd: '/auto-trade', icon: '🤖', label: 'AI Auto Trading', template: 'Auto trading status' },
+
     { cmd: '/security', icon: '🛡️', label: 'Token security', template: 'Check token security for ' },
 ];
 
@@ -986,7 +985,7 @@ export default function ChatPage() {
     const [userApiKeys, setUserApiKeys] = useState([]);
     // AI Settings panel state
     const [showSettingsPanel, setShowSettingsPanel] = useState(false);
-    const [showAiTrader, setShowAiTrader] = useState(false);
+
     const [settingsTab, setSettingsTab] = useState('model');
     const [selectedPersona, setSelectedPersona] = useState(() => {
         try { return localStorage.getItem('xbot_ai_persona') || 'default'; } catch { return 'default'; }
@@ -1480,6 +1479,7 @@ export default function ChatPage() {
                         return copy;
                     });
                 },
+                onApprovalRequired: data => api.confirmHermesApproval(data),
                 onDone: (data) => {
                     setConversationId(data.conversationId);
                     setMessages(prev => {
@@ -2673,7 +2673,7 @@ export default function ChatPage() {
                         </div>
                     )}
 
-                    {/* Compact chip bar — Model+Persona unified + AI Trader */}
+                    {/* Compact chip bar — Model+Persona unified */}
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                         <div className={`flex items-center gap-1.5 flex-1 min-w-0 ${isMobile ? 'overflow-x-auto scrollbar-hide' : 'flex-wrap'}`}>
                             {/* Unified Model+Persona chip */}
@@ -2686,13 +2686,7 @@ export default function ChatPage() {
                                 <span>{selectedPersona === 'custom' ? '✏️' : (PERSONA_OPTIONS.find(p => p.value === selectedPersona)?.icon || '🔰')}</span>
                                 <span className="truncate max-w-[50px]">{selectedPersona === 'custom' ? t('dashboard.chatPage.custom', 'Custom') : (PERSONA_OPTIONS.find(p => p.value === selectedPersona)?.label || 'Default')}</span>
                             </button>
-                            {/* AI Trader chip */}
-                            <button onClick={() => setShowAiTrader(true)}
-                                className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-brand-500/10 to-purple-500/10 border border-brand-500/20 text-brand-400 hover:border-brand-500/40 transition-all whitespace-nowrap flex-shrink-0
-                                    ${isMobile ? 'px-3 py-2 text-xs' : 'px-2 py-1 text-[10px]'}`}>
-                                🤖 <span>AI Trader</span>
-                                <span className="px-1 py-0 text-[8px] font-bold bg-amber-500/20 text-amber-400 rounded">β</span>
-                            </button>
+
                             {/* Compare mode indicator */}
                             {compareMode && <span className={`inline-flex items-center gap-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 whitespace-nowrap flex-shrink-0
                                 ${isMobile ? 'px-3 py-2 text-xs' : 'px-2 py-1 text-[10px]'}`}>{t('dashboard.chatPage.compareIndicator', '⚔️ Compare')}</span>}
@@ -3208,8 +3202,6 @@ export default function ChatPage() {
                 </>
             )}
         </div>
-        {/* AI Trader Panel */}
-        <AiTraderPanel visible={showAiTrader} onClose={() => setShowAiTrader(false)} />
 
         {/* ── Share Link Modal ── */}
         {shareModal && (

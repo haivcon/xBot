@@ -2,7 +2,7 @@
  * AI provider metadata and normalization helpers for xBot.
  *
  * This module keeps provider naming consistent across Telegram, dashboard,
- * OKX.AI bridge, and server-side AI routing.
+ * and server-side AI routing.
  */
 const {
     GEMINI_API_KEYS = [],
@@ -71,7 +71,7 @@ function getServerProviderConfig(provider) {
             baseURL: NINEROUTER_CHAT_COMPLETIONS_URL
                 ? NINEROUTER_CHAT_COMPLETIONS_URL.replace(/\/chat\/completions$/, '')
                 : null,
-            allowNoKey: process.env.NINEROUTER_ALLOW_NO_KEY !== 'false'
+            allowNoKey: Boolean(NINEROUTER_CHAT_COMPLETIONS_URL) && process.env.NINEROUTER_ALLOW_NO_KEY !== 'false'
         };
     }
     if (normalized === 'google') {

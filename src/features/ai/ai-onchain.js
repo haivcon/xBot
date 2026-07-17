@@ -14,7 +14,7 @@ const marketTools = require('./onchain/marketTools');
 const defiTools = require('./onchain/defiTools');
 const agenticWalletTools = require('./onchain/agenticWalletTools');
 const treasuryTools = require('./onchain/treasuryTools');
-const smartCopyTools = require('./onchain/smartCopyTools');
+
 const tamagotchiTools = require('./onchain/tamagotchiTools');
 
 const toolHandlers = {
@@ -24,7 +24,6 @@ const toolHandlers = {
     ...defiTools,
     ...agenticWalletTools,
     ...treasuryTools,
-    ...smartCopyTools,
     ...tamagotchiTools
 };
 
