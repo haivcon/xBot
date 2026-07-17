@@ -12,11 +12,12 @@ import {
 /* ─── Markdown renderer (XSS-safe) ─── */
 function renderMd(text) {
     if (!text) return '';
-    let safe = text
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-        .replace(/javascript\s*:/gi, '')
-        .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+    let safe = String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
         .replace(/\n?\[Used: [\w, ]+\]/g, '');
     const codeBlocks = [];
     safe = safe.replace(/```([\w]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
@@ -74,7 +75,7 @@ function renderMd(text) {
         .replace(/`([^`]+)`/g, '<code class="chat-inline-code">$1</code>')
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, t, url) => /javascript\s*:/i.test(url) ? t : `<a href="${url}" target="_blank" rel="noopener" class="chat-link">${t}</a>`)
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, t, url) => /^https?:\/\//i.test(url) ? `<a href="${url}" target="_blank" rel="noopener" class="chat-link">${t}</a>` : t)
         .replace(/^> (.+)$/gm, '<blockquote class="chat-blockquote">$1</blockquote>')
         .replace(/^### (.+)$/gm, '<h4 class="chat-h4">$1</h4>')
         .replace(/^## (.+)$/gm, '<h3 class="chat-h3">$1</h3>')
@@ -154,8 +155,15 @@ function MsgBubble({ msg }) {
                 {isUser ? (
                     <p className="text-xs text-surface-100 whitespace-pre-wrap">{msg.content}</p>
                 ) : (
-                    <div className="text-xs text-surface-200/90 chat-content leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: renderMd(msg.content) }} />
+                    <>
+                        <div className="text-xs text-surface-200/90 chat-content leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: renderMd(msg.content) }} />
+                        {msg.engine && (
+                            <span className="mt-1 block text-[9px] text-surface-200/25">
+                                Routed by 9Router · {msg.engine}
+                            </span>
+                        )}
+                    </>
                 )}
             </div>
         </div>
@@ -376,6 +384,7 @@ export default function ChatWidget() {
 
             await api.streamChatMessage(msg, conversationId, {
                 signal: controller.signal,
+                provider: '9router',
                 onTextDelta: (text) => {
                     fullText += text;
                     setMessages(prev => {
@@ -404,6 +413,11 @@ export default function ChatWidget() {
                 onApprovalRequired: data => api.confirmHermesApproval(data),
                 onDone: (data) => {
                     setConversationId(data.conversationId);
+                    setMessages(prev => {
+                        const copy = [...prev];
+                        if (copy[assistantIdx.current]) copy[assistantIdx.current] = { ...copy[assistantIdx.current], engine: data.engine };
+                        return copy;
+                    });
                     if (!open) setUnread(prev => prev + 1);
                 },
                 onError: (data) => {

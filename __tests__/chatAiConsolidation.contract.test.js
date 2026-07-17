@@ -69,16 +69,13 @@ describe('legacy AI and copy surfaces are retired', () => {
 
     test('Chat routes preserve the web-tool executor call contract', () => {
         const routes = read('src/server/chatRoutes.js');
-        expect(routes).toContain('executeWebToolCall(functionCall, ctx)');
-        expect(routes).toContain('executeWebToolCall({ name: tc.name, args }, ctx)');
-        expect(routes).toContain('executeToolCall(functionCall, ctx)');
-        expect(routes).toContain('executeToolCall({ name: tc.name, args }, ctx)');
-        expect(routes).not.toMatch(/execute(?:Web)?ToolCall\(\{ functionCall/);
+        expect(routes).toContain('executeWebToolCall(call, context)');
+        expect(routes).toContain('executeToolCall(call, context)');
     });
 
     test('Chat V2 does not persist or emit done for a cancelled upstream run', () => {
         const routes = read('src/server/chatRoutes.js');
-        expect(routes).toMatch(/if \(!result\.completed\) \{[\s\S]*?res\.end\(\);[\s\S]*?return;/);
+        expect(routes).toMatch(/if \(!result\.completed \|\| aborted\) \{[\s\S]*?return res\.end\(\);[\s\S]*?\}/);
     });
 
     test('Hermes approvals are exposed through a tenant-bound Node route and all chat surfaces handle them', () => {
@@ -122,5 +119,70 @@ describe('legacy AI and copy surfaces are retired', () => {
     test('dashboard catalog and translations do not advertise removed pages', () => {
         expect(read('dashboard/xBot/src/pages/LandingPage.jsx')).not.toMatch(/pageAiTraderDesc|pageSmartCopyDesc|AI Trader|Smart Copy/);
         expect(read('dashboard/xBot/src/i18n/index.js')).not.toMatch(/smartCopyPage|aiTraderPage|pageAiTraderDesc|pageSmartCopyDesc|suggestCopy|suggestAutoTrading/);
+    });
+
+    test('Chat AI exposes one 9Router connection and never collects or sends upstream credentials', () => {
+        const chatPage = read('dashboard/xBot/src/pages/user/ChatPage.jsx');
+        const settingsPage = read('dashboard/xBot/src/pages/user/SettingsPage.jsx');
+        const apiClient = read('dashboard/xBot/src/api/client.js');
+        const chatRoutes = read('src/server/chatRoutes.js');
+
+        expect(chatPage).not.toMatch(/setApiKeyProvider|PROVIDER_OPTIONS/);
+        expect(settingsPage).not.toMatch(/PROVIDER_OPTIONS|provider:\s*['"]google['"]|API Keys are now in the Chat page/);
+        expect(chatPage).not.toMatch(/loadApiKeys/);
+        expect(chatPage).not.toMatch(/xbot_ai_api_keys|apiKeyInput|API Keys Tab|value:\s*['"](?:google|openai|groq)['"]/i);
+        expect(chatPage).toMatch(/const stopGenerating = \(\) => \{[\s\S]*?abortRef\.current\?\.abort\(\)/);
+        expect(chatPage).not.toContain("content: `\\u274c ${err.message");
+        expect(apiClient).toContain('AI stream ended unexpectedly. Please try again.');
+        expect(apiClient).not.toMatch(/userApiKey/);
+        expect(chatRoutes).not.toMatch(/resolve(?:Gemini|OpenAI|Groq|NineRouter)Key|userApiKey/);
+        expect(chatPage).toContain("provider: '9router'");
+    });
+
+    test('every dashboard chat surface explicitly selects 9Router and records terminal engine provenance', () => {
+        for (const relativePath of [
+            'dashboard/xBot/src/pages/user/ChatPage.jsx',
+            'dashboard/xBot/src/components/ChatWidget.jsx',
+            'dashboard/xBot/src/components/chat/FloatingChat.jsx'
+        ]) {
+            const source = read(relativePath);
+            expect(source).toContain("provider: '9router'");
+            expect(source).toMatch(/engine/);
+        }
+    });
+
+    test('every dashboard chat surface renders non-secret 9Router engine provenance', () => {
+        for (const relativePath of [
+            'dashboard/xBot/src/pages/user/ChatPage.jsx',
+            'dashboard/xBot/src/components/ChatWidget.jsx',
+            'dashboard/xBot/src/components/chat/FloatingChat.jsx'
+        ]) {
+            const source = read(relativePath);
+            expect(source).toContain('Routed by 9Router');
+            expect(source).toMatch(/\.engine/);
+        }
+    });
+
+    test('every dashboard chat surface escapes model HTML and allowlists link protocols', () => {
+        for (const relativePath of [
+            'dashboard/xBot/src/pages/user/ChatPage.jsx',
+            'dashboard/xBot/src/components/ChatWidget.jsx',
+            'dashboard/xBot/src/components/chat/FloatingChat.jsx'
+        ]) {
+            const source = read(relativePath);
+            expect(source).toContain(".replace(/</g, '&lt;')");
+            expect(source).toContain('/^https?:\\/\\//i.test(url)');
+        }
+    });
+
+    test('model discovery and paid inference are fail-closed through 9Router only', () => {
+        const chatRoutes = read('src/server/chatRoutes.js');
+        expect(chatRoutes).toMatch(/router\.get\('\/models'/);
+        expect(chatRoutes).not.toMatch(/new GoogleGenAI|new OpenAI/);
+        expect(chatRoutes).not.toMatch(/detectProviderFromModel/);
+        expect(chatRoutes).toMatch(/createChatOrchestrator/);
+        expect(chatRoutes).toContain('baseUrl: NINEROUTER_API_ROOT');
+        expect(chatRoutes).toContain('configured: true');
+        expect(read('src/config/env.js')).toContain('NINEROUTER_API_ROOT,');
     });
 });

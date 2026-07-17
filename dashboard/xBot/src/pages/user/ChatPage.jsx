@@ -18,12 +18,13 @@ import { hapticImpact, hapticNotification } from '@/utils/telegram';
 /* ─── Markdown renderer (lightweight, XSS-safe) ─── */
 function renderMarkdown(text) {
     if (!text) return '';
-    // Sanitize: strip dangerous HTML before processing
-    let safe = text
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-        .replace(/javascript\s*:/gi, '')
-        .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+    // Escape model-controlled HTML before adding our own Markdown markup.
+    let safe = String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
         // Strip internal [Used: tool_name] metadata from display
         .replace(/\n?\[Used: [\w, ]+\]/g, '');
 
@@ -116,7 +117,7 @@ function renderMarkdown(text) {
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
-            if (/javascript\s*:/i.test(url)) return text;
+            if (!/^https?:\/\//i.test(url)) return text;
             return `<a href="${url}" target="_blank" rel="noopener" class="chat-link">${text}</a>`;
         })
         .replace(/^> (.+)$/gm, '<blockquote class="chat-blockquote">$1</blockquote>')
@@ -488,10 +489,17 @@ function ChatBubble({ message, onRetry, onPin, isPinned, onFeedback, feedback, o
                         <p className="text-sm text-surface-100 whitespace-pre-wrap">{message.content}</p>
                     </>
                 ) : (
-                    <div
-                        className="text-sm text-surface-200/90 chat-content"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
-                    />
+                    <>
+                        <div
+                            className="text-sm text-surface-200/90 chat-content"
+                            dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
+                        />
+                        {message.engine && (
+                            <span className="mt-1.5 block text-[9px] text-surface-200/25">
+                                Routed by 9Router · {message.engine}
+                            </span>
+                        )}
+                    </>
                 )}
                 {message.ts && (
                     <span className="block text-[9px] text-surface-200/20 mt-1.5 text-right">
@@ -828,8 +836,7 @@ function TypingIndicator() {
 // Token autocomplete data (outside component to avoid re-creation)
 const KNOWN_TOKEN_LIST = ['BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'OKB', 'BANMAO', 'PEPE', 'DOGE', 'SHIB', 'ARB', 'OP', 'AVAX', 'MATIC', 'DOT', 'ADA', 'XRP', 'LINK', 'UNI', 'AAVE'];
 const FALLBACK_MODELS = [
-    { id: 'xbot', label: 'xbot', desc: '9Router default combo with auto fallback', icon: '🧭', provider: '9router' },
-    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', desc: 'Stable multimodal fallback', icon: '⚡', provider: 'google' },
+    { id: 'xbot', label: 'xbot', desc: '9Router default route', icon: '🧭', provider: '9router' },
 ];
 
 const PERSONA_OPTIONS = [
@@ -890,13 +897,6 @@ const PERSONA_PREVIEWS = {
     gentleman: 'It would be my pleasure to assist you. Allow me, if you will...',
 };
 
-const PROVIDER_OPTIONS = [
-    { value: '9router', label: '9Router', icon: '🧭', desc: 'Default smart router, combo + auto fallback' },
-    { value: 'google', label: 'Google (Gemini)', icon: '✨', desc: 'Direct Gemini fallback, multimodal' },
-    { value: 'openai', label: 'OpenAI (GPT)', icon: '🧠', desc: 'Direct OpenAI fallback, reasoning & code' },
-    { value: 'groq', label: 'Groq', icon: '⚡', desc: 'Direct Groq fallback, ultra-fast inference' },
-];
-
 const THINKING_OPTIONS = [
     { value: 'none', label: 'None', icon: '💤', desc: 'Fastest, no extra reasoning' },
     { value: 'low', label: 'Low', icon: '💡', desc: 'Light reasoning' },
@@ -906,46 +906,18 @@ const THINKING_OPTIONS = [
 
 // Per-provider reasoning support config
 const REASONING_BY_PROVIDER = {
-    google: { supported: true, levels: ['none', 'low', 'medium', 'high'] },
-    openai: {
-        supported: true,
-        byModel: {
-            'gpt-4o': [],
-            'gpt-4o-mini': [],
-        },
-        defaultLevels: [],
-    },
-    groq: { supported: false, levels: [] },
     '9router': { supported: false, levels: [] },
 };
 
 const SETTINGS_TABS = [
     { id: 'model', icon: '🎯', labelKey: 'model' },
     { id: 'persona', icon: '🎭', labelKey: 'persona' },
-    { id: 'keys', icon: '🔑', labelKey: 'apiKeys' },
 ];
 
 // Model options per provider (fallback when backend doesn't return provider-specific models)
 const MODEL_OPTIONS_BY_PROVIDER = {
     '9router': [
-        { id: 'xbot', label: 'xbot', desc: '9Router xBot combo, recommended default', icon: '🧭' },
-        { id: 'plan', label: 'plan', desc: '9Router planning/reasoning combo', icon: '🧠' },
-        { id: 'action', label: 'action', desc: '9Router action/tool combo', icon: '⚙️' },
-    ],
-    google: [
-        { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', desc: 'Stable multimodal default', icon: '⚡' },
-        { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', desc: 'Best direct Gemini reasoning', icon: '🧠' },
-        { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash Preview', desc: 'Preview/experimental', icon: '🧪' },
-    ],
-    openai: [
-        { id: 'gpt-4o-mini', label: 'GPT-4o Mini', desc: 'Reliable cost-efficient default', icon: '💡' },
-        { id: 'gpt-4o', label: 'GPT-4o', desc: 'Reliable multimodal flagship', icon: '🌟' },
-    ],
-    groq: [
-        { id: 'qwen/qwen3-32b', label: 'Qwen3 32B', desc: 'Strong current Groq model', icon: '🐉' },
-        { id: 'llama-3.3-70b-versatile', label: 'LLaMA 3.3 70B', desc: 'Best quality, versatile', icon: '🦙' },
-        { id: 'llama-3.1-8b-instant', label: 'LLaMA 3.1 8B', desc: 'Ultra-fast, 560 t/s', icon: '⚡' },
-        { id: 'meta-llama/llama-4-scout-17b-16e-instruct', label: 'LLaMA 4 Scout', desc: 'Vision-capable', icon: '🔭' },
+        { id: 'xbot', label: 'xbot', desc: '9Router default route', icon: '🧭', provider: '9router' },
     ],
 };
 
@@ -979,10 +951,7 @@ export default function ChatPage() {
     });
     const [showModelPicker, setShowModelPicker] = useState(false);
     const [modelOptions, setModelOptions] = useState(FALLBACK_MODELS);
-    const [modelMeta, setModelMeta] = useState({ hasPersonalKey: false, hasServerKey: false, isOwner: false });
-    const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-    const [apiKeyInput, setApiKeyInput] = useState('');
-    const [userApiKeys, setUserApiKeys] = useState([]);
+    const [modelMeta, setModelMeta] = useState({ upstreams: [], configured: false });
     // AI Settings panel state
     const [showSettingsPanel, setShowSettingsPanel] = useState(false);
 
@@ -990,17 +959,15 @@ export default function ChatPage() {
     const [selectedPersona, setSelectedPersona] = useState(() => {
         try { return localStorage.getItem('xbot_ai_persona') || 'default'; } catch { return 'default'; }
     });
-    const [selectedProvider, setSelectedProvider] = useState(() => {
-        try { return localStorage.getItem('xbot_ai_provider') || '9router'; } catch { return '9router'; }
-    });
+    const selectedProvider = '9router';
     const [selectedThinking, setSelectedThinking] = useState(() => {
         try { return localStorage.getItem('xbot_ai_thinking') || 'medium'; } catch { return 'medium'; }
     });
-    const [apiKeyProvider, setApiKeyProvider] = useState('google');
+
 
     // Persist AI settings to localStorage
     useEffect(() => { try { localStorage.setItem('xbot_ai_model', selectedModel); } catch {} }, [selectedModel]);
-    useEffect(() => { try { localStorage.setItem('xbot_ai_provider', selectedProvider); } catch {} }, [selectedProvider]);
+
     useEffect(() => { try { localStorage.setItem('xbot_ai_persona', selectedPersona); } catch {} }, [selectedPersona]);
     useEffect(() => { try { localStorage.setItem('xbot_ai_thinking', selectedThinking); } catch {} }, [selectedThinking]);
 
@@ -1018,10 +985,9 @@ export default function ChatPage() {
         setSavedPrompts(updated);
         localStorage.setItem('chat_saved_prompts', JSON.stringify(updated));
     };
-    const [apiKeyLoading, setApiKeyLoading] = useState(false);
-    const [apiKeyError, setApiKeyError] = useState('');
+
     const [isDragging, setIsDragging] = useState(false);
-    const [compareMode, setCompareMode] = useState(false);
+    const compareMode = false;
     const [loadingConv, setLoadingConv] = useState(false);
     const [inputShake, setInputShake] = useState(false);
     const [shareModal, setShareModal] = useState(null); // { url, title, loading }
@@ -1112,26 +1078,13 @@ export default function ChatPage() {
             if (data?.models?.length) {
                 setModelOptions(data.models);
                 setModelMeta({
-                    hasPersonalKey: data.hasPersonalKey,
-                    hasServerKey: data.hasServerKey,
-                    isOwner: data.isOwner,
-                    hasOpenAiKey: data.hasOpenAiKey,
-                    hasServerOpenAiKey: data.hasServerOpenAiKey,
-                    hasGroqKey: data.hasGroqKey,
-                    hasServerGroqKey: data.hasServerGroqKey,
-                    hasNineRouterKey: data.hasNineRouterKey,
-                    hasServerNineRouterKey: data.hasServerNineRouterKey,
-                    defaultModel: data.defaultModel,
+                    upstreams: data.upstreams || [],
+                    configured: Boolean(data.configured),
+                    defaultModel: data.defaultModel || data.models[0]?.id
                 });
-                // Only reset model if the current model doesn't exist in ANY provider's model list
                 const savedModel = localStorage.getItem('xbot_ai_model');
-                const savedProvider = localStorage.getItem('xbot_ai_provider') || 'google';
-                const allKnownModels = Object.values(MODEL_OPTIONS_BY_PROVIDER).flat().map(m => m.id);
                 const currentModel = savedModel || selectedModel;
-                if (data.defaultProvider && !localStorage.getItem('xbot_ai_provider')) {
-                    setSelectedProvider(data.defaultProvider);
-                }
-                if (data.defaultModel && !allKnownModels.includes(currentModel) && !data.models.find(m => m.id === currentModel)) {
+                if (data.defaultModel && !data.models.find(m => m.id === currentModel)) {
                     setSelectedModel(data.defaultModel);
                 }
             }
@@ -1144,7 +1097,6 @@ export default function ChatPage() {
         api.getProfile().then(data => {
             const p = data?.preferences || {};
             if (p.persona) setSelectedPersona(p.persona);
-            if (p.provider) setSelectedProvider(p.provider);
             if (p.thinkingLevel) setSelectedThinking(p.thinkingLevel);
             if (p.model) setSelectedModel(p.model);
         }).catch(() => {});
@@ -1152,14 +1104,12 @@ export default function ChatPage() {
 
     // B4 fix: use refs to prevent stale closure in saveAiPrefs
     const personaRef = useRef(selectedPersona);
-    const providerRef = useRef(selectedProvider);
     const thinkingRef = useRef(selectedThinking);
     useEffect(() => { personaRef.current = selectedPersona; }, [selectedPersona]);
-    useEffect(() => { providerRef.current = selectedProvider; }, [selectedProvider]);
     useEffect(() => { thinkingRef.current = selectedThinking; }, [selectedThinking]);
 
     const saveAiPrefs = useCallback(async (updates) => {
-        const newPrefs = { persona: personaRef.current, provider: providerRef.current, thinkingLevel: thinkingRef.current, ...updates };
+        const newPrefs = { persona: personaRef.current, provider: '9router', thinkingLevel: thinkingRef.current, ...updates };
         try { await api.updatePreferences(newPrefs); } catch {}
     }, []);
 
@@ -1172,81 +1122,8 @@ export default function ChatPage() {
         });
     }, []);
 
-    // ── API key management — stored locally on device only ──
-    const LOCAL_KEYS_STORAGE = 'xbot_ai_api_keys';
-    const loadApiKeys = useCallback(() => {
-        try {
-            const stored = JSON.parse(localStorage.getItem(LOCAL_KEYS_STORAGE) || '[]');
-            setUserApiKeys(stored);
-        } catch { setUserApiKeys([]); }
-    }, []);
-    useEffect(() => { loadApiKeys(); }, [loadApiKeys]);
-
-    const addApiKey = useCallback(async () => {
-        if (!apiKeyInput.trim()) return;
-        setApiKeyLoading(true);
-        setApiKeyError('');
-        const key = apiKeyInput.trim();
-        const prov = apiKeyProvider;
-        // Client-side format validation
-        if (prov === 'google' && !key.startsWith('AIza') && key.length < 30) {
-            setApiKeyError('Google key should start with AIzaSy...'); setApiKeyLoading(false); return;
-        }
-        if (prov === 'openai' && !key.startsWith('sk-') && key.length < 20) {
-            setApiKeyError('OpenAI key should start with sk-...'); setApiKeyLoading(false); return;
-        }
-        try {
-            const existing = JSON.parse(localStorage.getItem(LOCAL_KEYS_STORAGE) || '[]');
-            // Prevent duplicates
-            if (existing.some(k => k.apiKey === key)) {
-                setApiKeyError('Key already added'); setApiKeyLoading(false); return;
-            }
-            const newKey = {
-                id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-                provider: prov,
-                apiKey: key,
-                maskedKey: `${key.slice(0, 6)}...${key.slice(-4)}`,
-                addedAt: Date.now(),
-            };
-            const updated = [...existing, newKey];
-            localStorage.setItem(LOCAL_KEYS_STORAGE, JSON.stringify(updated));
-            setApiKeyInput('');
-            loadApiKeys();
-            hapticNotification('success');
-        } catch (err) {
-            setApiKeyError(err.message || 'Failed to save key');
-            hapticNotification('error');
-        } finally { setApiKeyLoading(false); }
-    }, [apiKeyInput, apiKeyProvider, loadApiKeys]);
-
-    const deleteApiKey = useCallback((keyId) => {
-        try {
-            const existing = JSON.parse(localStorage.getItem(LOCAL_KEYS_STORAGE) || '[]');
-            const updated = existing.filter(k => k.id !== keyId);
-            localStorage.setItem(LOCAL_KEYS_STORAGE, JSON.stringify(updated));
-            loadApiKeys();
-            hapticNotification('success');
-        } catch { hapticNotification('error'); }
-    }, [loadApiKeys]);
-
-    // ── Unified helper: can user change model/thinking for a provider? ──
-    // Combines backend DB key flags + local localStorage keys
-    const canChangeForProvider = useCallback((provider) => {
-        if (modelMeta.isOwner) return true;
-        // Check local keys (stored in localStorage)
-        const hasLocalKey = userApiKeys.some(k => {
-            const p = (k.provider || '').toLowerCase();
-            if (provider === 'google') return ['google', 'gemini'].includes(p);
-            return p === provider;
-        });
-        if (hasLocalKey) return true;
-        // Check backend DB keys
-        if (provider === 'google') return modelMeta.hasPersonalKey;
-        if (provider === 'openai') return modelMeta.hasOpenAiKey;
-        if (provider === 'groq') return modelMeta.hasGroqKey;
-        if (provider === '9router') return modelMeta.hasNineRouterKey;
-        return false;
-    }, [modelMeta, userApiKeys]);
+    // Model access is controlled by the server-side 9Router connection and allowlist.
+    const canChangeForProvider = useCallback(() => Boolean(modelMeta.configured), [modelMeta.configured]);
 
     useEffect(() => { inputRef.current?.focus(); }, []);
 
@@ -1332,6 +1209,13 @@ export default function ChatPage() {
         inputRef.current?.focus();
     };
 
+    const stopGenerating = () => {
+        abortRef.current?.abort();
+        abortRef.current = null;
+        setLoading(false);
+        inputRef.current?.focus();
+    };
+
     const deleteConversation = async (convId, e) => {
         e.stopPropagation();
         try {
@@ -1399,7 +1283,7 @@ export default function ChatPage() {
                 setMessages(prev => [...prev, { role: 'compare', content: null, ts: Date.now() }]);
                 const models = availableModels?.length >= 2
                     ? availableModels
-                    : (MODEL_OPTIONS_BY_PROVIDER[selectedProvider] || MODEL_OPTIONS_BY_PROVIDER.google).map(m => m.id);
+                    : (MODEL_OPTIONS_BY_PROVIDER[selectedProvider] || []).map(m => m.id);
                 const modelA = selectedModel || models[0];
                 const modelB = models.find(m => m !== modelA) || models[1] || models[0];
                 const result = await api.compareChat(msg, modelA, modelB);
@@ -1443,17 +1327,11 @@ export default function ChatPage() {
                 signal: controller.signal,
                 image: currentImage,
                 model: selectedModel,
-                provider: selectedProvider,
+                provider: '9router',
                 persona: selectedPersona,
                 // U5: Pass custom persona text
                 customPersonaText: selectedPersona === 'custom' ? customPersonaInput : undefined,
-                userApiKey: (() => {
-                    try {
-                        const keys = JSON.parse(localStorage.getItem('xbot_ai_api_keys') || '[]');
-                        const providerKey = keys.find(k => k.provider === selectedProvider);
-                        return providerKey?.apiKey || undefined;
-                    } catch { return undefined; }
-                })(),
+
                 onTextDelta: (text) => {
                     fullText += text;
                     setMessages(prev => {
@@ -1488,6 +1366,7 @@ export default function ChatPage() {
                             copy[assistantIdx.current] = {
                                 ...copy[assistantIdx.current],
                                 toolCalls: data.toolCalls || streamToolCalls,
+                                engine: data.engine,
                             };
                         }
                         return copy;
@@ -1509,11 +1388,8 @@ export default function ChatPage() {
                     
                     let errContent;
                     if (isAuth || isQuota) {
-                        const pName = selectedProvider === 'google' ? 'Gemini' : selectedProvider === 'openai' ? 'OpenAI' : selectedProvider === 'groq' ? 'Groq' : 'AI';
-                        const pLink = selectedProvider === 'google' ? 'aistudio.google.com/app/apikey' : selectedProvider === 'openai' ? 'platform.openai.com/api-keys' : 'console.groq.com/keys';
-                        const errTitle = t('dashboard.chatPage.err_authTitle', `Lỗi kết nối {{pName}}`, { pName });
-                        const errReason = isQuota ? t('dashboard.chatPage.err_quotaUser', 'Dạ, tài khoản API của bạn hình như đã dùng hết hạn mức (quota) rồi ạ.') : t('dashboard.chatPage.err_authUser', 'Dạ, khóa API của bạn có vẻ đã hết hạn hoặc không chính xác mất rồi.');
-                        errContent = `\u274c **${errTitle}**\n\n${errReason}\n\n${t('dashboard.chatPage.err_openSettingsHint', '💡 Bạn có thể nhấn vào nút **⚙️ Cài đặt AI** bên dưới để kiểm tra và cập nhật lại API key nhé.')} [${t('dashboard.chatPage.err_getKey', 'Lấy key miễn phí')}](https://${pLink})`;
+                        const reason = isQuota ? '9Router quota or rate limit reached.' : 'The server-side 9Router connection is not authorized.';
+                        errContent = `\u274c **9Router unavailable**\n\n${reason} Please contact the xBot administrator.`;
                     } else {
                         errContent = `\u274c ${t('dashboard.chatPage.err_generic', 'Dạ, có chút trục trặc nhỏ:')} ${rawErr.substring(0, 200)}`;
                     }
@@ -1529,6 +1405,7 @@ export default function ChatPage() {
         } catch (err) {
             if (controller.signal.aborted) return;
             hapticNotification('error');
+            if (err.streamHandled) return;
             
             let errMsg = err.message || 'Lỗi kết nối. Vui lòng thử lại sau.';
             const errLower = errMsg.toLowerCase();
@@ -1539,23 +1416,8 @@ export default function ChatPage() {
             const sanitized = errMsg.replace(/sk-[a-zA-Z0-9*_-]{10,}/g, 'sk-***').replace(/https?:\/\/[^\s)]+/g, '').trim();
 
             if (isRateLimit || isAuthError) {
-                const hasUserKey = (() => {
-                    try {
-                        const keys = JSON.parse(localStorage.getItem('xbot_ai_api_keys') || '[]');
-                        return !!keys.find(k => k.provider === selectedProvider)?.apiKey;
-                    } catch { return false; }
-                })();
-                
-                const pName = selectedProvider === 'google' ? 'Gemini' : selectedProvider === 'openai' ? 'OpenAI' : selectedProvider === 'groq' ? 'Groq' : 'AI';
-                const pLink = selectedProvider === 'google' ? 'aistudio.google.com/app/apikey' : selectedProvider === 'openai' ? 'platform.openai.com/api-keys' : 'console.groq.com/keys';
-
-                if (hasUserKey) {
-                   const errTitle = t('dashboard.chatPage.err_authTitle', `Lỗi kết nối {{pName}}`, { pName });
-                   const errReason = isRateLimit ? t('dashboard.chatPage.err_quotaUser', 'Dạ, tài khoản API của bạn hình như đã dùng hết hạn mức (quota) rồi ạ.') : t('dashboard.chatPage.err_authUser', 'Dạ, khóa API của bạn có vẻ đã hết hạn hoặc không chính xác mất rồi.');
-                   errMsg = `\u274c **${errTitle}**\n\n${errReason}\n\n${t('dashboard.chatPage.err_openSettingsHint', '💡 Bạn có thể nhấn vào nút **⚙️ Cài đặt AI** bên dưới để kiểm tra và cập nhật lại API key nhé.')}`;
-                } else {
-                   errMsg = `\u274c **${t('dashboard.chatPage.err_titleServer', `Máy chủ {{pName}} đang quá tải`, { pName })}**\n\n${t('dashboard.chatPage.err_descServer', 'Dạ, hiện tại lượng truy cập đang vượt quá hạn mức miễn phí của hệ thống XBot.')}\n\n💡 **${t('dashboard.chatPage.err_tipServer', 'Mẹo để không bị gián đoạn:')}**\n${t('dashboard.chatPage.err_tipServerDesc', 'Bạn có thể tự thiết lập API key cá nhân để được xử lý ngay lập tức, tốc độ cao nhất và hoàn toàn miễn phí nhé!')}\n\n**${t('dashboard.chatPage.err_guideServer', 'Hướng dẫn nhanh:')}**\n${t('dashboard.chatPage.err_guideServer1', '1. Lấy key miễn phí tại:')} [${pLink}](https://${pLink})\n${t('dashboard.chatPage.err_guideServer2', '2. Nhấn nút [Cài đặt AI] bên dưới > chuyển sang tab [Khóa API]')}\n${t('dashboard.chatPage.err_guideServer3', '3. Dán key của bạn vào và tận hưởng đường truyền riêng biệt ạ.')}`;
-                }
+                const reason = isRateLimit ? '9Router quota or rate limit reached.' : 'The server-side 9Router connection is not authorized.';
+                errMsg = `\u274c **9Router unavailable**\n\n${reason} Please contact the xBot administrator.`;
             } else {
                 // Safely wrap any remaining error without leaking raw technical details
                 errMsg = `\u274c ${t('dashboard.chatPage.err_generic', 'Dạ, có chút trục trặc nhỏ:')} ${sanitized.substring(0, 200)}`;
@@ -1571,7 +1433,7 @@ export default function ChatPage() {
                 }
                 return [...prev, {
                     role: 'assistant',
-                    content: `\u274c ${err.message || 'Failed to get AI response. Please try again.'}`,
+                    content: errMsg,
                     ts: Date.now()
                 }];
             });
@@ -2299,21 +2161,9 @@ export default function ChatPage() {
                     </div>
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                         {/* Compare toggle — hidden on mobile */}
-                        <button
-                            onClick={() => setCompareMode(!compareMode)}
-                            className={`hidden sm:flex p-2 rounded-lg transition-colors items-center gap-1 ${
-                                compareMode
-                                    ? 'bg-purple-500/20 text-purple-400'
-                                    : 'hover:bg-white/5 text-surface-200/40 hover:text-purple-400'
-                            }`}
-                            title={t('dashboard.chatPage.compareIndicator', 'Compare')}
-                        >
-                            <Columns size={12} />
-                            <span className="hidden sm:inline text-[10px]">{compareMode ? t('dashboard.chatPage.compareIndicator', 'Compare') : ''}</span>
-                        </button>
                         {/* AI Settings Button */}
                         <div className="relative">
-                            <button onClick={() => { setShowSettingsPanel(!showSettingsPanel); if (!showSettingsPanel) { loadApiKeys(); } }}
+                            <button onClick={() => setShowSettingsPanel(!showSettingsPanel)}
                                 className={`rounded-lg transition-colors flex items-center gap-1 active:scale-95 ${
                                     isMobile ? 'p-2.5 min-w-[40px] min-h-[40px] justify-center' : 'p-2'
                                 } ${
@@ -2601,7 +2451,7 @@ export default function ChatPage() {
                                                 <RefreshCw size={11} />
                                                 {t('dashboard.chatPage.retryBtn', 'Thử lại')}
                                             </button>
-                                            <button onClick={() => { setShowSettingsPanel(true); setSettingsTab('keys'); }}
+                                            <button onClick={() => { setShowSettingsPanel(true); setSettingsTab('model'); }}
                                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px]
                                                     bg-brand-500/10 text-brand-400 border border-brand-500/20
                                                     hover:bg-brand-500/20 transition-all">
@@ -2680,8 +2530,8 @@ export default function ChatPage() {
                             <button onClick={() => { setShowSettingsPanel(true); setSettingsTab('model'); }}
                                 className={`inline-flex items-center gap-1.5 rounded-full bg-surface-800/60 border border-white/5 text-surface-200/60 hover:text-surface-200/90 hover:border-white/10 transition-all whitespace-nowrap flex-shrink-0
                                     ${isMobile ? 'px-3 py-2 text-xs' : 'px-2.5 py-1 text-[10px]'}`}>
-                                <span>{(MODEL_OPTIONS_BY_PROVIDER[selectedProvider] || []).find(m => m.id === selectedModel)?.icon || '🤖'}</span>
-                                <span className="truncate max-w-[70px]">{(MODEL_OPTIONS_BY_PROVIDER[selectedProvider] || []).find(m => m.id === selectedModel)?.label || 'Flash'}</span>
+                                <span>{modelOptions.find(m => m.id === selectedModel)?.icon || '🧭'}</span>
+                                <span className="truncate max-w-[70px]">{modelOptions.find(m => m.id === selectedModel)?.label || '9Router'}</span>
                                 <span className="text-surface-200/25">·</span>
                                 <span>{selectedPersona === 'custom' ? '✏️' : (PERSONA_OPTIONS.find(p => p.value === selectedPersona)?.icon || '🔰')}</span>
                                 <span className="truncate max-w-[50px]">{selectedPersona === 'custom' ? t('dashboard.chatPage.custom', 'Custom') : (PERSONA_OPTIONS.find(p => p.value === selectedPersona)?.label || 'Default')}</span>
@@ -2790,6 +2640,10 @@ export default function ChatPage() {
                         )}
                         <button
                             onClick={() => {
+                                if (loading) {
+                                    stopGenerating();
+                                    return;
+                                }
                                 if (!input.trim()) {
                                     setInputShake(true);
                                     setTimeout(() => setInputShake(false), 500);
@@ -2797,15 +2651,17 @@ export default function ChatPage() {
                                 }
                                 sendMessage();
                             }}
-                            disabled={loading}
+                            title={loading ? t('dashboard.chatPage.stopGenerating', 'Stop generating') : t('dashboard.chatPage.send', 'Send')}
                             className={`rounded-xl transition-all flex-shrink-0
                                 ${isMobile ? 'p-3 min-w-[44px] min-h-[44px] flex items-center justify-center' : 'p-2.5'}
-                                ${input.trim() && !loading
+                                ${loading
+                                    ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                                    : input.trim()
                                     ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25'
                                     : 'bg-surface-800/40 text-surface-200/20 cursor-not-allowed'
                                 }`}>
                             {loading
-                                ? <Loader2 size={isMobile ? 18 : 16} className="animate-spin" />
+                                ? <X size={isMobile ? 18 : 16} />
                                 : <Send size={isMobile ? 18 : 16} />}
                         </button>
                     </div>
@@ -2845,7 +2701,7 @@ export default function ChatPage() {
                         {/* Tabs */}
                         <div className="flex border-b border-white/5 px-4 gap-1 flex-shrink-0">
                             {SETTINGS_TABS.map(tab => (
-                                <button key={tab.id} onClick={() => { setSettingsTab(tab.id); if (tab.id === 'keys') setApiKeyProvider(selectedProvider); }}
+                                <button key={tab.id} onClick={() => setSettingsTab(tab.id)}
                                     className={`px-3 py-2.5 text-xs font-medium transition-all relative ${
                                         settingsTab === tab.id
                                             ? 'text-brand-400'
@@ -2862,55 +2718,20 @@ export default function ChatPage() {
                             {/* ── Model Tab ── */}
                             {settingsTab === 'model' && (
                                 <>
-                                    {/* Provider */}
+                                    {/* One immutable server-side 9Router connection */}
                                     <div>
-                                        <p className="text-[10px] text-surface-200/40 uppercase tracking-widest font-semibold mb-2">{t('dashboard.chatPage.provider', 'Provider')}</p>
-                                        <div className="space-y-1">
-                                            {PROVIDER_OPTIONS.map(p => {
-                                                // U1: Key status per provider
-                                                const hasLocal = userApiKeys.some(k => {
-                                                    const kp = (k.provider || '').toLowerCase();
-                                                    return p.value === 'google' ? ['google', 'gemini'].includes(kp) : kp === p.value;
-                                                });
-                                                const hasServer = p.value === 'google' ? modelMeta.hasServerKey :
-                                                    p.value === 'openai' ? modelMeta.hasServerOpenAiKey :
-                                                    p.value === 'groq' ? modelMeta.hasServerGroqKey : false;
-                                                const hasDbKey = p.value === 'google' ? modelMeta.hasPersonalKey :
-                                                    p.value === 'openai' ? modelMeta.hasOpenAiKey :
-                                                    p.value === 'groq' ? modelMeta.hasGroqKey : false;
-                                                const keyDot = (hasLocal || hasDbKey) ? 'bg-emerald-400' : hasServer ? 'bg-amber-400' : 'bg-surface-200/20';
-                                                const keyLabel = (hasLocal || hasDbKey) ? t('dashboard.chatPage.yourKey', 'Your key') : hasServer ? t('dashboard.chatPage.serverKey', 'Server') : t('dashboard.chatPage.noKey', 'No key');
-                                                // U3: usage count for this provider
-                                                const providerUsage = (MODEL_OPTIONS_BY_PROVIDER[p.value] || []).reduce((sum, m) => sum + (modelUsageStats[m.id] || 0), 0);
-                                                return (
-                                                    <button key={p.value} onClick={() => {
-                                                        setSelectedProvider(p.value);
-                                                        const providerModels = MODEL_OPTIONS_BY_PROVIDER[p.value] || [];
-                                                        const firstModel = providerModels.length > 0 ? providerModels[0].id : selectedModel;
-                                                        if (providerModels.length > 0) setSelectedModel(firstModel);
-                                                        saveAiPrefs({ provider: p.value, model: firstModel });
-                                                    }}
-                                                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all flex items-center justify-between ${
-                                                            selectedProvider === p.value
-                                                                ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20'
-                                                                : 'text-surface-200/70 hover:bg-white/5 border border-transparent'
-                                                        }`}>
-                                                        <div>
-                                                            <span className="font-medium">{p.icon} {p.label}</span>
-                                                            <span className="block text-[10px] text-surface-200/40">{t(`dashboard.chatPage.providerDesc.${p.value}`, p.desc)}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            {providerUsage > 0 && <span className="text-[9px] text-surface-200/30">{t('dashboard.chatPage.msgCount', '{count} msgs').replace('{count}', providerUsage)}</span>}
-                                                            <div className="flex items-center gap-1">
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${keyDot}`} />
-                                                                <span className="text-[8px] text-surface-200/30">{keyLabel}</span>
-                                                            </div>
-                                                            {selectedProvider === p.value && <Check size={12} className="text-brand-400" />}
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>\n                                    </div>
+                                        <p className="text-[10px] text-surface-200/40 uppercase tracking-widest font-semibold mb-2">{t('dashboard.chatPage.provider', 'Connection')}</p>
+                                        <div className="w-full px-3 py-2.5 rounded-xl text-xs flex items-center justify-between bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                                            <div>
+                                                <span className="font-medium">🧭 9Router</span>
+                                                <span className="block text-[10px] text-surface-200/40">{t('dashboard.chatPage.providerDesc.9router', 'Private routed AI connection')}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <div className={`w-1.5 h-1.5 rounded-full ${modelMeta.configured ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                                                <span className="text-[8px] text-surface-200/40">{modelMeta.configured ? 'Connected' : 'Unavailable'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
 
                                     {/* Model — filtered by provider */}
                                     {(() => {
@@ -2921,7 +2742,7 @@ export default function ChatPage() {
                                                     <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl px-3 py-2 mb-3">
                                                         <p className="text-[10px] text-amber-400/70 flex items-center gap-1.5">
                                                             <Lock size={10} />
-                                                            {t('dashboard.chatPage.modelLockedHint', 'Model & thinking level are locked when using server API key. Add your own key in the "API Key" tab to unlock all options.')}
+                                                            {t('dashboard.chatPage.modelLockedHint', 'Model access is controlled by the server-side 9Router allowlist.')}
                                                         </p>
                                                     </div>
                                                 )}
@@ -2935,7 +2756,7 @@ export default function ChatPage() {
                                                 const canChange = canChangeForProvider(selectedProvider);
                                                 // Default model for each provider (first in list)
                                                 const providerModels = MODEL_OPTIONS_BY_PROVIDER[selectedProvider] || modelOptions;
-                                                const defaultProviderModel = selectedProvider === 'google' ? (modelMeta.defaultModel || providerModels[0]?.id) : providerModels[0]?.id;
+                                                const defaultProviderModel = modelMeta.defaultModel || providerModels[0]?.id;
                                                 const isDefault = m.id === defaultProviderModel;
                                                 const isLocked = !canChange && !isDefault;
                                                 return (
@@ -3085,118 +2906,6 @@ export default function ChatPage() {
                                 </>
                             )}
 
-                            {/* ── API Keys Tab ── */}
-                            {settingsTab === 'keys' && (
-                                <>
-                                    {/* Provider selector for keys */}
-                                    <div>
-                                        <p className="text-[10px] text-surface-200/40 uppercase tracking-widest font-semibold mb-2">{t('dashboard.chatPage.provider', 'Provider')}</p>
-                                        <div className="flex gap-1">
-                                            {PROVIDER_OPTIONS.map(p => (
-                                                <button key={p.value} onClick={() => setApiKeyProvider(p.value)}
-                                                    className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all ${
-                                                        apiKeyProvider === p.value
-                                                            ? 'bg-brand-500/15 text-brand-400 border border-brand-500/20'
-                                                            : 'text-surface-200/50 hover:bg-white/5 border border-transparent'
-                                                    }`}>
-                                                    {p.icon} {p.value === 'google' ? 'Google' : p.value === 'openai' ? 'OpenAI' : p.value === '9router' ? '9Router' : 'Groq'}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Existing keys */}
-                                    {userApiKeys.filter(k => !apiKeyProvider || (k.provider || 'google') === apiKeyProvider).length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className="text-[10px] text-surface-200/40 uppercase tracking-widest font-semibold">{t('dashboard.chatPage.yourKeys', 'Your Keys')}</p>
-                                            {userApiKeys.filter(k => !apiKeyProvider || (k.provider || 'google') === apiKeyProvider).map(k => (
-                                                <div key={k.id} className="flex items-center justify-between bg-surface-800/60 rounded-xl px-3 py-2.5">
-                                                    <div className="flex items-center gap-2 min-w-0">
-                                                        <Key size={12} className="text-emerald-400 flex-shrink-0" />
-                                                        <div className="min-w-0">
-                                                            <span className="text-xs text-surface-200/70 truncate font-mono block">{k.maskedKey}</span>
-                                                            <span className="text-[9px] text-surface-200/30">{k.provider || 'google'}</span>
-                                                        </div>
-                                                    </div>
-                                                    <button onClick={() => deleteApiKey(k.id)}
-                                                        className="p-1.5 rounded-lg hover:bg-red-500/20 text-surface-200/30 hover:text-red-400 transition-colors flex-shrink-0"
-                                                        title="Delete key">
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Add key form */}
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] text-surface-200/40 uppercase tracking-widest font-semibold">{t('dashboard.chatPage.addKey', 'Add Key')}</p>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="password"
-                                                value={apiKeyInput}
-                                                onChange={e => { setApiKeyInput(e.target.value); setApiKeyError(''); }}
-                                                placeholder={apiKeyProvider === 'google' ? 'AIzaSy...' : apiKeyProvider === 'openai' ? 'sk-...' : apiKeyProvider === '9router' ? '9Router API key' : 'gsk_...'}
-                                                className="flex-1 bg-surface-800/60 border border-white/10 rounded-lg px-3 py-2.5 text-xs text-surface-100 placeholder-surface-200/30 focus:outline-none focus:border-brand-400/50 font-mono"
-                                                onKeyDown={e => { if (e.key === 'Enter') addApiKey(); }}
-                                            />
-                                            <button onClick={addApiKey} disabled={apiKeyLoading || !apiKeyInput.trim()}
-                                                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-                                                    apiKeyLoading || !apiKeyInput.trim()
-                                                        ? 'bg-surface-800/40 text-surface-200/20 cursor-not-allowed'
-                                                        : 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25'
-                                                }`}>
-                                                {apiKeyLoading ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                                                {t('dashboard.chatPage.add', 'Add')}
-                                            </button>
-                                        </div>
-                                        {apiKeyError && (
-                                            <p className="text-[10px] text-red-400 flex items-center gap-1">
-                                                <X size={10} /> {apiKeyError}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Info */}
-                                    <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl px-3 py-2.5 space-y-1.5">
-                                        <p className="text-[11px] text-amber-400/80 font-medium">{t('dashboard.chatPage.howToGetKeys', 'How to get API keys:')}</p>
-                                        <p className="text-[10px] text-surface-200/50 leading-relaxed">
-                                            <strong className="text-surface-200/70">Google:</strong> <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" className="text-brand-400 hover:text-brand-300">aistudio.google.com</a><br/>
-                                            <strong className="text-surface-200/70">OpenAI:</strong> <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" className="text-brand-400 hover:text-brand-300">platform.openai.com</a><br/>
-                                            <strong className="text-surface-200/70">Groq:</strong> <a href="https://console.groq.com/keys" target="_blank" rel="noopener" className="text-brand-400 hover:text-brand-300">console.groq.com</a>
-                                        </p>
-                                        <p className="text-[10px] text-emerald-400/60 flex items-center gap-1">🔒 {t('dashboard.chatPage.keysLocalOnly', 'Keys are stored locally on your device only — never sent to our server.')}</p>
-                                    </div>
-
-                                    {/* Status */}
-                                    {(() => {
-                                        const canChange = canChangeForProvider(selectedProvider);
-                                        return (
-                                            <div className={`rounded-xl px-3 py-2.5 ${
-                                                canChange ? 'bg-emerald-500/5 border border-emerald-500/10' :
-                                                'bg-amber-500/5 border border-amber-500/10'
-                                            }`}>
-                                                {canChange ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <Key size={12} className="text-emerald-400 flex-shrink-0" />
-                                                        <span className="text-[10px] text-emerald-400/80 font-medium">✓ {t('dashboard.chatPage.personalKeyActive', 'Your API key is active — all models & thinking levels unlocked')}</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-y-1.5">
-                                                        <div className="flex items-center gap-2">
-                                                            <Lock size={12} className="text-amber-400/70 flex-shrink-0" />
-                                                            <span className="text-[10px] text-amber-400/70 font-medium">{t('dashboard.chatPage.serverKeyLocked', 'Server key — limited to default model & thinking level')}</span>
-                                                        </div>
-                                                        <p className="text-[9px] text-surface-200/40 leading-relaxed pl-5">
-                                                            {t('dashboard.chatPage.unlockHint', 'Go to the "API Key" tab and add your own key to unlock all models, thinking levels, and get faster responses with higher quotas.')}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
-                                </>
-                            )}
                         </div>
                     </div>
                 </>

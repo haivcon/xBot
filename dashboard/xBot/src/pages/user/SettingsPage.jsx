@@ -26,12 +26,6 @@ const PERSONA_OPTIONS = [
     { value: 'xwizard', label: 'Xwizard', icon: '🧙‍♂️', description: 'Crypto wizard personality' },
 ];
 
-const PROVIDER_OPTIONS = [
-    { value: 'google', label: 'Google (Gemini)', icon: '✨', description: 'Multimodal, best for complex tasks' },
-    { value: 'openai', label: 'OpenAI (GPT)', icon: '🧠', description: 'Strong reasoning & code' },
-    { value: 'groq', label: 'Groq (LLaMA)', icon: '⚡', description: 'Ultra-fast inference' },
-];
-
 const THINKING_OPTIONS = [
     { value: 'none', label: 'None', icon: '💤', description: 'Fastest, no extra reasoning' },
     { value: 'low', label: 'Low', icon: '💡', description: 'Light reasoning' },
@@ -55,7 +49,6 @@ export default function SettingsPage() {
     const [prefs, setPrefs] = useState({
         language: i18n.language?.substring(0, 2) || 'en',
         persona: 'default',
-        provider: 'google',
         thinkingLevel: 'medium',
     });
     const [ownerSettings, setOwnerSettings] = useState(null);
@@ -68,7 +61,9 @@ export default function SettingsPage() {
         api.getProfile()
             .then((data) => {
                 if (data.preferences) {
-                    setPrefs(prev => ({ ...prev, ...data.preferences }));
+                    const preferences = { ...data.preferences };
+                    delete preferences.provider;
+                    setPrefs(prev => ({ ...prev, ...preferences }));
                 }
             })
             .catch(() => {});
@@ -176,8 +171,8 @@ export default function SettingsPage() {
                 />
             </Section>
 
-            {/* ═══ AI Settings (moved to ChatPage) ═══ */}
-            <Section icon={Bot} title={t('dashboard.settingsPage.persona', 'AI Persona')} description={t('dashboard.settingsPage.aiMovedDesc', 'AI Persona, Provider, and API Keys are now in the Chat page')}>
+            {/* ═══ AI Settings (managed through Chat AI and server-side 9Router) ═══ */}
+            <Section icon={Bot} title={t('dashboard.settingsPage.persona', 'AI Persona')} description={t('dashboard.settingsPage.aiMovedDesc', 'Model selection is available in Chat AI; provider credentials remain server-side')}>
                 <button
                     onClick={() => navigate('/chat')}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 text-sm font-medium hover:bg-brand-500/15 transition-colors"

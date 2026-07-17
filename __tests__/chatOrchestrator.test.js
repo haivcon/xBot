@@ -72,7 +72,41 @@ describe('Chat orchestrator', () => {
         ]);
         const [, init] = fetchImpl.mock.calls[0];
         expect(init.headers.Authorization).toBe('Bearer service-secret');
+        expect(init.headers['Idempotency-Key']).toMatch(/^[a-f0-9]{64}$/);
         expect(init.body).not.toContain('service-secret');
+    });
+
+    test('uses stable per-round opaque idempotency keys across a tool loop', async () => {
+        const fetchImpl = jest.fn()
+            .mockResolvedValueOnce(sseResponse([
+                'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"read_balance","arguments":"{}"}}]}}]}\n\ndata: [DONE]\n\n'
+            ]))
+            .mockResolvedValueOnce(sseResponse(['data: {"choices":[{"delta":{"content":"done"}}]}\n\ndata: [DONE]\n\n']));
+        const orchestrator = createChatOrchestrator({
+            fetchImpl,
+            baseUrl: 'http://127.0.0.1:20128/v1',
+            serviceCredential: 'service-secret',
+            allowedModels: ['route-safe'],
+            tools: [{ type: 'function', function: { name: 'read_balance', parameters: { type: 'object' } } }],
+            executeTool: jest.fn().mockResolvedValue({ balance: 1 })
+        });
+
+        await orchestrator.streamChat({ ...baseInput, requestId: 'browser-visible-request' }, { onEvent: jest.fn() });
+
+        const keys = fetchImpl.mock.calls.map(([, init]) => init.headers['Idempotency-Key']);
+        expect(keys[0]).toMatch(/^[a-f0-9]{64}$/);
+        expect(keys[1]).toMatch(/^[a-f0-9]{64}$/);
+        expect(keys[1]).not.toBe(keys[0]);
+        expect(keys[0]).not.toContain('browser-visible-request');
+    });
+
+    test('fails closed when the server-owned 9Router credential is missing', () => {
+        expect(() => createChatOrchestrator({
+            fetchImpl: jest.fn(),
+            baseUrl: 'http://127.0.0.1:20128/v1',
+            serviceCredential: '',
+            allowedModels: ['route-safe']
+        })).toThrow(expect.objectContaining({ code: 'CONFIG_INVALID' }));
     });
 
     test('executes a bounded 9Router tool loop and reports done only after the final model turn', async () => {
@@ -437,6 +471,25 @@ describe('Chat orchestrator', () => {
         });
         await expect(orchestrator.streamChat(baseInput, { onEvent: e => events.push(e) })).rejects.toMatchObject({ code: 'UPSTREAM_ERROR', status: 503 });
         expect(events.some(e => e.type === 'done')).toBe(false);
+    });
+
+    test('does not retry after 9Router accepted a stream that ended incompletely', async () => {
+        const fetchImpl = jest.fn().mockResolvedValue(sseResponse([
+            'data: {"choices":[{"delta":{"content":"partial"}}]}\n\n'
+        ]));
+        const events = [];
+        const orchestrator = createChatOrchestrator({
+            fetchImpl,
+            baseUrl: 'http://127.0.0.1:20128/v1',
+            serviceCredential: 'secret',
+            allowedModels: ['route-safe']
+        });
+
+        await expect(orchestrator.streamChat(baseInput, { onEvent: event => events.push(event) }))
+            .rejects.toMatchObject({ code: 'UPSTREAM_STREAM_INCOMPLETE' });
+        expect(fetchImpl).toHaveBeenCalledTimes(1);
+        expect(events).toContainEqual({ type: 'text-delta', data: { text: 'partial' } });
+        expect(events.some(event => event.type === 'done')).toBe(false);
     });
 });
 

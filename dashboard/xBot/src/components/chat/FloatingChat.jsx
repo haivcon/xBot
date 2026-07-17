@@ -6,10 +6,12 @@ import api from '@/api/client';
 /* ─── Lightweight Markdown renderer for mini chat ─── */
 function renderMiniMd(text) {
     if (!text) return '';
-    let s = text
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-        .replace(/javascript\s*:/gi, '');
+    let s = String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     // Code blocks
     const blocks = [];
     s = s.replace(/```([\w]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
@@ -21,7 +23,7 @@ function renderMiniMd(text) {
         .replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:3px;font-size:10px">$1</code>')
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, t, url) => /javascript:/i.test(url) ? t : `<a href="${url}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:underline">${t}</a>`)
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, t, url) => /^https?:\/\//i.test(url) ? `<a href="${url}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:underline">${t}</a>` : t)
         .replace(/^> (.+)$/gm, '<div style="border-left:2px solid rgba(255,255,255,0.15);padding-left:8px;color:rgba(255,255,255,0.5);margin:2px 0">$1</div>')
         .replace(/^### (.+)$/gm, '<strong style="font-size:11px">$1</strong>')
         .replace(/^## (.+)$/gm, '<strong style="font-size:12px">$1</strong>')
@@ -71,6 +73,7 @@ export default function FloatingChat() {
             setMessages(prev => [...prev, { role: 'assistant', content: '', ts: assistantTs }]);
 
             await api.streamChatMessage(msg, conversationId, {
+                provider: '9router',
                 onTextDelta: (text) => {
                     fullText += text;
                     setMessages(prev => {
@@ -83,6 +86,12 @@ export default function FloatingChat() {
                 onApprovalRequired: data => api.confirmHermesApproval(data),
                 onDone: (data) => {
                     setConversationId(data.conversationId);
+                    setMessages(prev => {
+                        const copy = [...prev];
+                        const last = copy[copy.length - 1];
+                        if (last?.role === 'assistant') copy[copy.length - 1] = { ...last, engine: data.engine };
+                        return copy;
+                    });
                     if (!open) setUnread(prev => prev + 1);
                 },
                 onError: (data) => {
@@ -180,7 +189,14 @@ export default function FloatingChat() {
                                     {msg.role === 'user'
                                         ? <span>{msg.content || '...'}</span>
                                         : msg.content
-                                            ? <div dangerouslySetInnerHTML={{ __html: renderMiniMd(msg.content) }} />
+                                            ? <>
+                                                <div dangerouslySetInnerHTML={{ __html: renderMiniMd(msg.content) }} />
+                                                {msg.engine && (
+                                                    <span className="mt-1 block text-[9px] text-surface-200/25">
+                                                        Routed by 9Router · {msg.engine}
+                                                    </span>
+                                                )}
+                                            </>
                                             : <span className="text-surface-200/30">...</span>
                                     }
                                 </div>

@@ -9,8 +9,16 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const db = require('../../db.js');
 const { normalizeAddressSafe } = require('../utils/helpers');
-const { OKX_BASE_URL, API_PORT } = require('../config/env');
+const {
+    OKX_BASE_URL,
+    API_PORT,
+    NINEROUTER_API_KEY,
+    NINEROUTER_MODEL,
+    NINEROUTER_API_ROOT
+} = require('../config/env');
 const { createDashboardRoutes } = require('./dashboardRoutes');
+const { renderChatMetrics } = require('../services/chatOrchestrator/telemetry');
+const { checkNineRouterReadiness } = require('../services/nineRouterConnection');
 const {
     enqueueJob,
     registerJobHandler,
@@ -52,7 +60,7 @@ registerJobHandler('generate-token', async ({ walletAddress, token }) => {
 startJobWorkers();
 
 const isControlPath = (req) =>
-    req.path === '/health' || req.path === '/healthz' || req.path === '/metrics';
+    req.path === '/health' || req.path === '/healthz' || req.path === '/readyz' || req.path === '/metrics';
 
 function metricsMiddleware(req, res, next) {
     totalRequests += 1;
@@ -250,6 +258,15 @@ function startApiServer() {
         });
     });
 
+    app.get('/readyz', (_req, res) => {
+        const readiness = checkNineRouterReadiness({
+            baseUrl: NINEROUTER_API_ROOT,
+            serviceCredential: process.env.NINEROUTER_SERVICE_TOKEN || NINEROUTER_API_KEY,
+            allowedModels: (process.env.CHAT_ORCHESTRATOR_MODELS || NINEROUTER_MODEL || '')
+                .split(',').map(value => value.trim()).filter(Boolean)
+        });
+        return res.status(readiness.ready ? 200 : 503).json(readiness);
+    });
 
     app.get('/metrics', async (req, res) => {
         if (!METRICS_ENABLED) {
@@ -322,6 +339,7 @@ function startApiServer() {
         lines.push('# HELP process_resident_memory_bytes Resident memory size in bytes');
         lines.push('# TYPE process_resident_memory_bytes gauge');
         lines.push(metricLine('process_resident_memory_bytes', mem.rss));
+        lines.push(renderChatMetrics());
 
         res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
         res.send(lines.join('\n'));

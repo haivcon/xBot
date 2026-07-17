@@ -343,7 +343,7 @@ class ApiClient {
         return this.approveHermesRun(runId, approved ? 'once' : 'deny');
     }
 
-    async streamChatMessage(message, conversationId, { onTextDelta, onToolStart, onToolResult, onApprovalRequired, onDone, onError, image, model, provider, persona, userApiKey, customPersonaText, signal } = {}) {
+    async streamChatMessage(message, conversationId, { onTextDelta, onToolStart, onToolResult, onApprovalRequired, onDone, onError, image, model, provider, persona, customPersonaText, signal } = {}) {
         const headers = {
             'Content-Type': 'application/json',
             ...useAuthStore.getState().getHeaders(),
@@ -353,7 +353,7 @@ class ApiClient {
         if (model) body.model = model;
         if (provider) body.provider = provider;
         if (persona) body.persona = persona;
-        if (userApiKey) body.userApiKey = userApiKey;
+
         if (customPersonaText) body.customPersonaText = customPersonaText;
 
         const res = await fetch(`${API_BASE}/ai/chat/stream`, {
@@ -365,6 +365,7 @@ class ApiClient {
         const decoder = new TextDecoder();
         let buffer = '';
         let currentEvent = ''; // MUST persist across chunk reads
+        let terminalEvent = false;
 
         while (true) {
             const { done, value } = await reader.read();
@@ -383,14 +384,23 @@ class ApiClient {
                     else if (currentEvent === 'tool-start') onToolStart?.(data);
                     else if (currentEvent === 'tool-result') onToolResult?.(data);
                     else if (currentEvent === 'approval-required') await onApprovalRequired?.(data);
-                    else if (currentEvent === 'done') onDone?.(data);
-                    else if (currentEvent === 'error') onError?.(data);
+                    else if (currentEvent === 'done') {
+                        terminalEvent = true;
+                        onDone?.(data);
+                    } else if (currentEvent === 'error') {
+                        terminalEvent = true;
+                        onError?.(data);
+                        const error = new Error('AI service unavailable. Please try again.');
+                        error.streamHandled = true;
+                        throw error;
+                    }
                     currentEvent = '';
                 } else if (trimmed === '') {
                     currentEvent = '';
                 }
             }
         }
+        if (!terminalEvent && !signal?.aborted) throw new Error('AI stream ended unexpectedly. Please try again.');
     }
 
     // === Market APIs ===

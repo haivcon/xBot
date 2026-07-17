@@ -59,6 +59,7 @@ function createChatOrchestrator(options = {}) {
     if (typeof fetchImpl !== 'function') throw orchestrationError('CONFIG_INVALID', 'fetch is unavailable');
     const baseUrl = assertInternalUrl(options.baseUrl, '9Router URL');
     const credential = options.serviceCredential;
+    if (!String(credential || '').trim()) throw orchestrationError('CONFIG_INVALID', '9Router service credential is required');
     const allowedModels = new Set(options.allowedModels || []);
     const timeoutMs = Math.max(1, options.timeoutMs || 60_000);
     const maxConcurrent = Math.max(1, options.maxConcurrentPerTenant || 2);
@@ -104,9 +105,9 @@ function createChatOrchestrator(options = {}) {
     }
 
     async function streamNineRouter(input, hooks) {
-        if (!credential) throw orchestrationError('SERVICE_CREDENTIAL_REQUIRED', '9Router service credential is not configured');
         checkCircuit();
         const controller = new AbortController();
+        const idempotencySeed = `${input.tenantId}:${input.userId}:${input.requestId || crypto.randomUUID()}`;
         let timedOut = false;
         const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
         const abortFromCaller = () => controller.abort();
@@ -117,9 +118,18 @@ function createChatOrchestrator(options = {}) {
             for (let round = 0; round < maxToolRounds; round += 1) {
                 let roundText = '';
                 const pendingToolCalls = [];
+                const upstreamIdempotencyKey = crypto.createHash('sha256')
+                    .update(`${idempotencySeed}:${round}`)
+                    .digest('hex');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    Accept: 'text/event-stream',
+                    Authorization: 'Bearer ' + credential,
+                    'Idempotency-Key': upstreamIdempotencyKey
+                };
                 const response = await fetchImpl(`${baseUrl}/chat/completions`, {
                     method: 'POST',
-                    headers: { Authorization: 'Bearer ' + credential, 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+                    headers,
                     body: JSON.stringify({
                         model: input.model,
                         messages,
