@@ -76,6 +76,34 @@ describe('Chat orchestrator', () => {
         expect(init.body).not.toContain('service-secret');
     });
 
+    test('returns final OpenAI usage and emits it only after the provider completes', async () => {
+        const fetchImpl = jest.fn().mockResolvedValue(sseResponse([
+            'data: {"choices":[{"delta":{"content":"hello"}}]}\n\n',
+            'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":8,"completion_tokens":2,"total_tokens":10}}\n\n',
+            'data: [DONE]\n\n'
+        ]));
+        const events = [];
+        const orchestrator = createChatOrchestrator({
+            fetchImpl,
+            baseUrl: 'http://127.0.0.1:20128/v1',
+            serviceCredential: 'service-secret',
+            allowedModels: ['route-safe']
+        });
+
+        const result = await orchestrator.streamChat(baseInput, { onEvent: event => events.push(event) });
+
+        expect(result).toMatchObject({
+            completed: true,
+            usage: { prompt_tokens: 8, completion_tokens: 2, total_tokens: 10 }
+        });
+        expect(JSON.parse(fetchImpl.mock.calls[0][1].body).stream_options).toEqual({ include_usage: true });
+        expect(events).toEqual([
+            { type: 'text-delta', data: { text: 'hello' } },
+            { type: 'usage', data: { prompt_tokens: 8, completion_tokens: 2, total_tokens: 10 } },
+            { type: 'done', data: { engine: '9router' } }
+        ]);
+    });
+
     test('uses stable per-round opaque idempotency keys across a tool loop', async () => {
         const fetchImpl = jest.fn()
             .mockResolvedValueOnce(sseResponse([
@@ -98,6 +126,36 @@ describe('Chat orchestrator', () => {
         expect(keys[1]).toMatch(/^[a-f0-9]{64}$/);
         expect(keys[1]).not.toBe(keys[0]);
         expect(keys[0]).not.toContain('browser-visible-request');
+    });
+
+    test('aggregates provider usage across bounded tool rounds', async () => {
+        const fetchImpl = jest.fn()
+            .mockResolvedValueOnce(sseResponse([
+                'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"read_balance","arguments":"{}"}}]}}]}\n\n',
+                'data: {"choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}\n\n',
+                'data: [DONE]\n\n'
+            ]))
+            .mockResolvedValueOnce(sseResponse([
+                'data: {"choices":[{"delta":{"content":"done"}}]}\n\n',
+                'data: {"choices":[],"usage":{"prompt_tokens":8,"completion_tokens":2,"total_tokens":10}}\n\n',
+                'data: [DONE]\n\n'
+            ]));
+        const events = [];
+        const orchestrator = createChatOrchestrator({
+            fetchImpl,
+            baseUrl: 'http://127.0.0.1:20128/v1',
+            serviceCredential: 'service-secret',
+            allowedModels: ['route-safe'],
+            tools: [{ type: 'function', function: { name: 'read_balance', parameters: { type: 'object' } } }],
+            executeTool: jest.fn().mockResolvedValue({ balance: 1 })
+        });
+
+        const result = await orchestrator.streamChat(baseInput, { onEvent: event => events.push(event) });
+
+        expect(result.usage).toEqual({ prompt_tokens: 13, completion_tokens: 3, total_tokens: 16 });
+        expect(events.filter(event => event.type === 'usage')).toEqual([
+            { type: 'usage', data: { prompt_tokens: 13, completion_tokens: 3, total_tokens: 16 } }
+        ]);
     });
 
     test('fails closed when the server-owned 9Router credential is missing', () => {

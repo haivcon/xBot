@@ -114,9 +114,11 @@ function createChatOrchestrator(options = {}) {
         hooks.signal?.addEventListener('abort', abortFromCaller, { once: true });
         const messages = input.messages.map(message => ({ ...message }));
         let finalText = '';
+        let finalUsage = null;
         try {
             for (let round = 0; round < maxToolRounds; round += 1) {
                 let roundText = '';
+                let roundUsage = null;
                 const pendingToolCalls = [];
                 const upstreamIdempotencyKey = crypto.createHash('sha256')
                     .update(`${idempotencySeed}:${round}`)
@@ -135,6 +137,7 @@ function createChatOrchestrator(options = {}) {
                         messages,
                         tools: tools.length ? tools : undefined,
                         stream: true,
+                        stream_options: { include_usage: true },
                         max_tokens: maxOutputTokens
                     }),
                     signal: controller.signal
@@ -147,6 +150,13 @@ function createChatOrchestrator(options = {}) {
                 await parseOpenAiSse(response, {
                     maxBytes: options.maxOutputBytes,
                     onChunk: async chunk => {
+                        if (chunk?.usage && typeof chunk.usage === 'object') {
+                            roundUsage = {
+                                prompt_tokens: Math.max(0, Number(chunk.usage.prompt_tokens) || 0),
+                                completion_tokens: Math.max(0, Number(chunk.usage.completion_tokens) || 0),
+                                total_tokens: Math.max(0, Number(chunk.usage.total_tokens) || 0)
+                            };
+                        }
                         const delta = chunk?.choices?.[0]?.delta;
                         if (typeof delta?.content === 'string' && delta.content) {
                             roundText += delta.content;
@@ -164,12 +174,19 @@ function createChatOrchestrator(options = {}) {
                     }
                 });
 
+                if (roundUsage) {
+                    finalUsage = finalUsage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+                    finalUsage.prompt_tokens += roundUsage.prompt_tokens;
+                    finalUsage.completion_tokens += roundUsage.completion_tokens;
+                    finalUsage.total_tokens += roundUsage.total_tokens;
+                }
                 const toolCalls = pendingToolCalls.filter(call => call?.function?.name);
                 if (toolCalls.length === 0) {
                     finalText = roundText;
+                    if (finalUsage) await hooks.onEvent({ type: 'usage', data: finalUsage });
                     await hooks.onEvent({ type: 'done', data: { engine: '9router' } });
                     circuitFailures = 0;
-                    return { completed: true, text: finalText, engine: '9router' };
+                    return { completed: true, text: finalText, engine: '9router', usage: finalUsage };
                 }
                 if (typeof executeTool !== 'function') throw orchestrationError('TOOL_EXECUTOR_REQUIRED', 'A tool executor is required for model tool calls');
                 messages.push({ role: 'assistant', content: roundText || null, tool_calls: toolCalls });

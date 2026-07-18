@@ -10,7 +10,14 @@ const db = require('../../db.js');
 const logger = require('../core/logger');
 const { createJWT, decodeAndVerifyJWT, verifyJWT } = require('./dashboardAuth');
 const log = logger.child('Dashboard');
-const { BOT_ID } = require('../config/env');
+const {
+    BOT_ID,
+    NINEROUTER_API_KEY,
+    NINEROUTER_MODEL,
+    NINEROUTER_API_ROOT
+} = require('../config/env');
+const { createNineRouterConnection } = require('../services/nineRouterConnection');
+const { nineRouterRuntime } = require('../services/nineRouterRuntime');
 
 function hasWelcomeBotPermissions(member) {
     return member?.status === 'creator'
@@ -1193,6 +1200,48 @@ function createDashboardRoutes() {
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
+    });
+
+    const nineRouterConfiguredModels = () => (process.env.CHAT_ORCHESTRATOR_MODELS || NINEROUTER_MODEL || '')
+        .split(',').map(value => value.trim()).filter(Boolean);
+    const nineRouterCredential = () => String(process.env.NINEROUTER_SERVICE_TOKEN || NINEROUTER_API_KEY || '').trim();
+    const nineRouterConfigured = () => Boolean(NINEROUTER_API_ROOT && nineRouterCredential() && nineRouterConfiguredModels().length);
+
+    // ONE Connect is owner-only and never receives credentials from a dashboard payload.
+    router.get('/owner/config/one-connect', ownerGuard, (_req, res) => {
+        res.json(nineRouterRuntime.getStatus({ configured: nineRouterConfigured() }));
+    });
+
+    router.post('/owner/config/one-connect/connect', ownerGuard, async (req, res) => {
+        try {
+            const status = await nineRouterRuntime.connect({
+                probe: ({ signal }) => createNineRouterConnection({
+                    baseUrl: NINEROUTER_API_ROOT,
+                    serviceCredential: nineRouterCredential(),
+                    allowedModels: nineRouterConfiguredModels(),
+                    timeoutMs: Number(process.env.NINEROUTER_DISCOVERY_TIMEOUT_MS || 5000)
+                }).discover(
+                    { tenantId: 'owner-control', userId: String(req.dashboardUser.userId) },
+                    { signal }
+                )
+            });
+            log.info(`Dashboard: Owner ${req.dashboardUser.userId} connected ONE Connect`);
+            res.json(status);
+        } catch (error) {
+            log.warn(`Dashboard: ONE Connect probe failed (${error?.code || 'FAILED'})`);
+            res.status(error?.code === 'FEATURE_DISABLED' ? 409 : 503).json({
+                error: error?.code === 'FEATURE_DISABLED'
+                    ? '9Router integration feature is disabled'
+                    : '9Router connection probe failed',
+                code: error?.code || 'CONNECTION_FAILED'
+            });
+        }
+    });
+
+    router.post('/owner/config/one-connect/disconnect', ownerGuard, (req, res) => {
+        const status = nineRouterRuntime.disconnect();
+        log.info(`Dashboard: Owner ${req.dashboardUser.userId} disconnected ONE Connect; cancelled:${status.cancelledRequests}`);
+        res.json(status);
     });
 
     // --- Owner: Full Settings (read/write for dashboard Settings page) ---

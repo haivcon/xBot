@@ -222,6 +222,18 @@ class ApiClient {
         return this.get('/owner/config/runtime');
     }
 
+    getOneConnectStatus() {
+        return this.get('/owner/config/one-connect');
+    }
+
+    connectOneConnect() {
+        return this.post('/owner/config/one-connect/connect');
+    }
+
+    disconnectOneConnect() {
+        return this.post('/owner/config/one-connect/disconnect');
+    }
+
     getOwnerSettings() {
         return this.get('/owner/config/settings');
     }

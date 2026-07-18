@@ -1,27 +1,32 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '@/api/client';
-import { Settings, Bot, Key, ShieldAlert, Users, Save, Check, RefreshCw, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Key, ShieldAlert, Users, RefreshCw, Trash2, PlugZap } from 'lucide-react';
 
 export default function ConfigPage() {
     const { t } = useTranslation();
-    const [activeTab, setActiveTab] = useState('keys');
+    const [activeTab, setActiveTab] = useState('one-connect');
     const [aiKeys, setAiKeys] = useState([]);
     const [blocks, setBlocks] = useState([]);
     const [coOwners, setCoOwners] = useState([]);
+    const [oneConnect, setOneConnect] = useState(null);
+    const [oneConnectBusy, setOneConnectBusy] = useState(false);
+    const [oneConnectError, setOneConnectError] = useState('');
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [k, b, c] = await Promise.all([
+            const [k, b, c, connection] = await Promise.all([
                 api.get('/owner/config/ai-keys'),
                 api.get('/owner/config/blocks'),
                 api.get('/owner/co-owners'),
+                api.getOneConnectStatus(),
             ]);
             setAiKeys(k.keys || []);
             setBlocks(b.blocks || []);
             setCoOwners(c.coOwners || []);
+            setOneConnect(connection);
         } catch { /* handled */ } finally { setLoading(false); }
     };
 
@@ -43,7 +48,23 @@ export default function ConfigPage() {
         fetchData();
     };
 
+    const handleOneConnect = async (shouldConnect) => {
+        try {
+            setOneConnectBusy(true);
+            setOneConnectError('');
+            const status = shouldConnect
+                ? await api.connectOneConnect()
+                : await api.disconnectOneConnect();
+            setOneConnect(status);
+        } catch (error) {
+            setOneConnectError(error.message || 'ONE Connect request failed');
+        } finally {
+            setOneConnectBusy(false);
+        }
+    };
+
     const tabs = [
+        { id: 'one-connect', label: 'ONE Connect', icon: PlugZap },
         { id: 'keys', label: 'API Keys', icon: Key },
         { id: 'blocks', label: 'Blocked', icon: ShieldAlert },
         { id: 'coowners', label: 'Co-Owners', icon: Users },
@@ -78,6 +99,42 @@ export default function ConfigPage() {
                 <div className="flex items-center justify-center h-32"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
             ) : (
                 <>
+                    {activeTab === 'one-connect' && (
+                        <div className="glass-card overflow-hidden">
+                            <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="font-semibold text-surface-100 flex items-center gap-2">
+                                        <PlugZap size={16} className="text-brand-400" /> ONE Connect
+                                    </h3>
+                                    <p className="text-xs text-surface-200/50 mt-1">Private 9Router orchestration. Credentials remain server-side.</p>
+                                </div>
+                                <span className={oneConnect?.connected ? 'badge-success' : 'badge-warning'}>
+                                    {oneConnect?.connected ? 'Connected' : 'Disconnected'}
+                                </span>
+                            </div>
+                            <div className="p-5 space-y-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                    <div><p className="text-surface-200/40 text-xs">Configured</p><p className="text-surface-100">{oneConnect?.configured ? 'Yes' : 'No'}</p></div>
+                                    <div><p className="text-surface-200/40 text-xs">Models</p><p className="text-surface-100">{oneConnect?.modelCount || 0}</p></div>
+                                    <div><p className="text-surface-200/40 text-xs">Requests</p><p className="text-surface-100">{oneConnect?.usage?.requests || 0}</p></div>
+                                    <div><p className="text-surface-200/40 text-xs">Tokens</p><p className="text-surface-100">{oneConnect?.usage?.totalTokens || 0}</p></div>
+                                </div>
+                                {!oneConnect?.featureEnabled && (
+                                    <p className="text-sm text-amber-400">Enable CHAT_ORCHESTRATOR_V2 at startup before connecting.</p>
+                                )}
+                                {oneConnectError && <p className="text-sm text-red-400">{oneConnectError}</p>}
+                                <button
+                                    onClick={() => handleOneConnect(!oneConnect?.connected)}
+                                    disabled={oneConnectBusy || !oneConnect?.featureEnabled}
+                                    className={oneConnect?.connected ? 'btn-secondary' : 'btn-primary'}
+                                >
+                                    <RefreshCw size={14} className={oneConnectBusy ? 'animate-spin' : ''} />
+                                    {oneConnect?.connected ? 'Disconnect' : 'Connect'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* API Keys Tab */}
                     {activeTab === 'keys' && (
                         <div className="glass-card overflow-hidden">

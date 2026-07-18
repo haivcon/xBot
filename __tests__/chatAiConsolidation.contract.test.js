@@ -139,6 +139,28 @@ describe('legacy AI and copy surfaces are retired', () => {
         expect(chatPage).toContain("provider: '9router'");
     });
 
+    test('ONE Connect lifecycle is owner-only, feature-gated, and never accepts secrets from dashboard payloads', () => {
+        const dashboardRoutes = read('src/server/dashboardRoutes.js');
+        const apiClient = read('dashboard/xBot/src/api/client.js');
+        const configPage = read('dashboard/xBot/src/pages/owner/ConfigPage.jsx');
+        const apiServer = read('src/server/apiServer.js');
+        const envExample = read('.env.example');
+
+        expect(envExample).toContain('CHAT_ORCHESTRATOR_V2=false');
+        expect(dashboardRoutes).toMatch(/router\.get\('\/owner\/config\/one-connect', ownerGuard/);
+        expect(dashboardRoutes).toMatch(/router\.post\('\/owner\/config\/one-connect\/connect', ownerGuard/);
+        expect(dashboardRoutes).toMatch(/router\.post\('\/owner\/config\/one-connect\/disconnect', ownerGuard/);
+        expect(dashboardRoutes).not.toMatch(/req\.body[^\n]*(serviceToken|apiKey|credential)/i);
+        expect(apiClient).toMatch(/getOneConnectStatus\(\)/);
+        expect(apiClient).toMatch(/connectOneConnect\(\)/);
+        expect(apiClient).toMatch(/disconnectOneConnect\(\)/);
+        expect(configPage).toMatch(/ONE Connect/);
+        expect(configPage).not.toMatch(/type=["']password["']/);
+        expect(read('src/server/chatRoutes.js')).toMatch(/if \(result\.engine === '9router'\) nineRouterRuntime\.recordUsage/);
+        const readinessRoute = apiServer.slice(apiServer.indexOf("app.get('/readyz'"), apiServer.indexOf("app.get('/metrics'"));
+        expect(readinessRoute).not.toMatch(/usage|activeRequests|connectedAt/);
+    });
+
     test('every dashboard chat surface explicitly selects 9Router and records terminal engine provenance', () => {
         for (const relativePath of [
             'dashboard/xBot/src/pages/user/ChatPage.jsx',

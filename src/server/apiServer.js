@@ -19,6 +19,7 @@ const {
 const { createDashboardRoutes } = require('./dashboardRoutes');
 const { renderChatMetrics } = require('../services/chatOrchestrator/telemetry');
 const { checkNineRouterReadiness } = require('../services/nineRouterConnection');
+const { nineRouterRuntime } = require('../services/nineRouterRuntime');
 const {
     enqueueJob,
     registerJobHandler,
@@ -259,12 +260,16 @@ function startApiServer() {
     });
 
     app.get('/readyz', (_req, res) => {
-        const readiness = checkNineRouterReadiness({
+        const configReadiness = checkNineRouterReadiness({
             baseUrl: NINEROUTER_API_ROOT,
             serviceCredential: process.env.NINEROUTER_SERVICE_TOKEN || NINEROUTER_API_KEY,
             allowedModels: (process.env.CHAT_ORCHESTRATOR_MODELS || NINEROUTER_MODEL || '')
                 .split(',').map(value => value.trim()).filter(Boolean)
         });
+        const connection = nineRouterRuntime.getStatus({ configured: configReadiness.ready });
+        const readiness = connection.connected
+            ? { ready: true, provider: '9router' }
+            : { ready: false, provider: '9router', code: connection.code };
         return res.status(readiness.ready ? 200 : 503).json(readiness);
     });
 

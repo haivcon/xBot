@@ -22,6 +22,7 @@ const { createHermesClient } = require('../services/hermes/client');
 const { createNineRouterConnection } = require('../services/nineRouterConnection');
 const { beginChatRequest, recordChatOutcome } = require('../services/chatOrchestrator/telemetry');
 const { recordChatAudit } = require('../services/chatOrchestrator/audit');
+const { nineRouterRuntime } = require('../services/nineRouterRuntime');
 
 const SESSION_TTL = 30 * 60 * 1000;
 const SESSION_MAX_MESSAGES = 40;
@@ -248,7 +249,11 @@ function createChatRoutes() {
     router.get('/models', async (req, res) => {
         const userId = req.dashboardUser?.userId?.toString();
         if (!userId) return res.status(401).json({ error: 'Authentication required' });
+        try { nineRouterRuntime.assertConnected(); } catch (error) {
+            return res.status(503).json({ error: '9Router connection unavailable', code: error.code });
+        }
         const controller = new AbortController();
+        const unregister = nineRouterRuntime.register(controller);
         res.on('close', () => controller.abort());
         try {
             const discovery = await createDiscoveryConnection().discover({
@@ -272,12 +277,17 @@ function createChatRoutes() {
             if (error?.code !== 'CLIENT_ABORTED') log.warn(`[Discovery] ${error?.code || 'FAILED'}`);
             if (res.headersSent || res.writableEnded) return;
             return res.status(statusForError(error)).json({ error: '9Router model discovery unavailable', code: error?.code || 'DISCOVERY_FAILED' });
+        } finally {
+            unregister();
         }
     });
 
     router.post('/chat/stream', async (req, res) => {
         const userId = req.dashboardUser?.userId?.toString();
         if (!userId) return res.status(401).json({ error: 'Authentication required' });
+        try { nineRouterRuntime.assertConnected(); } catch (error) {
+            return res.status(503).json({ error: '9Router connection unavailable', code: error.code });
+        }
         const { message, conversationId, model, provider, persona, customPersonaText, image } = req.body || {};
         if (!message?.trim()) return res.status(400).json({ error: 'Message required' });
         if (message.length > 10000) return res.status(400).json({ error: 'Message too long' });
@@ -296,6 +306,7 @@ function createChatRoutes() {
             if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
         };
         const abortController = new AbortController();
+        const unregisterRuntimeRequest = nineRouterRuntime.register(abortController);
         let aborted = false;
         let auditContext = null;
         const endTelemetry = beginChatRequest();
@@ -371,6 +382,7 @@ function createChatRoutes() {
                 });
                 return res.end();
             }
+            if (result.engine === '9router') nineRouterRuntime.recordUsage(result.usage || {});
             session.messages = messages
                 .filter(item => item.role === 'user' || item.role === 'assistant')
                 .concat(result.text ? [{ role: 'assistant', content: result.text }] : [])
@@ -397,6 +409,7 @@ function createChatRoutes() {
             if (!aborted) sendEvent('error', { error: 'AI service unavailable. Please try again.', code: error?.code || 'AI_UNAVAILABLE' });
             return res.end();
         } finally {
+            unregisterRuntimeRequest();
             endTelemetry();
         }
     });
