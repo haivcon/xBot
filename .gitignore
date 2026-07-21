@@ -71,6 +71,7 @@ scripts/backup-sqlite.js
 
 # ─── Scripts ───
 *.cjs
+!services/nine-router-sidecar/tenant-context.cjs
 
 # Temporary script files
 fix*.js
