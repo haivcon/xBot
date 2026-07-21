@@ -85,9 +85,13 @@ function checkNineRouterReadiness(options = {}) {
     try {
         normalizeBaseUrl(options.baseUrl || process.env.NINEROUTER_BASE_URL || '');
         const serviceCredential = String(options.serviceCredential || process.env.NINEROUTER_API_KEY || '').trim();
-        if (!serviceCredential) throw new NineRouterConnectionError('SERVICE_CREDENTIAL_REQUIRED', '9Router service credential is required');
+        if (!serviceCredential && typeof options.buildHeaders !== 'function') {
+            throw new NineRouterConnectionError('SERVICE_CREDENTIAL_REQUIRED', '9Router service credential is required');
+        }
         const allowedModels = (options.allowedModels || []).map(String).filter(Boolean);
-        if (!allowedModels.length) throw new NineRouterConnectionError('MODEL_ALLOWLIST_REQUIRED', '9Router model allowlist is required');
+        if (!allowedModels.length && options.allowDynamicModels !== true) {
+            throw new NineRouterConnectionError('MODEL_ALLOWLIST_REQUIRED', '9Router model allowlist is required');
+        }
         return { ready: true, provider: '9router' };
     } catch {
         return { ready: false, provider: '9router', code: 'CONFIG_INVALID' };
@@ -101,11 +105,13 @@ function createNineRouterConnection(options = {}) {
     }
     const baseUrl = normalizeBaseUrl(options.baseUrl || process.env.NINEROUTER_BASE_URL || '');
     const serviceCredential = String(options.serviceCredential || process.env.NINEROUTER_API_KEY || '').trim();
-    if (!serviceCredential) {
+    const buildHeaders = options.buildHeaders;
+    if (!serviceCredential && typeof buildHeaders !== 'function') {
         throw new NineRouterConnectionError('SERVICE_CREDENTIAL_REQUIRED', '9Router service credential is required', 503);
     }
     const allowedModels = new Set((options.allowedModels || []).map(String).filter(Boolean));
-    if (!allowedModels.size) {
+    const allowDynamicModels = options.allowDynamicModels === true;
+    if (!allowedModels.size && !allowDynamicModels) {
         throw new NineRouterConnectionError('MODEL_ALLOWLIST_REQUIRED', '9Router model allowlist is required', 503);
     }
     const timeoutMs = Math.max(100, Number(options.timeoutMs || process.env.NINEROUTER_DISCOVERY_TIMEOUT_MS || 5000));
@@ -116,7 +122,13 @@ function createNineRouterConnection(options = {}) {
         }
         const linked = createLinkedAbortSignal(requestOptions.signal, timeoutMs);
         try {
-            const headers = { Accept: 'application/json', Authorization: `Bearer ${serviceCredential}` };
+            const headers = {
+                Accept: 'application/json',
+                ...(serviceCredential ? { Authorization: `Bearer ${serviceCredential}` } : {}),
+                ...(typeof buildHeaders === 'function'
+                    ? buildHeaders(identity, { method: 'GET', path: '/models' })
+                    : {})
+            };
             const response = await fetchImpl(`${baseUrl}/models`, {
                 method: 'GET',
                 headers,
@@ -132,7 +144,10 @@ function createNineRouterConnection(options = {}) {
             if (!Array.isArray(payload?.data)) {
                 throw new NineRouterConnectionError('DISCOVERY_INVALID', '9Router returned invalid discovery data', 502);
             }
-            const models = payload.data.map(item => normalizeModel(item, allowedModels)).filter(Boolean);
+            const effectiveAllowedModels = allowDynamicModels
+                ? new Set(payload.data.map(item => item?.id).filter(Boolean))
+                : allowedModels;
+            const models = payload.data.map(item => normalizeModel(item, effectiveAllowedModels)).filter(Boolean);
             if (!models.length) {
                 throw new NineRouterConnectionError('NO_ALLOWED_MODELS', '9Router returned no allowlisted chat models', 503);
             }

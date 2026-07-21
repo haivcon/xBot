@@ -546,8 +546,10 @@ function createDashboardRoutes() {
     // ==================
     router.use(authMiddleware);
 
-    // --- AI Chat Routes (Web AI Chat) ---
+    // --- Tenant-isolated 9Router management + AI Chat ---
+    const { createNineRouterTenantRoutes } = require('./nineRouterTenantRoutes');
     const { createChatRoutes } = require('./chatRoutes');
+    router.use('/ai/9router', createNineRouterTenantRoutes());
     router.use('/ai', createChatRoutes());
 
     // --- AI provider router (server/user API keys) ---

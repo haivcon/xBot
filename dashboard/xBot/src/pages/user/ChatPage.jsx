@@ -13,6 +13,7 @@ import {
     Brain, Save, Tag, AlertCircle, ChevronUp
 } from 'lucide-react';
 import { hapticImpact, hapticNotification } from '@/utils/telegram';
+import NineRouterSettings from '@/components/chat/NineRouterSettings';
 
 
 /* ─── Markdown renderer (lightweight, XSS-safe) ─── */
@@ -912,6 +913,7 @@ const REASONING_BY_PROVIDER = {
 const SETTINGS_TABS = [
     { id: 'model', icon: '🎯', labelKey: 'model' },
     { id: 'persona', icon: '🎭', labelKey: 'persona' },
+    { id: '9router', icon: '🧭', labelKey: '9router' },
 ];
 
 // Model options per provider (fallback when backend doesn't return provider-specific models)
@@ -2833,6 +2835,11 @@ export default function ChatPage() {
                                         );
                                     })()}
                                 </>
+                            )}
+
+                            {/* ── Tenant-isolated 9Router settings ── */}
+                            {settingsTab === '9router' && (
+                                <NineRouterSettings onModelsChanged={loadModels} />
                             )}
 
                             {/* ── Persona Tab ── */}

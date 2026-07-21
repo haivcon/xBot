@@ -6,11 +6,7 @@ const { Router } = require('express');
 const crypto = require('crypto');
 const logger = require('../core/logger');
 const log = logger.child('WebChat');
-const {
-    NINEROUTER_API_KEY,
-    NINEROUTER_MODEL,
-    NINEROUTER_API_ROOT
-} = require('../config/env');
+const { NINEROUTER_MODEL } = require('../config/env');
 const { ONCHAIN_TOOLS, executeToolCall, buildSystemInstruction } = require('../features/ai/ai-onchain');
 const { WEB_TOOL_DECLARATIONS, executeWebToolCall } = require('./webToolExecutor');
 const { buildAIAPrompt } = require('../config/prompts');
@@ -22,7 +18,11 @@ const { createHermesClient } = require('../services/hermes/client');
 const { createNineRouterConnection } = require('../services/nineRouterConnection');
 const { beginChatRequest, recordChatOutcome } = require('../services/chatOrchestrator/telemetry');
 const { recordChatAudit } = require('../services/chatOrchestrator/audit');
-const { nineRouterRuntime } = require('../services/nineRouterRuntime');
+const {
+    createTenantHeaders,
+    getConfig: getNineRouterTenantConfig,
+    normalizeTenantId
+} = require('../services/nineRouterTenantClient');
 
 const SESSION_TTL = 30 * 60 * 1000;
 const SESSION_MAX_MESSAGES = 40;
@@ -57,10 +57,6 @@ const CHAT_V2_READ_ONLY_TOOLS = new Set([
 function configuredModels() {
     return (process.env.CHAT_ORCHESTRATOR_MODELS || NINEROUTER_MODEL || '')
         .split(',').map(value => value.trim()).filter(Boolean);
-}
-
-function serviceCredential() {
-    return String(process.env.NINEROUTER_SERVICE_TOKEN || NINEROUTER_API_KEY || '').trim();
 }
 
 function createChatV2ToolPolicy(toolDeclarations) {
@@ -103,9 +99,14 @@ function htmlToMarkdown(html) {
         .replace(/<\/?[^>]+(>|$)/g, '');
 }
 
-let chatOrchestratorV2;
-function getChatOrchestratorV2() {
-    if (chatOrchestratorV2) return chatOrchestratorV2;
+const chatOrchestratorsV2 = new Map();
+function getTenantApiRoot() {
+    return `${getNineRouterTenantConfig().baseUrl}/v1`;
+}
+
+function getChatOrchestratorV2(allowedModels = configuredModels()) {
+    const modelKey = [...new Set(allowedModels.map(String).filter(Boolean))].sort().join('\n');
+    if (chatOrchestratorsV2.has(modelKey)) return chatOrchestratorsV2.get(modelKey);
     let hermesClient;
     if (process.env.HERMES_ENABLED === 'true') {
         hermesClient = createHermesClient({
@@ -116,10 +117,15 @@ function getChatOrchestratorV2() {
         });
     }
     const tools = convertToolsToOpenAI(getToolDeclarations());
-    chatOrchestratorV2 = createChatOrchestrator({
-        baseUrl: NINEROUTER_API_ROOT,
-        serviceCredential: serviceCredential(),
-        allowedModels: configuredModels(),
+    const orchestrator = createChatOrchestrator({
+        baseUrl: getTenantApiRoot(),
+        buildHeaders: (identity, request) => createTenantHeaders({
+            tenantId: normalizeTenantId(identity.userId),
+            method: request.method,
+            path: request.path,
+            body: request.body
+        }),
+        allowedModels: [...new Set(allowedModels.map(String).filter(Boolean))],
         timeoutMs: Number(process.env.CHAT_ORCHESTRATOR_TIMEOUT_MS || 60000),
         maxConcurrentPerTenant: Number(process.env.CHAT_ORCHESTRATOR_TENANT_CONCURRENCY || 2),
         rateLimitPerMinute: Number(process.env.CHAT_ORCHESTRATOR_TENANT_RATE_LIMIT || 15),
@@ -154,14 +160,21 @@ function getChatOrchestratorV2() {
         hermesEnabled: process.env.HERMES_ENABLED === 'true',
         hermesClient
     });
-    return chatOrchestratorV2;
+    chatOrchestratorsV2.set(modelKey, orchestrator);
+    return orchestrator;
 }
 
 function createDiscoveryConnection() {
     return createNineRouterConnection({
-        baseUrl: NINEROUTER_API_ROOT,
-        serviceCredential: serviceCredential(),
+        baseUrl: getTenantApiRoot(),
+        buildHeaders: (identity, request) => createTenantHeaders({
+            tenantId: normalizeTenantId(identity.userId),
+            method: request.method,
+            path: `/v1${request.path}`,
+            body: request.body
+        }),
         allowedModels: configuredModels(),
+        allowDynamicModels: true,
         timeoutMs: Number(process.env.NINEROUTER_DISCOVERY_TIMEOUT_MS || 5000)
     });
 }
@@ -249,16 +262,13 @@ function createChatRoutes() {
     router.get('/models', async (req, res) => {
         const userId = req.dashboardUser?.userId?.toString();
         if (!userId) return res.status(401).json({ error: 'Authentication required' });
-        try { nineRouterRuntime.assertConnected(); } catch (error) {
-            return res.status(503).json({ error: '9Router connection unavailable', code: error.code });
-        }
         const controller = new AbortController();
-        const unregister = nineRouterRuntime.register(controller);
         res.on('close', () => controller.abort());
         try {
+            const tenantId = normalizeTenantId(userId);
             const discovery = await createDiscoveryConnection().discover({
-                tenantId: String(req.dashboardUser?.tenantId || userId),
-                userId
+                tenantId,
+                userId: tenantId
             }, { signal: controller.signal });
             return res.json({
                 provider: discovery.provider,
@@ -277,17 +287,12 @@ function createChatRoutes() {
             if (error?.code !== 'CLIENT_ABORTED') log.warn(`[Discovery] ${error?.code || 'FAILED'}`);
             if (res.headersSent || res.writableEnded) return;
             return res.status(statusForError(error)).json({ error: '9Router model discovery unavailable', code: error?.code || 'DISCOVERY_FAILED' });
-        } finally {
-            unregister();
         }
     });
 
     router.post('/chat/stream', async (req, res) => {
         const userId = req.dashboardUser?.userId?.toString();
         if (!userId) return res.status(401).json({ error: 'Authentication required' });
-        try { nineRouterRuntime.assertConnected(); } catch (error) {
-            return res.status(503).json({ error: '9Router connection unavailable', code: error.code });
-        }
         const { message, conversationId, model, provider, persona, customPersonaText, image } = req.body || {};
         if (!message?.trim()) return res.status(400).json({ error: 'Message required' });
         if (message.length > 10000) return res.status(400).json({ error: 'Message too long' });
@@ -306,15 +311,22 @@ function createChatRoutes() {
             if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
         };
         const abortController = new AbortController();
-        const unregisterRuntimeRequest = nineRouterRuntime.register(abortController);
         let aborted = false;
         let auditContext = null;
         const endTelemetry = beginChatRequest();
         res.on('close', () => { aborted = true; abortController.abort(); });
 
         try {
-            const chosenModel = String(model || NINEROUTER_MODEL || '').trim();
-            if (!chosenModel) throw Object.assign(new Error('No model configured'), { code: 'MODEL_NOT_ALLOWED' });
+            const tenantId = normalizeTenantId(userId);
+            const discovery = await createDiscoveryConnection().discover(
+                { tenantId, userId: tenantId },
+                { signal: abortController.signal }
+            );
+            const availableModelIds = discovery.models.map(item => item.id);
+            const chosenModel = String(model || NINEROUTER_MODEL || availableModelIds[0] || '').trim();
+            if (!chosenModel || !availableModelIds.includes(chosenModel)) {
+                throw Object.assign(new Error('Model is not available for this account'), { code: 'MODEL_NOT_ALLOWED' });
+            }
             const sessionId = conversationId || `web_${userId}_${Date.now()}`;
             let session = await getSession(sessionId, userId);
             if (!session) {
@@ -332,7 +344,6 @@ function createChatRoutes() {
             messages.push(...session.messages.map(item => ({ role: item.role, content: item.content || '' })));
             messages.push({ role: 'user', content: message.trim() });
 
-            const tenantId = String(req.dashboardUser?.tenantId || userId);
             const requestId = crypto.createHash('sha256')
                 .update(`${sessionId}:${session.messages.length}:${message.trim()}`)
                 .digest('hex');
@@ -342,7 +353,7 @@ function createChatRoutes() {
                 action: 'request_started', engine: 'unknown', outcome: 'started', code: 'OK'
             });
 
-            const result = await getChatOrchestratorV2().streamChat({
+            const result = await getChatOrchestratorV2(availableModelIds).streamChat({
                 tenantId,
                 userId,
                 model: chosenModel,
@@ -382,7 +393,6 @@ function createChatRoutes() {
                 });
                 return res.end();
             }
-            if (result.engine === '9router') nineRouterRuntime.recordUsage(result.usage || {});
             session.messages = messages
                 .filter(item => item.role === 'user' || item.role === 'assistant')
                 .concat(result.text ? [{ role: 'assistant', content: result.text }] : [])
@@ -409,7 +419,6 @@ function createChatRoutes() {
             if (!aborted) sendEvent('error', { error: 'AI service unavailable. Please try again.', code: error?.code || 'AI_UNAVAILABLE' });
             return res.end();
         } finally {
-            unregisterRuntimeRequest();
             endTelemetry();
         }
     });
@@ -423,12 +432,13 @@ function createChatRoutes() {
         if (!runId || runId.length > 256) return res.status(400).json({ error: 'Invalid run ID' });
         if (!['once', 'deny'].includes(choice)) return res.status(400).json({ error: 'Invalid approval choice' });
         try {
-            const result = await getChatOrchestratorV2().approveHermesRun({
-                tenantId: String(req.dashboardUser?.tenantId || userId), userId, runId, choice
+            const tenantId = normalizeTenantId(userId);
+            const result = await getChatOrchestratorV2(configuredModels()).approveHermesRun({
+                tenantId, userId: tenantId, runId, choice
             });
             recordChatAudit({
-                tenantId: String(req.dashboardUser?.tenantId || userId),
-                userId,
+                tenantId,
+                userId: tenantId,
                 requestId: crypto.createHash('sha256').update(runId).digest('hex'),
                 action: 'approval_submitted',
                 engine: 'hermes',

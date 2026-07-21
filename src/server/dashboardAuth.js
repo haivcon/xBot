@@ -24,7 +24,9 @@ function decodeAndVerifyJWT(token, { allowExpiredWithinSec = 0 } = {}) {
         if (!header || !body || !signature) return null;
 
         const expected = crypto.createHmac('sha256', secret).update(`${header}.${body}`).digest('base64url');
-        if (signature !== expected) return null;
+        const actualBuffer = Buffer.from(signature);
+        const expectedBuffer = Buffer.from(expected);
+        if (actualBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(actualBuffer, expectedBuffer)) return null;
 
         const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
         const now = Math.floor(Date.now() / 1000);

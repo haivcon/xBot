@@ -37,7 +37,7 @@ const TEXTS = {
         xmusicDesc: 'Biến địa chỉ ví Web3 thành một bản nhạc độc nhất bằng AI — tạo danh tính âm thanh, xuất tệp nhạc và đúc tác phẩm thành NFT trên X Layer.',
         aiChat: 'Chat AI', analytics: 'Phân tích', telegram: 'Telegram', multiLang: 'Đa ngôn ngữ', portfolio: 'Danh mục',
         offlineVault: 'Kho Offline', aes: 'AES-256', biometric: 'Sinh trắc', languages: '15 Ngôn ngữ', batchOps: 'Thao tác hàng loạt',
-        launchXbot: 'Mở xBot', launchXkey: 'Mở xKey', launchXmusic: 'Mở xMusic', source: 'Mã nguồn',
+        launchXbot: 'Mở xBot', launchXkey: 'Mở xKey', launchXmusic: 'Mở xMusic', source: 'Mã nguồn', okxAgent: 'OKX AI Agent',
         aiMusic: 'Âm nhạc AI', sonicIdentity: 'Danh tính âm thanh', walletSong: 'Nhạc ví', musicExport: 'Xuất nhạc', musicNft: 'NFT âm nhạc',
         footer: 'Được xây dựng bởi', docs: 'Tài liệu',
         webDemo: 'BẢN WEB DEMO', securityNotice: 'Lưu ý bảo mật', webPreviewMsg: 'Đây chỉ là bản xem trước trên web. Để bảo mật và trải nghiệm tốt nhất, vui lòng tải phiên bản mới nhất ở Github.', downloadAndroid: 'Tải bản Android trên GitHub', continueWeb: 'Tiếp tục truy cập bản Web',
@@ -53,7 +53,7 @@ const TEXTS = {
         xmusicDesc: 'Turn any Web3 wallet address into a one-of-a-kind AI composition — create a sonic identity, export music files, and mint the work as an NFT on X Layer.',
         aiChat: 'Chat AI', analytics: 'Analytics', telegram: 'Telegram', multiLang: 'Multi-lang', portfolio: 'Portfolio',
         offlineVault: 'Offline Vault', aes: 'AES-256', biometric: 'Biometric', languages: '15 Languages', batchOps: 'Batch Ops',
-        launchXbot: 'Launch xBot', launchXkey: 'Launch xKey', launchXmusic: 'Launch xMusic', source: 'Source',
+        launchXbot: 'Launch xBot', launchXkey: 'Launch xKey', launchXmusic: 'Launch xMusic', source: 'Source', okxAgent: 'OKX AI Agent',
         aiMusic: 'AI Music', sonicIdentity: 'Sonic Identity', walletSong: 'Wallet Song', musicExport: 'Music Export', musicNft: 'Music NFT',
         footer: 'Built by', docs: 'Docs',
         webDemo: 'WEB DEMO', securityNotice: 'Security Notice', webPreviewMsg: 'This is only a web preview. For security and the best experience, please download the latest version on Github.', downloadAndroid: 'Download Android on GitHub', continueWeb: 'Continue to Web version',
@@ -69,7 +69,7 @@ const TEXTS = {
         xmusicDesc: '使用 AI 将任意 Web3 钱包地址转化为独一无二的乐曲 — 创建声音身份、导出音乐文件，并在 X Layer 上铸造为 NFT。',
         aiChat: 'AI Chat', analytics: '分析', telegram: 'Telegram', multiLang: '多语言', portfolio: '投资组合',
         offlineVault: '离线金库', aes: 'AES-256', biometric: '生物识别', languages: '15种语言', batchOps: '批量操作',
-        launchXbot: '启动 xBot', launchXkey: '启动 xKey', launchXmusic: '启动 xMusic', source: '源代码',
+        launchXbot: '启动 xBot', launchXkey: '启动 xKey', launchXmusic: '启动 xMusic', source: '源代码', okxAgent: 'OKX AI Agent',
         aiMusic: 'AI 音乐', sonicIdentity: '声音身份', walletSong: '钱包之歌', musicExport: '音乐导出', musicNft: '音乐 NFT',
         footer: '由...构建', docs: '文档',
         webDemo: '网页演示版', securityNotice: '安全提示', webPreviewMsg: '这只是网页预览版。为了您的安全和最佳体验，请在Github上下载最新版本。', downloadAndroid: '在GitHub上下载Android版本', continueWeb: '继续访问网页版',
@@ -85,7 +85,7 @@ const TEXTS = {
         xmusicDesc: 'AI로 Web3 지갑 주소를 세상에 하나뿐인 음악으로 변환하세요 — 사운드 아이덴티티를 만들고 음악 파일을 내보내 X Layer에서 NFT로 발행합니다.',
         aiChat: 'AI Chat', analytics: '분석', telegram: '텔레그램', multiLang: '다국어', portfolio: '포트폴리오',
         offlineVault: '오프라인 금고', aes: 'AES-256', biometric: '생체인증', languages: '15개 언어', batchOps: '일괄 작업',
-        launchXbot: 'xBot 실행', launchXkey: 'xKey 실행', launchXmusic: 'xMusic 실행', source: '소스코드',
+        launchXbot: 'xBot 실행', launchXkey: 'xKey 실행', launchXmusic: 'xMusic 실행', source: '소스코드', okxAgent: 'OKX AI Agent',
         aiMusic: 'AI 음악', sonicIdentity: '사운드 아이덴티티', walletSong: '지갑 음악', musicExport: '음악 내보내기', musicNft: '음악 NFT',
         footer: '제작자', docs: '문서',
         webDemo: '웹 데모', securityNotice: '보안 알림', webPreviewMsg: '이것은 웹 미리보기일 뿐입니다. 보안 및 최상의 경험을 위해 Github에서 최신 버전을 다운로드하세요.', downloadAndroid: 'GitHub에서 Android 버전 다운로드', continueWeb: '웹 버전 계속 이용하기',
@@ -101,7 +101,7 @@ const TEXTS = {
         xmusicDesc: 'AIでWeb3ウォレットアドレスを唯一無二の楽曲に変換 — サウンドアイデンティティを作成し、音楽ファイルを出力してX Layer上でNFTとして発行できます。',
         aiChat: 'AI Chat', analytics: '分析', telegram: 'Telegram', multiLang: '多言語', portfolio: 'ポートフォリオ',
         offlineVault: 'オフライン金庫', aes: 'AES-256', biometric: '生体認証', languages: '15言語', batchOps: '一括操作',
-        launchXbot: 'xBot起動', launchXkey: 'xKey起動', launchXmusic: 'xMusic起動', source: 'ソースコード',
+        launchXbot: 'xBot起動', launchXkey: 'xKey起動', launchXmusic: 'xMusic起動', source: 'ソースコード', okxAgent: 'OKX AI Agent',
         aiMusic: 'AI音楽', sonicIdentity: 'サウンドID', walletSong: 'ウォレット楽曲', musicExport: '音楽出力', musicNft: '音楽NFT',
         footer: '開発者', docs: 'ドキュメント',
         webDemo: 'ウェブデモ', securityNotice: 'セキュリティに関する注意', webPreviewMsg: 'これはウェブプレビューです。セキュリティと最高のエクスペリエンスのために、Githubで最新バージョンをダウンロードしてください。', downloadAndroid: 'GitHubでAndroid版をダウンロード', continueWeb: 'ウェブ版を続行',
@@ -117,7 +117,7 @@ const TEXTS = {
         xmusicDesc: 'Превратите адрес Web3-кошелька в уникальную AI-композицию — создайте звуковую идентичность, экспортируйте музыку и выпустите её как NFT в X Layer.',
         aiChat: 'AI Chat', analytics: 'Аналитика', telegram: 'Telegram', multiLang: 'Мультиязычный', portfolio: 'Портфель',
         offlineVault: 'Оффлайн', aes: 'AES-256', biometric: 'Биометрия', languages: '15 языков', batchOps: 'Пакетные',
-        launchXbot: 'Открыть xBot', launchXkey: 'Открыть xKey', launchXmusic: 'Открыть xMusic', source: 'Исходники',
+        launchXbot: 'Открыть xBot', launchXkey: 'Открыть xKey', launchXmusic: 'Открыть xMusic', source: 'Исходники', okxAgent: 'OKX AI Agent',
         aiMusic: 'AI-музыка', sonicIdentity: 'Звуковой образ', walletSong: 'Музыка кошелька', musicExport: 'Экспорт музыки', musicNft: 'Музыкальный NFT',
         footer: 'Создано', docs: 'Документы',
         webDemo: 'ВЕБ-ДЕМО', securityNotice: 'Уведомление о безопасности', webPreviewMsg: 'Это только веб-версия для предпросмотра. Для безопасности и лучшего опыта, пожалуйста, скачайте последнюю версию на Github.', downloadAndroid: 'Скачать Android версию на GitHub', continueWeb: 'Продолжить в веб-версии',
@@ -133,7 +133,7 @@ const TEXTS = {
         xmusicDesc: 'Ubah alamat dompet Web3 menjadi komposisi AI yang unik — buat identitas sonik, ekspor file musik, dan cetak karya sebagai NFT di X Layer.',
         aiChat: 'AI Chat', analytics: 'Analitik', telegram: 'Telegram', multiLang: 'Multi-bahasa', portfolio: 'Portofolio',
         offlineVault: 'Vault Offline', aes: 'AES-256', biometric: 'Biometrik', languages: '15 Bahasa', batchOps: 'Batch',
-        launchXbot: 'Buka xBot', launchXkey: 'Buka xKey', launchXmusic: 'Buka xMusic', source: 'Sumber',
+        launchXbot: 'Buka xBot', launchXkey: 'Buka xKey', launchXmusic: 'Buka xMusic', source: 'Sumber', okxAgent: 'OKX AI Agent',
         aiMusic: 'Musik AI', sonicIdentity: 'Identitas Sonik', walletSong: 'Lagu Dompet', musicExport: 'Ekspor Musik', musicNft: 'NFT Musik',
         footer: 'Dibuat oleh', docs: 'Dokumen',
         webDemo: 'DEMO WEB', securityNotice: 'Pemberitahuan Keamanan', webPreviewMsg: 'Ini hanya pratinjau web. Untuk keamanan dan pengalaman terbaik, silakan unduh versi terbaru di Github.', downloadAndroid: 'Unduh versi Android di GitHub', continueWeb: 'Lanjutkan ke versi Web',
@@ -149,7 +149,7 @@ const TEXTS = {
         xmusicDesc: 'เปลี่ยนที่อยู่กระเป๋า Web3 ให้เป็นบทเพลง AI ที่ไม่เหมือนใคร — สร้างอัตลักษณ์เสียง ส่งออกไฟล์เพลง และมินต์ผลงานเป็น NFT บน X Layer',
         aiChat: 'AI Chat', analytics: 'วิเคราะห์', telegram: 'Telegram', multiLang: 'หลายภาษา', portfolio: 'พอร์ต',
         offlineVault: 'ออฟไลน์', aes: 'AES-256', biometric: 'ไบโอเมตริก', languages: '15 ภาษา', batchOps: 'แบทช์',
-        launchXbot: 'เปิด xBot', launchXkey: 'เปิด xKey', launchXmusic: 'เปิด xMusic', source: 'ซอร์สโค้ด',
+        launchXbot: 'เปิด xBot', launchXkey: 'เปิด xKey', launchXmusic: 'เปิด xMusic', source: 'ซอร์สโค้ด', okxAgent: 'OKX AI Agent',
         aiMusic: 'เพลง AI', sonicIdentity: 'อัตลักษณ์เสียง', walletSong: 'เพลงกระเป๋า', musicExport: 'ส่งออกเพลง', musicNft: 'NFT เพลง',
         footer: 'สร้างโดย', docs: 'เอกสาร',
         webDemo: 'เว็บเดโม่', securityNotice: 'ประกาศด้านความปลอดภัย', webPreviewMsg: 'นี่เป็นเพียงการดูตัวอย่างผ่านเว็บ เพื่อความปลอดภัยและประสบการณ์ที่ดีที่สุด โปรดดาวน์โหลดเวอร์ชันล่าสุดบน Github', downloadAndroid: 'ดาวน์โหลดเวอร์ชัน Android บน GitHub', continueWeb: 'ดำเนินการต่อไปยังเวอร์ชันเว็บ',
@@ -165,7 +165,7 @@ const TEXTS = {
         xmusicDesc: 'Convierte cualquier dirección de billetera Web3 en una composición de IA única — crea una identidad sonora, exporta música y acuña la obra como NFT en X Layer.',
         aiChat: 'Chat con IA', analytics: 'Analítica', telegram: 'Telegram', multiLang: 'Multi-idioma', portfolio: 'Portafolio',
         offlineVault: 'Bóveda Offline', aes: 'AES-256', biometric: 'Biométrico', languages: '15 Idiomas', batchOps: 'Lotes',
-        launchXbot: 'Abrir xBot', launchXkey: 'Abrir xKey', launchXmusic: 'Abrir xMusic', source: 'Código',
+        launchXbot: 'Abrir xBot', launchXkey: 'Abrir xKey', launchXmusic: 'Abrir xMusic', source: 'Código', okxAgent: 'OKX AI Agent',
         aiMusic: 'Música IA', sonicIdentity: 'Identidad sonora', walletSong: 'Canción de billetera', musicExport: 'Exportar música', musicNft: 'NFT musical',
         footer: 'Creado por', docs: 'Docs',
         webDemo: 'DEMO WEB', securityNotice: 'Aviso de Seguridad', webPreviewMsg: 'Esta es solo una vista previa web. Para seguridad y la mejor experiencia, descarga la última versión en Github.', downloadAndroid: 'Descargar versión Android en GitHub', continueWeb: 'Continuar a la versión Web',
@@ -181,7 +181,7 @@ const TEXTS = {
         xmusicDesc: 'Transformez toute adresse de portefeuille Web3 en composition IA unique — créez une identité sonore, exportez la musique et frappez l’œuvre en NFT sur X Layer.',
         aiChat: 'Chat IA', analytics: 'Analytique', telegram: 'Telegram', multiLang: 'Multilingue', portfolio: 'Portefeuille',
         offlineVault: 'Coffre Offline', aes: 'AES-256', biometric: 'Biométrique', languages: '15 Langues', batchOps: 'Par lots',
-        launchXbot: 'Ouvrir xBot', launchXkey: 'Ouvrir xKey', launchXmusic: 'Ouvrir xMusic', source: 'Source',
+        launchXbot: 'Ouvrir xBot', launchXkey: 'Ouvrir xKey', launchXmusic: 'Ouvrir xMusic', source: 'Source', okxAgent: 'OKX AI Agent',
         aiMusic: 'Musique IA', sonicIdentity: 'Identité sonore', walletSong: 'Musique du portefeuille', musicExport: 'Export musical', musicNft: 'NFT musical',
         footer: 'Créé par', docs: 'Docs',
         webDemo: 'DÉMO WEB', securityNotice: 'Avis de sécurité', webPreviewMsg: 'Ceci est seulement un aperçu web. Pour la sécurité et la meilleure expérience, veuillez télécharger la dernière version sur Github.', downloadAndroid: 'Télécharger la version Android sur GitHub', continueWeb: 'Continuer vers la version Web',
@@ -197,7 +197,7 @@ const TEXTS = {
         xmusicDesc: 'Verwandle jede Web3-Wallet-Adresse in eine einzigartige KI-Komposition — erstelle eine Klangidentität, exportiere Musik und präge das Werk als NFT auf X Layer.',
         aiChat: 'KI-Chat', analytics: 'Analytik', telegram: 'Telegram', multiLang: 'Mehrsprachig', portfolio: 'Portfolio',
         offlineVault: 'Offline-Tresor', aes: 'AES-256', biometric: 'Biometrisch', languages: '15 Sprachen', batchOps: 'Stapel',
-        launchXbot: 'xBot öffnen', launchXkey: 'xKey öffnen', launchXmusic: 'xMusic öffnen', source: 'Quellcode',
+        launchXbot: 'xBot öffnen', launchXkey: 'xKey öffnen', launchXmusic: 'xMusic öffnen', source: 'Quellcode', okxAgent: 'OKX AI Agent',
         aiMusic: 'KI-Musik', sonicIdentity: 'Klangidentität', walletSong: 'Wallet-Song', musicExport: 'Musikexport', musicNft: 'Musik-NFT',
         footer: 'Erstellt von', docs: 'Docs',
         webDemo: 'WEB-DEMO', securityNotice: 'Sicherheitshinweis', webPreviewMsg: 'Dies ist nur eine Webvorschau. Für Sicherheit und das beste Erlebnis laden Sie bitte die neueste Version auf Github herunter.', downloadAndroid: 'Android-Version auf GitHub herunterladen', continueWeb: 'Weiter zur Webversion',
@@ -213,7 +213,7 @@ const TEXTS = {
         xmusicDesc: 'Transforme qualquer endereço de carteira Web3 em uma composição de IA única — crie uma identidade sonora, exporte músicas e cunhe a obra como NFT na X Layer.',
         aiChat: 'Chat com IA', analytics: 'Analítica', telegram: 'Telegram', multiLang: 'Multi-idioma', portfolio: 'Portfólio',
         offlineVault: 'Cofre Offline', aes: 'AES-256', biometric: 'Biométrico', languages: '15 Idiomas', batchOps: 'Lote',
-        launchXbot: 'Abrir xBot', launchXkey: 'Abrir xKey', launchXmusic: 'Abrir xMusic', source: 'Fonte',
+        launchXbot: 'Abrir xBot', launchXkey: 'Abrir xKey', launchXmusic: 'Abrir xMusic', source: 'Fonte', okxAgent: 'OKX AI Agent',
         aiMusic: 'Música IA', sonicIdentity: 'Identidade sonora', walletSong: 'Música da carteira', musicExport: 'Exportar música', musicNft: 'NFT musical',
         footer: 'Criado por', docs: 'Docs',
         webDemo: 'DEMO WEB', securityNotice: 'Aviso de Segurança', webPreviewMsg: 'Esta é apenas uma prévia web. Para segurança e a melhor experiência, baixe a versão mais recente no Github.', downloadAndroid: 'Baixar versão Android no GitHub', continueWeb: 'Continuar na versão Web',
@@ -229,7 +229,7 @@ const TEXTS = {
         xmusicDesc: 'حوّل أي عنوان محفظة Web3 إلى مقطوعة فريدة بالذكاء الاصطناعي — أنشئ هوية صوتية، وصدّر الموسيقى، واسك العمل كرمز NFT على X Layer.',
         aiChat: 'دردشة AI', analytics: 'تحليلات', telegram: 'تيليجرام', multiLang: 'متعدد اللغات', portfolio: 'محفظة',
         offlineVault: 'خزنة', aes: 'AES-256', biometric: 'بيومتري', languages: '15 لغة', batchOps: 'دفعات',
-        launchXbot: 'فتح xBot', launchXkey: 'فتح xKey', launchXmusic: 'فتح xMusic', source: 'المصدر',
+        launchXbot: 'فتح xBot', launchXkey: 'فتح xKey', launchXmusic: 'فتح xMusic', source: 'المصدر', okxAgent: 'OKX AI Agent',
         aiMusic: 'موسيقى AI', sonicIdentity: 'هوية صوتية', walletSong: 'أغنية المحفظة', musicExport: 'تصدير الموسيقى', musicNft: 'NFT موسيقي',
         footer: 'صنع بواسطة', docs: 'مستندات',
         webDemo: 'عرض الويب', securityNotice: 'إشعار أمني', webPreviewMsg: 'هذه مجرد معاينة على الويب. للأمان وللحصول على أفضل تجربة، يرجى تنزيل أحدث إصدار من Github.', downloadAndroid: 'تنزيل إصدار Android على GitHub', continueWeb: 'الاستمرار إلى إصدار الويب',
@@ -245,7 +245,7 @@ const TEXTS = {
         xmusicDesc: 'किसी भी Web3 वॉलेट पते को एक अनोखी AI धुन में बदलें — सोनिक पहचान बनाएँ, संगीत फ़ाइलें निर्यात करें और X Layer पर रचना को NFT के रूप में मिंट करें।',
         aiChat: 'AI Chat', analytics: 'एनालिटिक्स', telegram: 'टेलीग्राम', multiLang: 'बहु-भाषा', portfolio: 'पोर्टफोलियो',
         offlineVault: 'ऑफलाइन वॉल्ट', aes: 'AES-256', biometric: 'बायोमेट्रिक', languages: '15 भाषाएँ', batchOps: 'बैच',
-        launchXbot: 'xBot खोलें', launchXkey: 'xKey खोलें', launchXmusic: 'xMusic खोलें', source: 'सोर्स',
+        launchXbot: 'xBot खोलें', launchXkey: 'xKey खोलें', launchXmusic: 'xMusic खोलें', source: 'सोर्स', okxAgent: 'OKX AI Agent',
         aiMusic: 'AI संगीत', sonicIdentity: 'सोनिक पहचान', walletSong: 'वॉलेट गीत', musicExport: 'संगीत निर्यात', musicNft: 'संगीत NFT',
         footer: 'द्वारा निर्मित', docs: 'दस्तावेज़',
         webDemo: 'वेब डेमो', securityNotice: 'सुरक्षा सूचना', webPreviewMsg: 'यह केवल एक वेब पूर्वावलोकन है। सुरक्षा और सर्वोत्तम अनुभव के लिए, कृपया Github पर नवीनतम संस्करण डाउनलोड करें।', downloadAndroid: 'GitHub पर Android संस्करण डाउनलोड करें', continueWeb: 'वेब संस्करण पर जारी रखें',
@@ -261,7 +261,7 @@ const TEXTS = {
         xmusicDesc: 'Her Web3 cüzdan adresini benzersiz bir AI bestesine dönüştürün — ses kimliği oluşturun, müzik dosyalarını dışa aktarın ve eseri X Layer üzerinde NFT olarak basın.',
         aiChat: 'AI Chat', analytics: 'Analitik', telegram: 'Telegram', multiLang: 'Çok dilli', portfolio: 'Portföy',
         offlineVault: 'Çevrimdışı Kasa', aes: 'AES-256', biometric: 'Biyometrik', languages: '15 Dil', batchOps: 'Toplu İşlem',
-        launchXbot: 'xBot Aç', launchXkey: 'xKey Aç', launchXmusic: 'xMusic Aç', source: 'Kaynak',
+        launchXbot: 'xBot Aç', launchXkey: 'xKey Aç', launchXmusic: 'xMusic Aç', source: 'Kaynak', okxAgent: 'OKX AI Agent',
         aiMusic: 'AI Müzik', sonicIdentity: 'Ses Kimliği', walletSong: 'Cüzdan Şarkısı', musicExport: 'Müzik Aktarımı', musicNft: 'Müzik NFT',
         footer: 'Yapımcı', docs: 'Belgeler',
         webDemo: 'WEB DEMOSU', securityNotice: 'Güvenlik Uyarısı', webPreviewMsg: 'Bu sadece bir web önizlemesidir. Güvenlik ve en iyi deneyim için lütfen en son sürümü Github\'dan indirin.', downloadAndroid: 'GitHub\'dan Android sürümünü indir', continueWeb: 'Web sürümüne devam et',
@@ -554,6 +554,14 @@ export default function App() {
                     <div className="mt-auto flex flex-col gap-3 w-full min-w-0">
                         <a href="https://xmusic.xlayer.my" className="btn-primary btn-xmusic justify-center w-full">
                             {t.launchXmusic} <ArrowRight size={16} />
+                        </a>
+                        <a
+                            href="https://www.okx.ai/agents/4447"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-outline justify-center w-full"
+                        >
+                            <Bot size={16} /> {t.okxAgent}
                         </a>
 
                     </div>

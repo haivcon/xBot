@@ -59,7 +59,10 @@ function createChatOrchestrator(options = {}) {
     if (typeof fetchImpl !== 'function') throw orchestrationError('CONFIG_INVALID', 'fetch is unavailable');
     const baseUrl = assertInternalUrl(options.baseUrl, '9Router URL');
     const credential = options.serviceCredential;
-    if (!String(credential || '').trim()) throw orchestrationError('CONFIG_INVALID', '9Router service credential is required');
+    const buildHeaders = options.buildHeaders;
+    if (!String(credential || '').trim() && typeof buildHeaders !== 'function') {
+        throw orchestrationError('CONFIG_INVALID', '9Router service credential or tenant header factory is required');
+    }
     const allowedModels = new Set(options.allowedModels || []);
     const timeoutMs = Math.max(1, options.timeoutMs || 60_000);
     const maxConcurrent = Math.max(1, options.maxConcurrentPerTenant || 2);
@@ -123,23 +126,28 @@ function createChatOrchestrator(options = {}) {
                 const upstreamIdempotencyKey = crypto.createHash('sha256')
                     .update(`${idempotencySeed}:${round}`)
                     .digest('hex');
+                const requestPath = `${new URL(baseUrl).pathname.replace(/\/$/, '')}/chat/completions` || '/chat/completions';
+                const requestBody = JSON.stringify({
+                    model: input.model,
+                    messages,
+                    tools: tools.length ? tools : undefined,
+                    stream: true,
+                    stream_options: { include_usage: true },
+                    max_tokens: maxOutputTokens
+                });
                 const headers = {
                     'Content-Type': 'application/json',
                     Accept: 'text/event-stream',
-                    Authorization: 'Bearer ' + credential,
+                    ...(credential ? { Authorization: 'Bearer ' + credential } : {}),
+                    ...(typeof buildHeaders === 'function'
+                        ? buildHeaders(input, { method: 'POST', path: requestPath, body: requestBody })
+                        : {}),
                     'Idempotency-Key': upstreamIdempotencyKey
                 };
                 const response = await fetchImpl(`${baseUrl}/chat/completions`, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify({
-                        model: input.model,
-                        messages,
-                        tools: tools.length ? tools : undefined,
-                        stream: true,
-                        stream_options: { include_usage: true },
-                        max_tokens: maxOutputTokens
-                    }),
+                    body: requestBody,
                     signal: controller.signal
                 });
                 if (!response.ok) throw orchestrationError('UPSTREAM_ERROR', '9Router request failed', response.status);

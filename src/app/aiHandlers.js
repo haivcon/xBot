@@ -95,6 +95,11 @@ const {
   hasExpiredKeyNotices
 } = require('../features/aiService');
 const {
+  completeTenantChat,
+  discoverTenantModels,
+  classifyTenantChatError
+} = require('../services/nineRouterTenantChat');
+const {
   aiProviderSelectionSessions,
   userDisabledGeminiKeyIndices,
   userDisabledGroqKeyIndices,
@@ -133,12 +138,6 @@ const {
   OPENAI_TTS_VOICE,
   OPENAI_TTS_FORMAT,
   OPENAI_AUDIO_MODEL,
-  NINEROUTER_API_KEY,
-  NINEROUTER_MODEL,
-  NINEROUTER_CHAT_COMPLETIONS_URL,
-  NINEROUTER_MODELS_URL,
-
-
   OPENAI_MODEL_FAMILIES,
   AI_IMAGE_MAX_BYTES,
   AI_IMAGE_DOWNLOAD_TIMEOUT_MS,
@@ -1222,22 +1221,28 @@ function createAiHandlers(deps) {
       await sendReply(msg, t(lang, 'error_generic') || '❌ An error occurred');
     }
   }
-  const nineRouterHealth = { ok: false, checkedAt: 0, lastError: null };
+  const nineRouterHealth = new Map();
 
-  async function isNineRouterAvailable(force = false) {
-    if (!NINEROUTER_CHAT_COMPLETIONS_URL || !NINEROUTER_MODEL) return false;
-    const ttlMs = 60 * 1000;
-    if (!force && Date.now() - nineRouterHealth.checkedAt < ttlMs) {
-      return nineRouterHealth.ok;
+  async function isNineRouterAvailable(userId, force = false) {
+    const tenantId = String(userId || '');
+    if (!/^\d{1,24}$/.test(tenantId)) return false;
+
+    const cached = nineRouterHealth.get(tenantId);
+    const ttlMs = 30 * 1000;
+    if (!force && cached && Date.now() - cached.checkedAt < ttlMs) {
+      return cached.ok;
     }
 
-    // 9Router is restricted to the single model configured in .env.
-    // Do not depend on /models here because routers can hide route/combo models
-    // or return a broader catalog than this bot is allowed to use.
-    nineRouterHealth.ok = true;
-    nineRouterHealth.checkedAt = Date.now();
-    nineRouterHealth.lastError = null;
-    return true;
+    try {
+      const discovery = await discoverTenantModels({ userId: tenantId });
+      const ok = Array.isArray(discovery.modelIds) && discovery.modelIds.length > 0;
+      nineRouterHealth.set(tenantId, { ok, checkedAt: Date.now() });
+      return ok;
+    } catch (error) {
+      log.child('9Router').warn(`Tenant discovery failed: ${classifyTenantChatError(error)}`);
+      nineRouterHealth.set(tenantId, { ok: false, checkedAt: Date.now() });
+      return false;
+    }
   }
 
   function orderProvidersForFallback(primary, availableProviders = []) {
@@ -1296,11 +1301,6 @@ function createAiHandlers(deps) {
       .filter((entry) => normalizeAiProvider(entry.provider) === 'openai')
       .map((entry) => entry.apiKey)
       .filter(Boolean);
-    const nineRouterUserKeys = userApiKeys
-      .filter((entry) => normalizeAiProvider(entry.provider) === '9router')
-      .map((entry) => entry.apiKey)
-      .filter(Boolean);
-
     const availableProviders = [];
     if (GEMINI_API_KEYS.length || googleUserKeys.length) {
       availableProviders.push('google');
@@ -1311,7 +1311,7 @@ function createAiHandlers(deps) {
     if (OPENAI_API_KEYS.length || openAiUserKeys.length) {
       availableProviders.push('openai');
     }
-    if (NINEROUTER_CHAT_COMPLETIONS_URL && NINEROUTER_MODEL && (NINEROUTER_API_KEY || nineRouterUserKeys.length || process.env.NINEROUTER_ALLOW_NO_KEY !== 'false')) {
+    if (userId && await isNineRouterAvailable(userId)) {
       availableProviders.push('9router');
     }
     // Remember last image sent by user
@@ -1387,7 +1387,7 @@ function createAiHandlers(deps) {
     }
     const promptText = userPrompt || t(lang, 'ai_default_prompt');
     const preferredProvider = userId ? await db.getUserAiProvider(userId) : null;
-    const nineRouterReady = availableProviders.includes('9router') && await isNineRouterAvailable();
+    const nineRouterReady = availableProviders.includes('9router') && await isNineRouterAvailable(userId);
     let provider = null;
     if (nineRouterReady) {
       provider = '9router';
@@ -1416,8 +1416,6 @@ function createAiHandlers(deps) {
         audioSource,
         hasAudio,
         deviceTargetId,
-        nineRouterUserKeys,
-
         usageDate,
         googleUserKeys,
         groqUserKeys,
@@ -1445,10 +1443,12 @@ function createAiHandlers(deps) {
       });
       return;
     }
-    const providerOrder = orderProvidersForFallback(provider, availableProviders);
+    const providerOrder = provider === '9router'
+      ? ['9router']
+      : orderProvidersForFallback(provider, availableProviders);
     let lastProviderError = null;
     for (const candidateProvider of providerOrder) {
-      if (candidateProvider === '9router' && !await isNineRouterAvailable(candidateProvider === provider)) {
+      if (candidateProvider === '9router' && !await isNineRouterAvailable(userId, candidateProvider === provider)) {
         continue;
       }
       try {
@@ -1467,7 +1467,6 @@ function createAiHandlers(deps) {
           googleUserKeys,
           groqUserKeys,
           openAiUserKeys,
-          nineRouterUserKeys,
           throwOnError: true
         });
         return;
